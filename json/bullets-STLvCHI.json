@@ -28,7 +28,7 @@
     "subtitle" : "Shooting % + Save %",
     "ranges":[0,30],
     "measures":[12.0625],
-    "markers":[13,16],
+    "markers":[13,15],
     "teams":["STL","CHI"]
   },
   {
@@ -36,7 +36,7 @@
     "subtitle" : "On Ice Goal Differential",
     "ranges":[0,30],
     "measures":[9.25],
-    "markers":[10,18],
+    "markers":[10,16],
     "teams":["STL","CHI"]
   },
   {
