@@ -43,16 +43,16 @@
     "title" : "PP%",
     "subtitle" : "Power Play Percentage",
     "ranges":[0,30],
-    "measures":[13.5625],
-    "markers":[6,19],
+    "measures":[10.875],
+    "markers":[6,2],
     "teams":["STL","CHI"]
   },
   {
     "title" : "PK%",
     "subtitle" : "Penalty Kill Percentage",
     "ranges":[0,30],
-    "measures":[14.5625],
-    "markers":[3,23],
+    "measures":[13.5],
+    "markers":[3,22],
     "teams":["STL","CHI"]
   }
 ]

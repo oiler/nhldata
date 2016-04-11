@@ -43,15 +43,15 @@
     "title" : "PP%",
     "subtitle" : "Power Play Percentage",
     "ranges":[0,30],
-    "measures":[13.5625],
-    "markers":[27,13],
+    "measures":[10.875],
+    "markers":[26,13],
     "teams":["TBL","DET"]
   },
   {
     "title" : "PK%",
     "subtitle" : "Penalty Kill Percentage",
     "ranges":[0,30],
-    "measures":[14.5625],
+    "measures":[13.5],
     "markers":[7,14],
     "teams":["TBL","DET"]
   }

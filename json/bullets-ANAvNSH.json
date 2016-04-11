@@ -43,16 +43,16 @@
     "title" : "PP%",
     "subtitle" : "Power Play Percentage",
     "ranges":[0,30],
-    "measures":[13.5625],
-    "markers":[1,9],
+    "measures":[10.875],
+    "markers":[1,10],
     "teams":["ANA","NSH"]
   },
   {
     "title" : "PK%",
     "subtitle" : "Penalty Kill Percentage",
     "ranges":[0,30],
-    "measures":[14.5625],
-    "markers":[1,8],
+    "measures":[13.5],
+    "markers":[1,16],
     "teams":["ANA","NSH"]
   }
 ]

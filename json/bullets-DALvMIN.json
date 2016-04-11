@@ -43,7 +43,7 @@
     "title" : "PP%",
     "subtitle" : "Power Play Percentage",
     "ranges":[0,30],
-    "measures":[13.5625],
+    "measures":[10.875],
     "markers":[4,15],
     "teams":["DAL","MIN"]
   },
@@ -51,7 +51,7 @@
     "title" : "PK%",
     "subtitle" : "Penalty Kill Percentage",
     "ranges":[0,30],
-    "measures":[14.5625],
+    "measures":[13.5],
     "markers":[10,27],
     "teams":["DAL","MIN"]
   }

@@ -43,16 +43,16 @@
     "title" : "PP%",
     "subtitle" : "Power Play Percentage",
     "ranges":[0,30],
-    "measures":[13.5625],
-    "markers":[30,12],
+    "measures":[10.875],
+    "markers":[5,11],
     "teams":["WSH","PHI"]
   },
   {
     "title" : "PK%",
     "subtitle" : "Penalty Kill Percentage",
     "ranges":[0,30],
-    "measures":[14.5625],
-    "markers":[25,21],
+    "measures":[13.5],
+    "markers":[2,20],
     "teams":["WSH","PHI"]
   }
 ]
