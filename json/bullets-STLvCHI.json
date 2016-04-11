@@ -1,0 +1,58 @@
+[
+  {
+    "title" : "CF%",
+    "subtitle" : "Corsi For Percentage of Total ",
+    "ranges":[0,30],
+    "measures":[10.8125],
+    "markers":[10,15],
+    "teams":["STL","CHI"]
+  },
+  {
+    "title" : "ZSO%",
+    "subtitle" : "Fraction of Off vs Def Zone Starts",
+    "ranges":[0,30],
+    "measures":[11.0625],
+    "markers":[27,8],
+    "teams":["STL","CHI"]
+  },
+  {
+    "title" : "SCF%",
+    "subtitle" : "Scoring Chances for Percentage of Total",
+    "ranges":[0,30],
+    "measures":[10.75],
+    "markers":[10,19],
+    "teams":["STL","CHI"]
+  },
+  {
+    "title" : "PDO",
+    "subtitle" : "Shooting % + Save %",
+    "ranges":[0,30],
+    "measures":[12.0625],
+    "markers":[13,16],
+    "teams":["STL","CHI"]
+  },
+  {
+    "title" : "G+/-",
+    "subtitle" : "On Ice Goal Differential",
+    "ranges":[0,30],
+    "measures":[9.25],
+    "markers":[10,18],
+    "teams":["STL","CHI"]
+  },
+  {
+    "title" : "PP%",
+    "subtitle" : "Power Play Percentage",
+    "ranges":[0,30],
+    "measures":[13.5625],
+    "markers":[6,19],
+    "teams":["STL","CHI"]
+  },
+  {
+    "title" : "PK%",
+    "subtitle" : "Penalty Kill Percentage",
+    "ranges":[0,30],
+    "measures":[14.5625],
+    "markers":[3,23],
+    "teams":["STL","CHI"]
+  }
+]

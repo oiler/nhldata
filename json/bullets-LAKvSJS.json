@@ -1,0 +1,58 @@
+[
+  {
+    "title" : "CF%",
+    "subtitle" : "Corsi For Percentage of Total ",
+    "ranges":[0,30],
+    "measures":[10.8125],
+    "markers":[1,3],
+    "teams":["LAK","SJS"]
+  },
+  {
+    "title" : "ZSO%",
+    "subtitle" : "Fraction of Off vs Def Zone Starts",
+    "ranges":[0,30],
+    "measures":[11.0625],
+    "markers":[1,17],
+    "teams":["LAK","SJS"]
+  },
+  {
+    "title" : "SCF%",
+    "subtitle" : "Scoring Chances for Percentage of Total",
+    "ranges":[0,30],
+    "measures":[10.75],
+    "markers":[3,2],
+    "teams":["LAK","SJS"]
+  },
+  {
+    "title" : "PDO",
+    "subtitle" : "Shooting % + Save %",
+    "ranges":[0,30],
+    "measures":[12.0625],
+    "markers":[15,19],
+    "teams":["LAK","SJS"]
+  },
+  {
+    "title" : "G+/-",
+    "subtitle" : "On Ice Goal Differential",
+    "ranges":[0,30],
+    "measures":[9.25],
+    "markers":[4,7],
+    "teams":["LAK","SJS"]
+  },
+  {
+    "title" : "PP%",
+    "subtitle" : "Power Play Percentage",
+    "ranges":[0,30],
+    "measures":[13.5625],
+    "markers":[8,3],
+    "teams":["LAK","SJS"]
+  },
+  {
+    "title" : "PK%",
+    "subtitle" : "Penalty Kill Percentage",
+    "ranges":[0,30],
+    "measures":[14.5625],
+    "markers":[15,20],
+    "teams":["LAK","SJS"]
+  }
+]

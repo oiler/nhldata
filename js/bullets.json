@@ -1,0 +1,22 @@
+[
+  {
+    "title" : "CF%",
+    "subtitle" : "Corsi For Percentage of Total ",
+    "ranges":[0,30],"measures":[10.625],"markers":[5,25],"teams":["DAL","MIN"]
+  },
+  {
+    "title" : "G+/-",
+    "subtitle" : "On Ice Goal Differential",
+    "ranges":[0,30],"measures":[9.25],"markers":[13,11],"teams":["DAL","MIN"]
+  },
+  {
+    "title" : "PDO",
+    "subtitle" : "Shooting % + Save %",
+    "ranges":[0,30],"measures":[12.06],"markers":[25,10],"teams":["DAL","MIN"]
+  },
+  {
+    "title" : "SCF%",
+    "subtitle" : "Scoring Chances for Percentage of Total",
+    "ranges":[0,30],"measures":[10.75],"markers":[6,23],"teams":["DAL","MIN"]
+  }
+]

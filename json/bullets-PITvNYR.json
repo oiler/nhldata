@@ -1,0 +1,58 @@
+[
+  {
+    "title" : "CF%",
+    "subtitle" : "Corsi For Percentage of Total ",
+    "ranges":[0,30],
+    "measures":[10.8125],
+    "markers":[2,21],
+    "teams":["PIT","NYR"]
+  },
+  {
+    "title" : "ZSO%",
+    "subtitle" : "Fraction of Off vs Def Zone Starts",
+    "ranges":[0,30],
+    "measures":[11.0625],
+    "markers":[5,15],
+    "teams":["PIT","NYR"]
+  },
+  {
+    "title" : "SCF%",
+    "subtitle" : "Scoring Chances for Percentage of Total",
+    "ranges":[0,30],
+    "measures":[10.75],
+    "markers":[1,24],
+    "teams":["PIT","NYR"]
+  },
+  {
+    "title" : "PDO",
+    "subtitle" : "Shooting % + Save %",
+    "ranges":[0,30],
+    "measures":[12.0625],
+    "markers":[4,3],
+    "teams":["PIT","NYR"]
+  },
+  {
+    "title" : "G+/-",
+    "subtitle" : "On Ice Goal Differential",
+    "ranges":[0,30],
+    "measures":[9.25],
+    "markers":[2,9],
+    "teams":["PIT","NYR"]
+  },
+  {
+    "title" : "PP%",
+    "subtitle" : "Power Play Percentage",
+    "ranges":[0,30],
+    "measures":[13.5625],
+    "markers":[16,14],
+    "teams":["PIT","NYR"]
+  },
+  {
+    "title" : "PK%",
+    "subtitle" : "Penalty Kill Percentage",
+    "ranges":[0,30],
+    "measures":[14.5625],
+    "markers":[5,26],
+    "teams":["PIT","NYR"]
+  }
+]

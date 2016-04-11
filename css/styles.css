@@ -1,0 +1,61 @@
+body {
+  font-family:"Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size:10px;
+}
+
+/*button {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+}
+*/
+
+h1, h2 { text-align:center; margin:0 0 20px 0; padding:0; }
+h1 { font-size:28px; }
+h2 { font-size:22px; }
+
+a:link, a:visited, a:hover, a:active { text-decoration:none; color:#111; }
+.header a, .footer a { color:#d9d9d9; } 
+.about a { color:blue; }
+
+.header { width:96%; height:16px; background:#111; color:#d9d9d9; padding:10px 2%; font-size:16px; }
+.footer { width:96%; height:16px; background:#111; color:#d9d9d9; padding:12px 2%; font-size:12px; text-align:center; }
+.round_hr { width:96%; height:30px; background:#d9d9d9; color:#111; margin:0 0 20px 0; padding:10px 2%; font-size:16px; }
+
+.about { max-width:600px; margin:20px auto; }
+.about .subhed { text-align:right; font-weight:bold; }
+.about .text { font-size:16px; padding:0 10px; }
+.about p { margin-left:22px; }
+
+.container { 
+  width:100%;
+  max-width:340px;
+  margin:0 auto;
+}
+
+.item {
+  display:block;
+  position:relative;
+  width:100%;
+  /*max-width:60em;*/
+  margin:0 auto;
+  padding-bottom:40px; 
+}
+.legend { padding:2px 10px; }
+
+.bullet { margin:0 auto; width:100%; }
+svg .label { /*color:red;*/ }
+
+
+.bullet { font:10px sans-serif; }
+.bullet .marker { stroke:#000; stroke-width:2px; }
+.bullet .marker.s0 { stroke:#333; stroke-width:1px; }
+.bullet .marker.s1 { stroke:#333; stroke-width:1px; }
+.bullet .tick line { stroke:#666; stroke-width:.5px; }
+.bullet .range.s0 { fill:#eee; }
+.bullet .range.s1 { fill:#ddd; }
+/*.bullet .range.s2 { fill:#ccc; }*/
+.bullet .measure.s0 { fill:#d9d9d9; }
+/*.bullet .measure.s1 { fill:steelblue; }*/
+.bullet .title { font-size:14px; font-weight:bold; }
+.bullet .subtitle { fill:#999; }

@@ -1,0 +1,58 @@
+[
+  {
+    "title" : "CF%",
+    "subtitle" : "Corsi For Percentage of Total ",
+    "ranges":[0,30],
+    "measures":[10.8125],
+    "markers":[8,5],
+    "teams":["TBL","DET"]
+  },
+  {
+    "title" : "ZSO%",
+    "subtitle" : "Fraction of Off vs Def Zone Starts",
+    "ranges":[0,30],
+    "measures":[11.0625],
+    "markers":[4,2],
+    "teams":["TBL","DET"]
+  },
+  {
+    "title" : "SCF%",
+    "subtitle" : "Scoring Chances for Percentage of Total",
+    "ranges":[0,30],
+    "measures":[10.75],
+    "markers":[5,12],
+    "teams":["TBL","DET"]
+  },
+  {
+    "title" : "PDO",
+    "subtitle" : "Shooting % + Save %",
+    "ranges":[0,30],
+    "measures":[12.0625],
+    "markers":[6,25],
+    "teams":["TBL","DET"]
+  },
+  {
+    "title" : "G+/-",
+    "subtitle" : "On Ice Goal Differential",
+    "ranges":[0,30],
+    "measures":[9.25],
+    "markers":[5,21],
+    "teams":["TBL","DET"]
+  },
+  {
+    "title" : "PP%",
+    "subtitle" : "Power Play Percentage",
+    "ranges":[0,30],
+    "measures":[13.5625],
+    "markers":[27,13],
+    "teams":["TBL","DET"]
+  },
+  {
+    "title" : "PK%",
+    "subtitle" : "Penalty Kill Percentage",
+    "ranges":[0,30],
+    "measures":[14.5625],
+    "markers":[7,14],
+    "teams":["TBL","DET"]
+  }
+]
