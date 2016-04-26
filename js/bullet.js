@@ -13,6 +13,9 @@ d3.bullet = function() {
       teams = bulletTeams,
       width = 380,
       height = 30,
+      thumbnailImgWidth = 30, 
+      thumbnailImgOffset = thumbnailImgWidth / 2,
+      bulletType = 0,
       tickFormat = null;
 
   // For each small multiple…
@@ -24,11 +27,6 @@ d3.bullet = function() {
           teamz = teams.call(this, d, i).slice(),
           g = d3.select(this);
 
-      // console.log(teamz[i]);
-      // console.log(rangez);
-      // console.log(markerz);
-      //console.log(d);
-
       // Compute the new x-scale.
       var x1 = d3.scale.linear()
           .domain([0, Math.max(rangez[0], markerz[0], measurez[0])])
@@ -37,7 +35,7 @@ d3.bullet = function() {
       // modified for our png logo (width 30)
       var x2 = d3.scale.linear()
           .domain([0, Math.max(rangez[0], markerz[0], measurez[0])])
-          .range(reverse ? [width-15, 0] : [0, width-15]);
+          .range(reverse ? [width-thumbnailImgOffset, 0] : [0, width-thumbnailImgOffset]);
 
 
       // Retrieve the old x-scale, if this is an update.
@@ -76,7 +74,6 @@ d3.bullet = function() {
       var measure = g.selectAll("rect.measure")
           .data(measurez);
 
-      //console.log(i);
       measure.enter().append("rect")
           .attr("class", function(d, i) { return "measure s" + i; })
           .attr("width", w0)
@@ -100,30 +97,31 @@ d3.bullet = function() {
           .data(markerz);
           //console.log(markerz);
 
-//       marker.enter().append("line")
-//           .attr("class", function(d, i) { return "marker s" + i; })
-// //          .attr("class", "marker")
-//           .attr("x1", x0)
-//           .attr("x2", x0)
-//           .attr("y1", height / 6)
-//           .attr("y2", height * 5 / 6)
-//         .transition()
-//           .duration(duration)
-//           .attr("x1", x1)
-//           .attr("x2", x1);
+      if( bulletType === "image" ) {
+        marker.enter().append("image")
+            .attr("xlink:href", function(d, i) { return 'teams/'+teamz[i]+'.png'; })
+            .attr("x", x2)
+            .attr("y", -2)
+            .attr("width", thumbnailImgWidth)
+            .attr("height", thumbnailImgWidth)
+          .transition()
+            .duration(duration)
+            .attr("x1", x1)
+            .attr("x2", x1);
+      }
 
-      marker.enter().append("image")
-          //.attr("class", function(d, i) { return "marker s" + i; })
-          .attr("xlink:href", function(d, i) { return 'teams/'+teamz[i]+'.png'; })
-          .attr("x", x2)
-          .attr("y", -2)
-          //.attr("xlink:href", 'teams/LAK.png')
-          .attr("width", 30)
-          .attr("height", 30)
-        .transition()
-          .duration(duration)
-          .attr("x1", x1)
-          .attr("x2", x1);
+      if( bulletType === "line" ) {
+        marker.enter().append("line")
+            .attr("class", function(d, i) { return "marker s" + i; })
+            .attr("x1", x0)
+            .attr("x2", x0)
+            .attr("y1", height / 6)
+            .attr("y2", height * 5 / 6)
+          .transition()
+            .duration(duration)
+            .attr("x1", x1)
+            .attr("x2", x1);
+      }
 
       marker.transition()
           .duration(duration)
@@ -230,6 +228,7 @@ d3.bullet = function() {
   bullet.tickFormat = function(x) {
     if (!arguments.length) return tickFormat;
     tickFormat = x;
+    console.log(arguments.length);
     return bullet;
   };
 
@@ -242,6 +241,12 @@ d3.bullet = function() {
   bullet.reverse = function(x) {
     if (!arguments.length) return reverse;
     reverse = x;
+    return bullet;
+  };
+
+  bullet.bulletType = function(x) {
+    if (!arguments.length) return bulletType;
+    bulletType = x;
     return bullet;
   };
 

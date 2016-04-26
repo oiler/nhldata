@@ -59,3 +59,14 @@ svg .label { /*color:red;*/ }
 /*.bullet .measure.s1 { fill:steelblue; }*/
 .bullet .title { font-size:14px; font-weight:bold; }
 .bullet .subtitle { fill:#999; }
+
+
+
+@media (min-width:601px) and (max-width:1600px ) {
+  .container { 
+    width:100%;
+    max-width:800px;
+    margin:0 auto;
+  }
+
+}
