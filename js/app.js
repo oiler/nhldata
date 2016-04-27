@@ -8,7 +8,7 @@ NHLDATA = {
   config: {
     width: 320,
     height: 50,
-    margin: { top: 5, right: 10, bottom: 20, left: 40},
+    margin: { top: 5, right: 10, bottom: 20, left: 50},
     breakPoint: 768,
     maxWidth: 800
   },
@@ -34,6 +34,14 @@ NHLDATA = {
         .append("g")
           .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
           .call(chart);
+      var title = svg.append("g")
+          .attr("class", "label")
+          .style("text-anchor", "start")
+          .attr("transform", "translate(-50," + height / 2 + ")");
+
+      title.append("text")
+          .attr("class", "title")
+          .text(function(d) { return d.title; });
     });
     NHLDATA.addLegend(className);
   },
