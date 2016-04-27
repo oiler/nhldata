@@ -58,7 +58,6 @@ NHLDATA = {
   },
   addLegend: function (className) {
     var html = '';
-      html += '<div class="legend">';
       html += '<b>Left (30) to Right (0)</b> = bad to good; ';
       html += '<b>CF%</b> = Corsi For Percentage of Total; ';
       html += '<b>ZSO%</b> = Fraction of Off vs Def Zone Starts; ';
@@ -67,7 +66,9 @@ NHLDATA = {
       html += '<b>G+/-</b> = On Ice Goal Differential; ';
       html += '<b>PP%</b> = Power Play Percentage; ';
       html += '<b>PK%</b> = Penalty Kill Percentage; ';
-      html += '</div>';
-    d3.select(className).html(html);
+    d3.select(className).append("div")
+      .attr("class", "legend")
+      .html(html)
+    ;
   }
 };
