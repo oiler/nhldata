@@ -64,4 +64,4 @@ NHLDATA = {
       html += '</div>';
     $(className).append(html);
   }
-}
+};
