@@ -62,6 +62,6 @@ NHLDATA = {
       html += '<b>PP%</b> = Power Play Percentage; ';
       html += '<b>PK%</b> = Penalty Kill Percentage; ';
       html += '</div>';
-    $(className).append(html);
+    d3.select(className).html(html);
   }
 };
