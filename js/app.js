@@ -5,6 +5,7 @@
 
 var NHLDATA = NHLDATA || {};
 NHLDATA = {
+
   config: {
     width: 320,
     height: 50,
@@ -12,7 +13,9 @@ NHLDATA = {
     breakPoint: 768,
     maxWidth: 800
   },
-  matchup: function(className, fileData) {
+
+  matchup: function matchup(className, fileData) {
+
     NHLDATA.updateDimensions(window.innerWidth);
     var margin = NHLDATA.config.margin;
     var width = NHLDATA.config.width - margin.left - margin.right;
@@ -33,24 +36,27 @@ NHLDATA = {
           .attr("height", height + margin.top + margin.bottom)
         .append("g")
           .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
-          .call(chart);
+          .call(chart)
+      ;
       var title = svg.append("g")
           .attr("class", "label")
           .style("text-anchor", "start")
-          .attr("transform", "translate(-50," + height / 2 + ")");
-
+          .attr("transform", "translate(-50," + height / 2 + ")")
+      ;
       title.append("text")
           .attr("class", "title")
-          .text(function(d) { return d.title; });
+          .text(function(d) { return d.title; })
+      ;
     });
     NHLDATA.addLegend(className);
   },
-  updateDimensions: function(winWidth) {
+
+  updateDimensions: function updateDimensions(winWidth) {
     //NHLDATA.config.width = winWidth - NHLDATA.config.margin.left - NHLDATA.config.margin.right;
     NHLDATA.config.width =  winWidth > NHLDATA.config.maxWidth ? NHLDATA.config.maxWidth: winWidth - 40 ;
     //NHLDATA.config.height = .5 * NHLDATA.config.width;
   },
-  addLegend: function(className) {
+  addLegend: function (className) {
     var html = '';
       html += '<div class="legend">';
       html += '<b>Left (30) to Right (0)</b> = bad to good; ';
