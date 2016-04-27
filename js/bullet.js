@@ -1,3 +1,9 @@
+/****************************** 
+  modified from
+  https://bl.ocks.org/mbostock/4061961
+  https://gist.github.com/mbostock/4061961
+******************************/
+
 (function() {
 
 // Chart design based on the recommendations of Stephen Few. Implementation
@@ -24,21 +30,15 @@ d3.bullet = function() {
           teamz = teams.call(this, d, i).slice(),
           g = d3.select(this);
 
-      // console.log(teamz[i]);
-      // console.log(rangez);
-      // console.log(markerz);
-      //console.log(d);
-
-      // Compute the new x-scale.
-      var x1 = d3.scale.linear()
-          .domain([0, Math.max(rangez[0], markerz[0], measurez[0])])
-          .range(reverse ? [width, 0] : [0, width]);
-
       // modified for our png logo (width 30)
       var x2 = d3.scale.linear()
           .domain([0, Math.max(rangez[0], markerz[0], measurez[0])])
           .range(reverse ? [width-15, 0] : [0, width-15]);
 
+      // Compute the new x-scale.
+      var x1 = d3.scale.linear()
+          .domain([0, Math.max(rangez[0], markerz[0], measurez[0])])
+          .range(reverse ? [width, 0] : [0, width]);
 
       // Retrieve the old x-scale, if this is an update.
       var x0 = this.__chart__ || d3.scale.linear()
