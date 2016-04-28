@@ -15,11 +15,11 @@ NHLDATA = {
   },
 
   matchup: function matchup(className, fileData) {
-
-    NHLDATA.updateDimensions(window.innerWidth);
-    var margin = NHLDATA.config.margin;
-    var width = NHLDATA.config.width - margin.left - margin.right;
-    var height = NHLDATA.config.height - margin.top - margin.bottom;
+    "use strict";
+    this.updateDimensions(window.innerWidth);
+    var margin = this.config.margin;
+    var width = this.config.width - margin.left - margin.right;
+    var height = this.config.height - margin.top - margin.bottom;
 
     var chart = d3.bullet()
       .reverse(true)
@@ -48,15 +48,18 @@ NHLDATA = {
           .text(function(d) { return d.title; })
       ;
     });
-    NHLDATA.addLegend(className);
+    this.addLegend(className);
   },
 
   updateDimensions: function updateDimensions(winWidth) {
     //NHLDATA.config.width = winWidth - NHLDATA.config.margin.left - NHLDATA.config.margin.right;
-    NHLDATA.config.width =  winWidth > NHLDATA.config.maxWidth ? NHLDATA.config.maxWidth: winWidth - 40 ;
+    //NHLDATA.config.width =  winWidth > NHLDATA.config.maxWidth ? NHLDATA.config.maxWidth: winWidth - 40 ;
+    "use strict"; 
+    this.config.width =  winWidth > this.config.maxWidth ? this.config.maxWidth: winWidth - 40 ;
     //NHLDATA.config.height = .5 * NHLDATA.config.width;
   },
   addLegend: function (className) {
+    "use strict";
     var html = '';
       html += '<b>Left (30) to Right (0)</b> = bad to good; ';
       html += '<b>CF%</b> = Corsi For Percentage of Total; ';
