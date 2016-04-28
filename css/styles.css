@@ -41,13 +41,13 @@ a:link, a:visited, a:hover, a:active { text-decoration:none; color:#111; }
   margin:0 auto;
   padding-bottom:40px; 
 }
-.legend { padding:2px 10px; }
+.legend { padding:2px 40px 20px 40px; }
 
 .bullet { margin:0 auto; /*width:100%;*/ }
 svg .label { /*color:red;*/ }
 
 
-.bullet { font:10px sans-serif; }
+.bullet { font:10px sans-serif; margin-left:10px; }
 .bullet .marker { stroke:#000; stroke-width:2px; }
 .bullet .marker.s0 { stroke:#333; stroke-width:1px; }
 .bullet .marker.s1 { stroke:#333; stroke-width:1px; }

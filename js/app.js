@@ -41,7 +41,7 @@ NHLDATA = {
       var title = svg.append("g")
           .attr("class", "label")
           .style("text-anchor", "start")
-          .attr("transform", "translate(-50," + height / 2 + ")")
+          .attr("transform", "translate(-45," + height / 2 + ")")
       ;
       title.append("text")
           .attr("class", "title")
