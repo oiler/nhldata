@@ -114,7 +114,7 @@ d3.bullet = function() {
 
       marker.enter().append("image")
           //.attr("class", function(d, i) { return "marker s" + i; })
-          .attr("xlink:href", function(d, i) { return 'teams/'+teamz[i]+'.png'; })
+          .attr("xlink:href", function(d, i) { return '/teams/'+teamz[i]+'.png'; })
           .attr("x", x2)
           .attr("y", -2)
           //.attr("xlink:href", 'teams/LAK.png')
