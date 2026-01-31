@@ -7,11 +7,15 @@ Uses uv for package management.
 
 Usage:
     python nhlgame.py START_GAME_ID END_GAME_ID
+    python nhlgame.py today
 
-Example:
+Examples:
     python nhlgame.py 3031 3032
-    
-This will download data for games 2025023031 and 2025023032
+        Downloads data for games 2025023031 and 2025023032
+
+    python nhlgame.py today
+        Auto-detects last saved game and downloads all games up through yesterday
+        (stops before today's first scheduled game)
 """
 
 import sys
@@ -19,8 +23,8 @@ import json
 import time
 import requests
 from pathlib import Path
-from datetime import datetime
-from typing import Dict, List, Tuple
+from datetime import datetime, date
+from typing import Dict, List, Tuple, Optional
 
 # ============================================================================
 # CONFIGURATION - Edit these values as needed
@@ -48,14 +52,14 @@ def construct_game_id(game_number: int) -> str:
 
 def setup_directories(season: str) -> Dict[str, Path]:
     """Create directory structure for the season."""
-    base_path = Path(season)
+    base_path = Path("data") / season
     paths = {}
-    
+
     for endpoint_name in ENDPOINTS.keys():
         path = base_path / endpoint_name
         path.mkdir(parents=True, exist_ok=True)
         paths[endpoint_name] = path
-    
+
     return paths
 
 
@@ -167,27 +171,149 @@ def download_game(game_id: str, paths: Dict[str, Path]) -> Tuple[int, int]:
 
 
 # ============================================================================
+# TODAY MODE FUNCTIONS
+# ============================================================================
+
+def get_last_saved_game() -> Optional[int]:
+    """
+    Find the highest game number in the saved boxscores directory.
+
+    Returns:
+        The highest game number found, or None if no games exist.
+    """
+    boxscores_dir = Path("data") / SEASON / "boxscores"
+
+    if not boxscores_dir.exists():
+        return None
+
+    # Pattern: 2025020XXX.json where XXX is the game number
+    pattern = f"{SEASON}{GAME_TYPE}*.json"
+    game_files = list(boxscores_dir.glob(pattern))
+
+    if not game_files:
+        return None
+
+    # Extract game numbers from filenames
+    game_numbers = []
+    for filepath in game_files:
+        # Filename is like 2025020724.json
+        filename = filepath.stem  # 2025020724
+        # Extract the game number (last 4 digits after season+gametype)
+        prefix = f"{SEASON}{GAME_TYPE}"
+        if filename.startswith(prefix):
+            game_num_str = filename[len(prefix):]
+            try:
+                game_numbers.append(int(game_num_str))
+            except ValueError:
+                continue
+
+    if not game_numbers:
+        return None
+
+    return max(game_numbers)
+
+
+def get_todays_first_game() -> Optional[int]:
+    """
+    Fetch today's schedule and return the first game ID for the current season/game type.
+
+    Returns:
+        The lowest game number scheduled for today, or None if no games today.
+    """
+    today = date.today().isoformat()  # YYYY-MM-DD format
+    schedule_url = f"https://api-web.nhle.com/v1/schedule/{today}"
+
+    try:
+        response = requests.get(schedule_url, timeout=30)
+
+        if response.status_code != 200:
+            print(f"Warning: Could not fetch schedule (HTTP {response.status_code})")
+            return None
+
+        data = response.json()
+
+        # Extract game IDs from the schedule
+        # The schedule response has gameWeek array with dates containing games
+        game_numbers = []
+        prefix = f"{SEASON}{GAME_TYPE}"
+
+        for game_week in data.get("gameWeek", []):
+            for game in game_week.get("games", []):
+                game_id = str(game.get("id", ""))
+                if game_id.startswith(prefix):
+                    game_num_str = game_id[len(prefix):]
+                    try:
+                        game_numbers.append(int(game_num_str))
+                    except ValueError:
+                        continue
+
+        if not game_numbers:
+            return None
+
+        return min(game_numbers)
+
+    except requests.exceptions.RequestException as e:
+        print(f"Warning: Could not fetch schedule: {e}")
+        return None
+    except json.JSONDecodeError:
+        print("Warning: Could not parse schedule response")
+        return None
+
+
+# ============================================================================
 # MAIN FUNCTION
 # ============================================================================
 
 def main():
     """Main execution function."""
-    # Validate command line arguments
-    if len(sys.argv) != 3:
-        print("Error: Invalid number of arguments")
+    # Check for "today" mode
+    if len(sys.argv) == 2 and sys.argv[1].lower() == "today":
+        # Today mode: auto-determine game range
+        today_str = date.today().isoformat()
+
+        # Get last saved game
+        last_saved = get_last_saved_game()
+        if last_saved is None:
+            print(f"Error: No saved games found in data/{SEASON}/boxscores/")
+            print(f"Run with explicit game IDs first: python {sys.argv[0]} START END")
+            sys.exit(1)
+
+        # Get today's first game
+        first_today = get_todays_first_game()
+        if first_today is None:
+            print(f"No games scheduled for today ({today_str}).")
+            print(f"Most recent saved game: {SEASON}{GAME_TYPE}{last_saved:04d}")
+            sys.exit(0)
+
+        # Calculate range
+        start_game = last_saved + 1
+        end_game = first_today - 1
+
+        # Check if already caught up
+        if start_game > end_game:
+            print(f"Already caught up!")
+            print(f"Last saved: {SEASON}{GAME_TYPE}{last_saved:04d}")
+            print(f"Next game (today): {SEASON}{GAME_TYPE}{first_today:04d}")
+            sys.exit(0)
+
+    elif len(sys.argv) == 3:
+        # Explicit range mode
+        try:
+            start_game = int(sys.argv[1])
+            end_game = int(sys.argv[2])
+        except ValueError:
+            print("Error: Game IDs must be integers")
+            sys.exit(1)
+
+        if start_game > end_game:
+            print("Error: Start game ID must be less than or equal to end game ID")
+            sys.exit(1)
+
+    else:
+        print("Error: Invalid arguments")
         print(f"Usage: python {sys.argv[0]} START_GAME_ID END_GAME_ID")
+        print(f"       python {sys.argv[0]} today")
         print(f"Example: python {sys.argv[0]} 3031 3032")
-        sys.exit(1)
-    
-    try:
-        start_game = int(sys.argv[1])
-        end_game = int(sys.argv[2])
-    except ValueError:
-        print("Error: Game IDs must be integers")
-        sys.exit(1)
-    
-    if start_game > end_game:
-        print("Error: Start game ID must be less than or equal to end game ID")
         sys.exit(1)
     
     # Setup
@@ -198,7 +324,7 @@ def main():
     print(f"Rate Limit: {RATE_LIMIT_SECONDS} seconds between requests")
     
     paths = setup_directories(SEASON)
-    print(f"\nData will be saved to: {SEASON}/")
+    print(f"\nData will be saved to: data/{SEASON}/")
     
     # Download games
     total_games = end_game - start_game + 1

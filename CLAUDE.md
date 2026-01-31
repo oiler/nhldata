@@ -20,7 +20,7 @@ Processes play-by-play data to track game situations using situationCode format:
 **Critical Rule - Coincidental Penalties (Rule 19.1)**:
 - When exactly one minor penalty per team occurs simultaneously with no other penalties in effect, teams play 4v4
 - Penalties are canceled by total count, not by type
-- See `/mnt/project/Rules_Coincidental_Penalties.md` for full details and Table 13 examples
+- See `resources/Rules Coincidental Penalties.md` for full details and Table 13 examples
 
 ### 2. On-Ice Shifts Processor
 Creates second-by-second player timelines for time-on-ice calculations.
@@ -36,7 +36,29 @@ Creates second-by-second player timelines for time-on-ice calculations.
 - This is NOT an error condition - it's missing data that requires fallback
 - **Solution**: Implement HTML scraping from NHL Time-on-Ice reports
 - **References**: Hockey-Scraper (archived but has patterns), scrapernhl, TopDownHockey_Scraper
-- See `/mnt/project/NHL_API_Documentation.md` section "API Access Patterns" for details
+- See `resources/NHL API Documentation.md` section "API Access Patterns" for details
+
+## Directory Structure
+
+```
+nhl/
+├── data/                    # All data files
+│   └── 2025/                # Season data
+│       ├── shifts/          # NHL API shift data
+│       ├── plays/           # NHL API play-by-play data
+│       ├── meta/            # NHL API game metadata
+│       ├── boxscores/       # NHL API boxscore data
+│       └── generated/       # Our calculated outputs
+│           └── timelines/   # Second-by-second timelines
+│               ├── json/
+│               └── csv/
+├── docs/                    # Documentation
+│   └── plans/               # Design documents
+├── resources/               # Reference materials
+├── tools/                   # Utility scripts
+├── v1/                      # Version 1 scripts
+└── v2/                      # Version 2 scripts
+```
 
 ## Technical Stack
 
@@ -59,8 +81,9 @@ All outputs must be validated against official sources:
 ## Key Resources
 
 ### Project Files
-- `/mnt/project/Rules_Coincidental_Penalties.md`: NHL Rule 19 + Table 13 examples
-- `/mnt/project/NHL_API_Documentation.md`: API endpoints, libraries, tutorials
+- `resources/Rules Coincidental Penalties.md`: NHL Rule 19 + Table 13 examples
+- `resources/NHL API Documentation.md`: API endpoints, libraries, tutorials
+- `resources/SITUATIONCODE_REFERENCE.md`: SituationCode format reference
 
 ### External References
 - NHL API Reference: https://github.com/Zmalski/NHL-API-Reference
