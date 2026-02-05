@@ -418,8 +418,41 @@ def parse_shifts_html(html: str, game_id: str, team_type: str, url: str) -> Opti
 
     players = []
 
-    for heading in player_headings:
-        heading_text = heading.get_text(strip=True)
+    # All players are in the same table, so we need to find rows between playerHeadings
+    # Get the parent table (contains all players)
+    if not player_headings:
+        return None
+
+    parent_table = player_headings[0].find_parent('table')
+    if not parent_table:
+        return None
+
+    all_rows = parent_table.find_all('tr')
+
+    # Build index: find which row each playerHeading is in
+    heading_row_indices = []
+    for i, row in enumerate(all_rows):
+        heading_cell = row.find('td', class_=lambda c: c and 'playerHeading' in c)
+        if heading_cell:
+            heading_row_indices.append(i)
+
+    # Process each player section
+    for idx, heading_idx in enumerate(heading_row_indices):
+        # Get rows from this heading to the next (or end)
+        if idx + 1 < len(heading_row_indices):
+            next_heading_idx = heading_row_indices[idx + 1]
+        else:
+            next_heading_idx = len(all_rows)
+
+        player_rows = all_rows[heading_idx:next_heading_idx]
+
+        # Extract player name from first row
+        heading_row = player_rows[0]
+        heading_cell = heading_row.find('td', class_=lambda c: c and 'playerHeading' in c)
+        if not heading_cell:
+            continue
+
+        heading_text = heading_cell.get_text(strip=True)
         number, name = parse_player_heading(heading_text)
 
         if number is None:
@@ -433,24 +466,24 @@ def parse_shifts_html(html: str, game_id: str, team_type: str, url: str) -> Opti
             "gameTotals": {}
         }
 
-        # Find the parent table that contains this player's data
-        # Navigate up to find the containing structure
-        parent_table = heading.find_parent('table')
-        if not parent_table:
-            continue
-
-        # Find all rows in this player's section
-        all_rows = parent_table.find_all('tr')
-
         # Parse shift rows (have oddColor or evenColor class)
-        for row in all_rows:
+        # Skip rows that are inside deeply nested tables (those are period summary rows)
+        # The player table is already nested 1 level deep in the layout table,
+        # so shift rows have 2 parent tables, but period summary rows have 3+
+        for row in player_rows:
+            parent_tables = row.find_parents('table')
+            if len(parent_tables) > 2:
+                # This row is inside a nested table (period summary), skip it
+                continue
+
             row_class = row.get('class', [])
             if isinstance(row_class, list):
                 row_class = ' '.join(row_class)
 
             if 'oddColor' in row_class or 'evenColor' in row_class:
                 cells = row.find_all('td')
-                if len(cells) >= 6:
+                # Shift rows have exactly 6 cells; period summary rows have 7
+                if len(cells) == 6:
                     # Check if this is a shift row (first cell is a number)
                     first_cell = cells[0].get_text(strip=True)
                     if first_cell.isdigit():
@@ -465,46 +498,48 @@ def parse_shifts_html(html: str, game_id: str, team_type: str, url: str) -> Opti
                         player_data["shifts"].append(shift)
 
         # Find period summary table (nested table with Per, SHF, AVG, TOI headers)
-        nested_tables = parent_table.find_all('table')
-        for nested in nested_tables:
-            headers = nested.find_all('td', class_=lambda c: c and 'heading' in str(c))
-            header_text = ' '.join([h.get_text(strip=True) for h in headers])
+        # Look for nested tables within this player's rows
+        for row in player_rows:
+            nested_tables = row.find_all('table')
+            for nested in nested_tables:
+                headers = nested.find_all('td', class_=lambda c: c and 'heading' in str(c))
+                header_text = ' '.join([h.get_text(strip=True) for h in headers])
 
-            if 'Per' in header_text and 'SHF' in header_text and 'TOI' in header_text:
-                # This is the period summary table
-                summary_rows = nested.find_all('tr')
-                for srow in summary_rows:
-                    srow_class = srow.get('class', [])
-                    if isinstance(srow_class, list):
-                        srow_class = ' '.join(srow_class)
+                if 'Per' in header_text and 'SHF' in header_text and 'TOI' in header_text:
+                    # This is the period summary table
+                    summary_rows = nested.find_all('tr')
+                    for srow in summary_rows:
+                        srow_class = srow.get('class', [])
+                        if isinstance(srow_class, list):
+                            srow_class = ' '.join(srow_class)
 
-                    if 'oddColor' in srow_class or 'evenColor' in srow_class:
-                        scells = srow.find_all('td')
-                        if len(scells) >= 7:
-                            per_text = scells[0].get_text(strip=True)
+                        if 'oddColor' in srow_class or 'evenColor' in srow_class:
+                            scells = srow.find_all('td')
+                            if len(scells) >= 7:
+                                per_text = scells[0].get_text(strip=True)
 
-                            if per_text == 'TOT':
-                                # Game totals row
-                                player_data["gameTotals"] = {
-                                    "shifts": int(scells[1].get_text(strip=True)),
-                                    "avgDuration": scells[2].get_text(strip=True),
-                                    "toi": scells[3].get_text(strip=True),
-                                    "evToi": scells[4].get_text(strip=True),
-                                    "ppToi": scells[5].get_text(strip=True),
-                                    "shToi": scells[6].get_text(strip=True)
-                                }
-                            elif per_text.isdigit() or 'OT' in per_text.upper():
-                                # Period summary row (including OT, 2OT, etc.)
-                                period_summary = {
-                                    "period": parse_period_value(per_text),
-                                    "shifts": int(scells[1].get_text(strip=True)),
-                                    "avgDuration": scells[2].get_text(strip=True),
-                                    "toi": scells[3].get_text(strip=True),
-                                    "evToi": scells[4].get_text(strip=True),
-                                    "ppToi": scells[5].get_text(strip=True),
-                                    "shToi": scells[6].get_text(strip=True)
-                                }
-                                player_data["periodSummary"].append(period_summary)
+                                if per_text == 'TOT':
+                                    # Game totals row
+                                    player_data["gameTotals"] = {
+                                        "shifts": int(scells[1].get_text(strip=True)),
+                                        "avgDuration": scells[2].get_text(strip=True),
+                                        "toi": scells[3].get_text(strip=True),
+                                        "evToi": scells[4].get_text(strip=True),
+                                        "ppToi": scells[5].get_text(strip=True),
+                                        "shToi": scells[6].get_text(strip=True)
+                                    }
+                                elif per_text.isdigit() or 'OT' in per_text.upper():
+                                    # Period summary row (including OT, 2OT, etc.)
+                                    period_summary = {
+                                        "period": parse_period_value(per_text),
+                                        "shifts": int(scells[1].get_text(strip=True)),
+                                        "avgDuration": scells[2].get_text(strip=True),
+                                        "toi": scells[3].get_text(strip=True),
+                                        "evToi": scells[4].get_text(strip=True),
+                                        "ppToi": scells[5].get_text(strip=True),
+                                        "shToi": scells[6].get_text(strip=True)
+                                    }
+                                    player_data["periodSummary"].append(period_summary)
 
         players.append(player_data)
 

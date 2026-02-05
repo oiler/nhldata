@@ -1,0 +1,31 @@
+Code,Strength,Meaning,Type,Advantage,Goalie Pulled
+0101,N/A,Penalty Shot,Penalty Shot,Away,N/A
+1010,N/A,Penalty Shot,Penalty Shot,Home,N/A
+1331,3v3,"3v3, both goalies in",Even Strength,None,FALSE
+1441,4v4,"4v4, both goalies in",Even Strength,None,FALSE
+1551,5v5,"5v5, both goalies in",Even Strength,None,FALSE
+1431,4v3,Away power play,Power Play,Away,FALSE
+1531,5v3,Away power play,Power Play,Away,FALSE
+1541,5v4,Away power play,Power Play,Away,FALSE
+1341,4v3,Home power play,Power Play,Home,FALSE
+1351,5v3,Home power play,Power Play,Home,FALSE
+1451,5v4,Home power play,Power Play,Home,FALSE
+0431,3v3,Away goalie pulled at even strength,Even Strength,None,TRUE
+0541,4v4,Away goalie pulled at even strength,Even Strength,None,TRUE
+0651,5v5,Away goalie pulled at even strength,Even Strength,None,TRUE
+0531,4v3,Away goalie pulled on power play,Power Play,Away,TRUE
+0631,5v3,Away goalie pulled on power play,Power Play,Away,TRUE
+0641,5v4,Away goalie pulled on power play,Power Play,Away,TRUE
+0441,4v3,Away goalie pulled while shorthanded,Power Play,Home,TRUE
+0451,5v3,Away goalie pulled while shorthanded,Power Play,Home,TRUE
+0551,5v4,Away goalie pulled while shorthanded,Power Play,Home,TRUE
+1340,3v3,Home goalie pulled at even strength,Even Strength,None,TRUE
+1450,4v4,Home goalie pulled at even strength,Even Strength,None,TRUE
+1560,5v5,Home goalie pulled at even strength,Even Strength,None,TRUE
+1350,4v3,Home goalie pulled on power play,Power Play,Home,TRUE
+1360,5v3,Home goalie pulled on power play,Power Play,Home,TRUE
+1460,5v4,Home goalie pulled on power play,Power Play,Home,TRUE
+1440,4v3,Home goalie pulled while shorthanded,Power Play,Away,TRUE
+1540,5v3,Home goalie pulled while shorthanded,Power Play,Away,TRUE
+1550,5v4,Home goalie pulled while shorthanded,Power Play,Away,TRUE
+0660,5v5,Rare delayed penalty edge case when a goalie is pulled,,,TRUE
