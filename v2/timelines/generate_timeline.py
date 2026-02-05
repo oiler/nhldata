@@ -308,6 +308,43 @@ def build_situation_code(home_skaters: int, home_goalie: bool,
     return f"{1 if away_goalie else 0}{away_skaters}{home_skaters}{1 if home_goalie else 0}"
 
 
+def situationcode_to_strength(code: str) -> str:
+    """
+    Convert situationCode to normalized strength.
+
+    Strength is team-agnostic: both 1451 (home PP) and 1541 (away PP) map to 5v4.
+    When a goalie is pulled, the extra attacker is normalized out so strength
+    remains consistent (e.g., 0641 with pulled goalie → 5v4).
+
+    Args:
+        code: 4-digit situationCode [awayGoalie][awaySkaters][homeSkaters][homeGoalie]
+
+    Returns:
+        Strength string like "5v5", "5v4", "4v3", or "N/A" for penalty shots
+    """
+    # Penalty shots
+    if code in ('0101', '1010'):
+        return 'N/A'
+
+    # Parse digits: [awayGoalie][awaySkaters][homeSkaters][homeGoalie]
+    away_goalie = int(code[0])
+    away_skaters = int(code[1])
+    home_skaters = int(code[2])
+    home_goalie = int(code[3])
+
+    # Normalize: if goalie pulled, that team has an extra attacker
+    # Subtract 1 to get effective strength
+    if away_goalie == 0:
+        away_skaters -= 1
+    if home_goalie == 0:
+        home_skaters -= 1
+
+    # Format with larger number first
+    high = max(away_skaters, home_skaters)
+    low = min(away_skaters, home_skaters)
+    return f"{high}v{low}"
+
+
 def generate_timeline(season: str, game_id: str) -> Tuple[Dict, List[Dict]]:
     """
     Generate second-by-second timeline for a game.
@@ -369,11 +406,15 @@ def generate_timeline(season: str, game_id: str) -> Tuple[Dict, List[Dict]]:
                     len(away_skaters), away_goalie is not None
                 )
 
+            # Calculate normalized strength
+            strength = situationcode_to_strength(situation_code)
+
             entry = {
                 'period': period,
                 'secondsIntoPeriod': sec,
                 'secondsElapsedGame': total_elapsed,
                 'situationCode': situation_code,
+                'strength': strength,
                 'home': {
                     'skaters': home_skaters,
                     'skaterCount': len(home_skaters),
@@ -482,7 +523,7 @@ def write_csv_output(game_info: Dict, timeline: List[Dict], output_path: Path):
         # Header - away team first to match situationCode format
         # situationCode: [Away Goalie][Away Skaters][Home Skaters][Home Goalie]
         writer.writerow([
-            'period', 'secondsIntoPeriod', 'secondsElapsedGame', 'situationCode',
+            'period', 'secondsIntoPeriod', 'secondsElapsedGame', 'situationCode', 'strength',
             'awayGoalie', 'awaySkaterCount', 'awaySkaters',
             'homeSkaterCount', 'homeGoalie', 'homeSkaters'
         ])
@@ -494,6 +535,7 @@ def write_csv_output(game_info: Dict, timeline: List[Dict], output_path: Path):
                 entry['secondsIntoPeriod'],
                 entry['secondsElapsedGame'],
                 entry['situationCode'],
+                entry['strength'],
                 entry['away']['goalie'] or '',
                 entry['away']['skaterCount'],
                 '|'.join(str(p) for p in entry['away']['skaters']),

@@ -99,6 +99,7 @@ See `resources/SITUATIONCODE_TABLE.md` for the complete reference of all 30 vali
       "secondsIntoPeriod": 0,
       "secondsElapsedGame": 0,
       "situationCode": "1551",
+      "strength": "5v5",
       "home": {
         "skaters": [8477932, 8478055, 8480185, 8482113, 8482713],
         "skaterCount": 5,
@@ -119,12 +120,12 @@ See `resources/SITUATIONCODE_TABLE.md` for the complete reference of all 30 vali
 Columns ordered to match situationCode format (away team first):
 
 ```
-period,secondsIntoPeriod,secondsElapsedGame,situationCode,awayGoalie,awaySkaterCount,awaySkaters,homeSkaterCount,homeGoalie,homeSkaters
+period,secondsIntoPeriod,secondsElapsedGame,situationCode,strength,awayGoalie,awaySkaterCount,awaySkaters,homeSkaterCount,homeGoalie,homeSkaters
 ```
 
 Player IDs are pipe-separated for SQLite compatibility:
 ```
-1,0,0,1551,8480843,5,8476885|8478873|8481754|8482803|8484153,5,8480193,8477932|8478055|8480185|8482113|8482713
+1,0,0,1551,5v5,8480843,5,8476885|8478873|8481754|8482803|8484153,5,8480193,8477932|8478055|8480185|8482113|8482713
 ```
 
 ## Validation
