@@ -137,6 +137,22 @@ Validating TOI... ✓ 38 players match
 
 ## Timing Logic
 
+### Second Semantics (Confirmed via Game Video)
+
+Each second record represents the **full second** from :00 to :59. For example:
+- Second 408 = 6:48:00 through 6:48:59
+- Second 409 = 6:49:00 through 6:49:59
+
+This is critical for understanding event timing:
+
+**Stoppages and Faceoffs**: These events share the same timecode. Players leaving the ice at a stoppage are considered already off at that timecode. The faceoff begins with new players on ice, so their shift starts at the recorded time.
+
+**Penalties**: A penalty recorded at 6:48 means:
+- Penalized player is off the ice at 6:47:59
+- Penalty begins at 6:48:00
+- For a 2-minute minor: shorthanded from 6:48:00 through 8:47:59
+- Return to even strength at 8:48:00
+
 ### Shift Processing
 
 A shift from `startTime` to `endTime` counts seconds `startTime` through `endTime-1` (exclusive end). This ensures:
