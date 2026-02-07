@@ -26,7 +26,11 @@ uv run python tools/gamecheck.py 2025
 
 ### flatten_plays.py - Flatten play-by-play data to CSV
 ```bash
-uv run python tools/flatten_plays.py 2025
+# Single game
+uv run python tools/flatten_plays.py 153 2025
+
+# Range of games
+uv run python tools/flatten_plays.py 1 100 2025
 ```
 
 ### discover_test_games.py - Find games with specific scenarios for testing
@@ -38,5 +42,10 @@ uv run python tools/discover_test_games.py
 
 ### generate_timeline.py - Generate second-by-second situation timelines
 ```bash
-uv run python v2/timelines/generate_timeline.py 2025020001
+# Single game
+uv run python v2/timelines/generate_timeline.py 591 2025
+
+# Batch mode
+uv run python v2/timelines/generate_timeline.py 1 100 2025
 ```
+
