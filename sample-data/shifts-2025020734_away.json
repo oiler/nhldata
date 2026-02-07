@@ -1,0 +1,3495 @@
+{
+  "gameId": "2025020734",
+  "teamType": "away",
+  "team": {
+    "abbrev": "DAL",
+    "name": "DALLAS STARS"
+  },
+  "source": {
+    "url": "https://www.nhl.com/scores/htmlreports/20252026/TV020734.HTM",
+    "fetchedAt": "2026-02-05T22:14:38.553828"
+  },
+  "players": [
+    {
+      "number": 1,
+      "name": "DESMITH, CASEY",
+      "shifts": [
+        {
+          "shiftNumber": 1,
+          "period": 1,
+          "startTime": "00:00",
+          "endTime": "20:00",
+          "duration": "20:00",
+          "event": "P"
+        },
+        {
+          "shiftNumber": 2,
+          "period": 2,
+          "startTime": "00:00",
+          "endTime": "02:20",
+          "duration": "02:20",
+          "event": "P"
+        },
+        {
+          "shiftNumber": 3,
+          "period": 2,
+          "startTime": "02:27",
+          "endTime": "20:00",
+          "duration": "17:33",
+          "event": "GP"
+        },
+        {
+          "shiftNumber": 4,
+          "period": 3,
+          "startTime": "00:00",
+          "endTime": "15:16",
+          "duration": "15:16",
+          "event": "G"
+        },
+        {
+          "shiftNumber": 5,
+          "period": 3,
+          "startTime": "15:38",
+          "endTime": "16:14",
+          "duration": "00:36",
+          "event": null
+        },
+        {
+          "shiftNumber": 6,
+          "period": 3,
+          "startTime": "17:48",
+          "endTime": "18:38",
+          "duration": "00:50",
+          "event": null
+        },
+        {
+          "shiftNumber": 7,
+          "period": 3,
+          "startTime": "19:39",
+          "endTime": "20:00",
+          "duration": "00:21",
+          "event": null
+        }
+      ],
+      "periodSummary": [
+        {
+          "period": 1,
+          "shifts": 1,
+          "avgDuration": "20:00",
+          "toi": "20:00",
+          "evToi": "18:00",
+          "ppToi": "00:00",
+          "shToi": "02:00"
+        },
+        {
+          "period": 2,
+          "shifts": 2,
+          "avgDuration": "09:56",
+          "toi": "19:53",
+          "evToi": "16:08",
+          "ppToi": "03:41",
+          "shToi": "00:04"
+        },
+        {
+          "period": 3,
+          "shifts": 4,
+          "avgDuration": "04:15",
+          "toi": "17:03",
+          "evToi": "16:51",
+          "ppToi": "00:12",
+          "shToi": "00:00"
+        }
+      ],
+      "gameTotals": {
+        "shifts": 7,
+        "avgDuration": "08:08",
+        "toi": "56:56",
+        "evToi": "50:59",
+        "ppToi": "03:53",
+        "shToi": "02:04"
+      }
+    },
+    {
+      "number": 5,
+      "name": "LUNDKVIST, NILS",
+      "shifts": [
+        {
+          "shiftNumber": 1,
+          "period": 1,
+          "startTime": "00:00",
+          "endTime": "00:41",
+          "duration": "00:41",
+          "event": null
+        },
+        {
+          "shiftNumber": 2,
+          "period": 1,
+          "startTime": "02:25",
+          "endTime": "03:08",
+          "duration": "00:43",
+          "event": null
+        },
+        {
+          "shiftNumber": 3,
+          "period": 1,
+          "startTime": "03:55",
+          "endTime": "04:39",
+          "duration": "00:44",
+          "event": null
+        },
+        {
+          "shiftNumber": 4,
+          "period": 1,
+          "startTime": "06:27",
+          "endTime": "06:48",
+          "duration": "00:21",
+          "event": "P"
+        },
+        {
+          "shiftNumber": 5,
+          "period": 1,
+          "startTime": "08:48",
+          "endTime": "09:04",
+          "duration": "00:16",
+          "event": null
+        },
+        {
+          "shiftNumber": 6,
+          "period": 1,
+          "startTime": "09:08",
+          "endTime": "10:40",
+          "duration": "01:32",
+          "event": null
+        },
+        {
+          "shiftNumber": 7,
+          "period": 1,
+          "startTime": "12:23",
+          "endTime": "13:14",
+          "duration": "00:51",
+          "event": null
+        },
+        {
+          "shiftNumber": 8,
+          "period": 1,
+          "startTime": "15:49",
+          "endTime": "16:26",
+          "duration": "00:37",
+          "event": null
+        },
+        {
+          "shiftNumber": 9,
+          "period": 1,
+          "startTime": "18:40",
+          "endTime": "19:05",
+          "duration": "00:25",
+          "event": null
+        },
+        {
+          "shiftNumber": 10,
+          "period": 2,
+          "startTime": "00:00",
+          "endTime": "00:43",
+          "duration": "00:43",
+          "event": "P"
+        },
+        {
+          "shiftNumber": 11,
+          "period": 2,
+          "startTime": "03:36",
+          "endTime": "05:02",
+          "duration": "01:26",
+          "event": null
+        },
+        {
+          "shiftNumber": 12,
+          "period": 2,
+          "startTime": "07:32",
+          "endTime": "08:45",
+          "duration": "01:13",
+          "event": null
+        },
+        {
+          "shiftNumber": 13,
+          "period": 2,
+          "startTime": "10:33",
+          "endTime": "10:45",
+          "duration": "00:12",
+          "event": null
+        },
+        {
+          "shiftNumber": 14,
+          "period": 2,
+          "startTime": "11:28",
+          "endTime": "12:23",
+          "duration": "00:55",
+          "event": null
+        },
+        {
+          "shiftNumber": 15,
+          "period": 2,
+          "startTime": "14:20",
+          "endTime": "16:12",
+          "duration": "01:52",
+          "event": null
+        },
+        {
+          "shiftNumber": 16,
+          "period": 2,
+          "startTime": "17:18",
+          "endTime": "18:11",
+          "duration": "00:53",
+          "event": null
+        },
+        {
+          "shiftNumber": 17,
+          "period": 3,
+          "startTime": "00:00",
+          "endTime": "00:48",
+          "duration": "00:48",
+          "event": null
+        },
+        {
+          "shiftNumber": 18,
+          "period": 3,
+          "startTime": "02:53",
+          "endTime": "04:05",
+          "duration": "01:12",
+          "event": null
+        },
+        {
+          "shiftNumber": 19,
+          "period": 3,
+          "startTime": "05:53",
+          "endTime": "06:25",
+          "duration": "00:32",
+          "event": null
+        },
+        {
+          "shiftNumber": 20,
+          "period": 3,
+          "startTime": "09:23",
+          "endTime": "10:03",
+          "duration": "00:40",
+          "event": null
+        },
+        {
+          "shiftNumber": 21,
+          "period": 3,
+          "startTime": "12:03",
+          "endTime": "12:40",
+          "duration": "00:37",
+          "event": null
+        },
+        {
+          "shiftNumber": 22,
+          "period": 3,
+          "startTime": "15:03",
+          "endTime": "15:16",
+          "duration": "00:13",
+          "event": null
+        },
+        {
+          "shiftNumber": 23,
+          "period": 3,
+          "startTime": "17:48",
+          "endTime": "18:16",
+          "duration": "00:28",
+          "event": null
+        }
+      ],
+      "periodSummary": [
+        {
+          "period": 1,
+          "shifts": 9,
+          "avgDuration": "00:41",
+          "toi": "06:10",
+          "evToi": "06:10",
+          "ppToi": "00:00",
+          "shToi": "00:00"
+        },
+        {
+          "period": 2,
+          "shifts": 7,
+          "avgDuration": "01:02",
+          "toi": "07:14",
+          "evToi": "07:10",
+          "ppToi": "00:00",
+          "shToi": "00:04"
+        },
+        {
+          "period": 3,
+          "shifts": 7,
+          "avgDuration": "00:38",
+          "toi": "04:30",
+          "evToi": "04:18",
+          "ppToi": "00:12",
+          "shToi": "00:00"
+        }
+      ],
+      "gameTotals": {
+        "shifts": 23,
+        "avgDuration": "00:46",
+        "toi": "17:54",
+        "evToi": "17:38",
+        "ppToi": "00:12",
+        "shToi": "00:04"
+      }
+    },
+    {
+      "number": 10,
+      "name": "B\u00c4CK, OSKAR",
+      "shifts": [
+        {
+          "shiftNumber": 1,
+          "period": 1,
+          "startTime": "03:28",
+          "endTime": "03:55",
+          "duration": "00:27",
+          "event": null
+        },
+        {
+          "shiftNumber": 2,
+          "period": 1,
+          "startTime": "05:41",
+          "endTime": "06:24",
+          "duration": "00:43",
+          "event": null
+        },
+        {
+          "shiftNumber": 3,
+          "period": 1,
+          "startTime": "06:48",
+          "endTime": "07:37",
+          "duration": "00:49",
+          "event": null
+        },
+        {
+          "shiftNumber": 4,
+          "period": 1,
+          "startTime": "13:10",
+          "endTime": "13:34",
+          "duration": "00:24",
+          "event": null
+        },
+        {
+          "shiftNumber": 5,
+          "period": 1,
+          "startTime": "16:26",
+          "endTime": "17:12",
+          "duration": "00:46",
+          "event": null
+        },
+        {
+          "shiftNumber": 6,
+          "period": 2,
+          "startTime": "06:44",
+          "endTime": "07:45",
+          "duration": "01:01",
+          "event": null
+        },
+        {
+          "shiftNumber": 7,
+          "period": 2,
+          "startTime": "13:10",
+          "endTime": "14:11",
+          "duration": "01:01",
+          "event": null
+        },
+        {
+          "shiftNumber": 8,
+          "period": 2,
+          "startTime": "15:44",
+          "endTime": "16:41",
+          "duration": "00:57",
+          "event": null
+        },
+        {
+          "shiftNumber": 9,
+          "period": 3,
+          "startTime": "02:53",
+          "endTime": "04:09",
+          "duration": "01:16",
+          "event": null
+        },
+        {
+          "shiftNumber": 10,
+          "period": 3,
+          "startTime": "06:25",
+          "endTime": "07:14",
+          "duration": "00:49",
+          "event": null
+        },
+        {
+          "shiftNumber": 11,
+          "period": 3,
+          "startTime": "09:23",
+          "endTime": "10:23",
+          "duration": "01:00",
+          "event": null
+        },
+        {
+          "shiftNumber": 12,
+          "period": 3,
+          "startTime": "12:38",
+          "endTime": "13:15",
+          "duration": "00:37",
+          "event": null
+        }
+      ],
+      "periodSummary": [
+        {
+          "period": 1,
+          "shifts": 5,
+          "avgDuration": "00:37",
+          "toi": "03:09",
+          "evToi": "02:20",
+          "ppToi": "00:00",
+          "shToi": "00:49"
+        },
+        {
+          "period": 2,
+          "shifts": 3,
+          "avgDuration": "00:59",
+          "toi": "02:59",
+          "evToi": "02:59",
+          "ppToi": "00:00",
+          "shToi": "00:00"
+        },
+        {
+          "period": 3,
+          "shifts": 4,
+          "avgDuration": "00:55",
+          "toi": "03:42",
+          "evToi": "03:42",
+          "ppToi": "00:00",
+          "shToi": "00:00"
+        }
+      ],
+      "gameTotals": {
+        "shifts": 12,
+        "avgDuration": "00:49",
+        "toi": "09:50",
+        "evToi": "09:01",
+        "ppToi": "00:00",
+        "shToi": "00:49"
+      }
+    },
+    {
+      "number": 12,
+      "name": "FAKSA, RADEK",
+      "shifts": [
+        {
+          "shiftNumber": 1,
+          "period": 1,
+          "startTime": "02:27",
+          "endTime": "03:07",
+          "duration": "00:40",
+          "event": null
+        },
+        {
+          "shiftNumber": 2,
+          "period": 1,
+          "startTime": "05:41",
+          "endTime": "06:27",
+          "duration": "00:46",
+          "event": null
+        },
+        {
+          "shiftNumber": 3,
+          "period": 1,
+          "startTime": "06:48",
+          "endTime": "07:36",
+          "duration": "00:48",
+          "event": null
+        },
+        {
+          "shiftNumber": 4,
+          "period": 1,
+          "startTime": "12:50",
+          "endTime": "13:34",
+          "duration": "00:44",
+          "event": null
+        },
+        {
+          "shiftNumber": 5,
+          "period": 1,
+          "startTime": "16:26",
+          "endTime": "17:25",
+          "duration": "00:59",
+          "event": null
+        },
+        {
+          "shiftNumber": 6,
+          "period": 2,
+          "startTime": "06:54",
+          "endTime": "07:58",
+          "duration": "01:04",
+          "event": null
+        },
+        {
+          "shiftNumber": 7,
+          "period": 2,
+          "startTime": "12:23",
+          "endTime": "13:25",
+          "duration": "01:02",
+          "event": null
+        },
+        {
+          "shiftNumber": 8,
+          "period": 2,
+          "startTime": "17:18",
+          "endTime": "18:03",
+          "duration": "00:45",
+          "event": null
+        },
+        {
+          "shiftNumber": 9,
+          "period": 3,
+          "startTime": "01:35",
+          "endTime": "02:24",
+          "duration": "00:49",
+          "event": null
+        },
+        {
+          "shiftNumber": 10,
+          "period": 3,
+          "startTime": "05:46",
+          "endTime": "06:39",
+          "duration": "00:53",
+          "event": null
+        },
+        {
+          "shiftNumber": 11,
+          "period": 3,
+          "startTime": "12:03",
+          "endTime": "12:42",
+          "duration": "00:39",
+          "event": null
+        },
+        {
+          "shiftNumber": 12,
+          "period": 3,
+          "startTime": "14:32",
+          "endTime": "15:16",
+          "duration": "00:44",
+          "event": null
+        }
+      ],
+      "periodSummary": [
+        {
+          "period": 1,
+          "shifts": 5,
+          "avgDuration": "00:47",
+          "toi": "03:57",
+          "evToi": "03:09",
+          "ppToi": "00:00",
+          "shToi": "00:48"
+        },
+        {
+          "period": 2,
+          "shifts": 3,
+          "avgDuration": "00:57",
+          "toi": "02:51",
+          "evToi": "02:51",
+          "ppToi": "00:00",
+          "shToi": "00:00"
+        },
+        {
+          "period": 3,
+          "shifts": 4,
+          "avgDuration": "00:46",
+          "toi": "03:05",
+          "evToi": "03:05",
+          "ppToi": "00:00",
+          "shToi": "00:00"
+        }
+      ],
+      "gameTotals": {
+        "shifts": 12,
+        "avgDuration": "00:49",
+        "toi": "09:53",
+        "evToi": "09:05",
+        "ppToi": "00:00",
+        "shToi": "00:48"
+      }
+    },
+    {
+      "number": 14,
+      "name": "BENN, JAMIE",
+      "shifts": [
+        {
+          "shiftNumber": 1,
+          "period": 1,
+          "startTime": "01:30",
+          "endTime": "02:25",
+          "duration": "00:55",
+          "event": null
+        },
+        {
+          "shiftNumber": 2,
+          "period": 1,
+          "startTime": "04:41",
+          "endTime": "05:38",
+          "duration": "00:57",
+          "event": null
+        },
+        {
+          "shiftNumber": 3,
+          "period": 1,
+          "startTime": "11:01",
+          "endTime": "11:37",
+          "duration": "00:36",
+          "event": null
+        },
+        {
+          "shiftNumber": 4,
+          "period": 1,
+          "startTime": "14:13",
+          "endTime": "14:53",
+          "duration": "00:40",
+          "event": null
+        },
+        {
+          "shiftNumber": 5,
+          "period": 1,
+          "startTime": "18:38",
+          "endTime": "19:37",
+          "duration": "00:59",
+          "event": null
+        },
+        {
+          "shiftNumber": 6,
+          "period": 2,
+          "startTime": "05:35",
+          "endTime": "06:44",
+          "duration": "01:09",
+          "event": null
+        },
+        {
+          "shiftNumber": 7,
+          "period": 2,
+          "startTime": "09:31",
+          "endTime": "10:34",
+          "duration": "01:03",
+          "event": null
+        },
+        {
+          "shiftNumber": 8,
+          "period": 2,
+          "startTime": "13:25",
+          "endTime": "14:01",
+          "duration": "00:36",
+          "event": null
+        },
+        {
+          "shiftNumber": 9,
+          "period": 2,
+          "startTime": "15:57",
+          "endTime": "16:42",
+          "duration": "00:45",
+          "event": null
+        },
+        {
+          "shiftNumber": 10,
+          "period": 3,
+          "startTime": "01:35",
+          "endTime": "02:12",
+          "duration": "00:37",
+          "event": null
+        },
+        {
+          "shiftNumber": 11,
+          "period": 3,
+          "startTime": "05:53",
+          "endTime": "06:25",
+          "duration": "00:32",
+          "event": null
+        },
+        {
+          "shiftNumber": 12,
+          "period": 3,
+          "startTime": "12:03",
+          "endTime": "12:38",
+          "duration": "00:35",
+          "event": null
+        },
+        {
+          "shiftNumber": 13,
+          "period": 3,
+          "startTime": "15:02",
+          "endTime": "15:16",
+          "duration": "00:14",
+          "event": null
+        }
+      ],
+      "periodSummary": [
+        {
+          "period": 1,
+          "shifts": 5,
+          "avgDuration": "00:49",
+          "toi": "04:07",
+          "evToi": "04:07",
+          "ppToi": "00:00",
+          "shToi": "00:00"
+        },
+        {
+          "period": 2,
+          "shifts": 4,
+          "avgDuration": "00:53",
+          "toi": "03:33",
+          "evToi": "03:33",
+          "ppToi": "00:00",
+          "shToi": "00:00"
+        },
+        {
+          "period": 3,
+          "shifts": 4,
+          "avgDuration": "00:29",
+          "toi": "01:58",
+          "evToi": "01:58",
+          "ppToi": "00:00",
+          "shToi": "00:00"
+        }
+      ],
+      "gameTotals": {
+        "shifts": 13,
+        "avgDuration": "00:44",
+        "toi": "09:38",
+        "evToi": "09:38",
+        "ppToi": "00:00",
+        "shToi": "00:00"
+      }
+    },
+    {
+      "number": 15,
+      "name": "BLACKWELL, COLIN",
+      "shifts": [
+        {
+          "shiftNumber": 1,
+          "period": 1,
+          "startTime": "02:26",
+          "endTime": "03:08",
+          "duration": "00:42",
+          "event": null
+        },
+        {
+          "shiftNumber": 2,
+          "period": 1,
+          "startTime": "05:38",
+          "endTime": "06:26",
+          "duration": "00:48",
+          "event": null
+        },
+        {
+          "shiftNumber": 3,
+          "period": 1,
+          "startTime": "07:37",
+          "endTime": "08:45",
+          "duration": "01:08",
+          "event": null
+        },
+        {
+          "shiftNumber": 4,
+          "period": 1,
+          "startTime": "12:51",
+          "endTime": "13:34",
+          "duration": "00:43",
+          "event": null
+        },
+        {
+          "shiftNumber": 5,
+          "period": 1,
+          "startTime": "16:26",
+          "endTime": "17:14",
+          "duration": "00:48",
+          "event": null
+        },
+        {
+          "shiftNumber": 6,
+          "period": 2,
+          "startTime": "06:42",
+          "endTime": "07:47",
+          "duration": "01:05",
+          "event": null
+        },
+        {
+          "shiftNumber": 7,
+          "period": 2,
+          "startTime": "12:23",
+          "endTime": "13:27",
+          "duration": "01:04",
+          "event": null
+        },
+        {
+          "shiftNumber": 8,
+          "period": 2,
+          "startTime": "17:18",
+          "endTime": "18:12",
+          "duration": "00:54",
+          "event": "P"
+        },
+        {
+          "shiftNumber": 9,
+          "period": 3,
+          "startTime": "01:35",
+          "endTime": "02:32",
+          "duration": "00:57",
+          "event": null
+        },
+        {
+          "shiftNumber": 10,
+          "period": 3,
+          "startTime": "05:36",
+          "endTime": "06:21",
+          "duration": "00:45",
+          "event": null
+        },
+        {
+          "shiftNumber": 11,
+          "period": 3,
+          "startTime": "12:03",
+          "endTime": "12:39",
+          "duration": "00:36",
+          "event": null
+        },
+        {
+          "shiftNumber": 12,
+          "period": 3,
+          "startTime": "14:47",
+          "endTime": "15:16",
+          "duration": "00:29",
+          "event": null
+        }
+      ],
+      "periodSummary": [
+        {
+          "period": 1,
+          "shifts": 5,
+          "avgDuration": "00:49",
+          "toi": "04:09",
+          "evToi": "03:01",
+          "ppToi": "00:00",
+          "shToi": "01:08"
+        },
+        {
+          "period": 2,
+          "shifts": 3,
+          "avgDuration": "01:01",
+          "toi": "03:03",
+          "evToi": "03:03",
+          "ppToi": "00:00",
+          "shToi": "00:00"
+        },
+        {
+          "period": 3,
+          "shifts": 4,
+          "avgDuration": "00:41",
+          "toi": "02:47",
+          "evToi": "02:47",
+          "ppToi": "00:00",
+          "shToi": "00:00"
+        }
+      ],
+      "gameTotals": {
+        "shifts": 12,
+        "avgDuration": "00:49",
+        "toi": "09:59",
+        "evToi": "08:51",
+        "ppToi": "00:00",
+        "shToi": "01:08"
+      }
+    },
+    {
+      "number": 18,
+      "name": "STEEL, SAM",
+      "shifts": [
+        {
+          "shiftNumber": 1,
+          "period": 1,
+          "startTime": "00:00",
+          "endTime": "00:43",
+          "duration": "00:43",
+          "event": null
+        },
+        {
+          "shiftNumber": 2,
+          "period": 1,
+          "startTime": "02:59",
+          "endTime": "03:28",
+          "duration": "00:29",
+          "event": null
+        },
+        {
+          "shiftNumber": 3,
+          "period": 1,
+          "startTime": "06:24",
+          "endTime": "06:48",
+          "duration": "00:24",
+          "event": "P"
+        },
+        {
+          "shiftNumber": 4,
+          "period": 1,
+          "startTime": "07:36",
+          "endTime": "08:45",
+          "duration": "01:09",
+          "event": null
+        },
+        {
+          "shiftNumber": 5,
+          "period": 1,
+          "startTime": "12:21",
+          "endTime": "13:10",
+          "duration": "00:49",
+          "event": null
+        },
+        {
+          "shiftNumber": 6,
+          "period": 1,
+          "startTime": "15:26",
+          "endTime": "16:26",
+          "duration": "01:00",
+          "event": null
+        },
+        {
+          "shiftNumber": 7,
+          "period": 1,
+          "startTime": "19:25",
+          "endTime": "20:00",
+          "duration": "00:35",
+          "event": null
+        },
+        {
+          "shiftNumber": 8,
+          "period": 2,
+          "startTime": "00:00",
+          "endTime": "00:43",
+          "duration": "00:43",
+          "event": "P"
+        },
+        {
+          "shiftNumber": 9,
+          "period": 2,
+          "startTime": "03:36",
+          "endTime": "04:35",
+          "duration": "00:59",
+          "event": null
+        },
+        {
+          "shiftNumber": 10,
+          "period": 2,
+          "startTime": "07:45",
+          "endTime": "08:45",
+          "duration": "01:00",
+          "event": null
+        },
+        {
+          "shiftNumber": 11,
+          "period": 2,
+          "startTime": "10:45",
+          "endTime": "11:35",
+          "duration": "00:50",
+          "event": null
+        },
+        {
+          "shiftNumber": 12,
+          "period": 2,
+          "startTime": "15:45",
+          "endTime": "16:43",
+          "duration": "00:58",
+          "event": null
+        },
+        {
+          "shiftNumber": 13,
+          "period": 3,
+          "startTime": "02:12",
+          "endTime": "02:53",
+          "duration": "00:41",
+          "event": null
+        },
+        {
+          "shiftNumber": 14,
+          "period": 3,
+          "startTime": "05:01",
+          "endTime": "05:53",
+          "duration": "00:52",
+          "event": null
+        },
+        {
+          "shiftNumber": 15,
+          "period": 3,
+          "startTime": "07:51",
+          "endTime": "08:44",
+          "duration": "00:53",
+          "event": null
+        },
+        {
+          "shiftNumber": 16,
+          "period": 3,
+          "startTime": "10:20",
+          "endTime": "11:11",
+          "duration": "00:51",
+          "event": null
+        },
+        {
+          "shiftNumber": 17,
+          "period": 3,
+          "startTime": "13:15",
+          "endTime": "14:04",
+          "duration": "00:49",
+          "event": null
+        },
+        {
+          "shiftNumber": 18,
+          "period": 3,
+          "startTime": "17:48",
+          "endTime": "18:29",
+          "duration": "00:41",
+          "event": null
+        },
+        {
+          "shiftNumber": 19,
+          "period": 3,
+          "startTime": "19:39",
+          "endTime": "20:00",
+          "duration": "00:21",
+          "event": null
+        }
+      ],
+      "periodSummary": [
+        {
+          "period": 1,
+          "shifts": 7,
+          "avgDuration": "00:44",
+          "toi": "05:09",
+          "evToi": "04:00",
+          "ppToi": "00:00",
+          "shToi": "01:09"
+        },
+        {
+          "period": 2,
+          "shifts": 5,
+          "avgDuration": "00:54",
+          "toi": "04:30",
+          "evToi": "04:26",
+          "ppToi": "00:00",
+          "shToi": "00:04"
+        },
+        {
+          "period": 3,
+          "shifts": 7,
+          "avgDuration": "00:44",
+          "toi": "05:08",
+          "evToi": "05:08",
+          "ppToi": "00:00",
+          "shToi": "00:00"
+        }
+      ],
+      "gameTotals": {
+        "shifts": 19,
+        "avgDuration": "00:46",
+        "toi": "14:47",
+        "evToi": "13:34",
+        "ppToi": "00:00",
+        "shToi": "01:13"
+      }
+    },
+    {
+      "number": 20,
+      "name": "CAPOBIANCO, KYLE",
+      "shifts": [
+        {
+          "shiftNumber": 1,
+          "period": 1,
+          "startTime": "01:30",
+          "endTime": "02:27",
+          "duration": "00:57",
+          "event": null
+        },
+        {
+          "shiftNumber": 2,
+          "period": 1,
+          "startTime": "04:39",
+          "endTime": "05:41",
+          "duration": "01:02",
+          "event": null
+        },
+        {
+          "shiftNumber": 3,
+          "period": 1,
+          "startTime": "09:08",
+          "endTime": "10:42",
+          "duration": "01:34",
+          "event": null
+        },
+        {
+          "shiftNumber": 4,
+          "period": 1,
+          "startTime": "13:14",
+          "endTime": "14:10",
+          "duration": "00:56",
+          "event": null
+        },
+        {
+          "shiftNumber": 5,
+          "period": 1,
+          "startTime": "16:26",
+          "endTime": "17:25",
+          "duration": "00:59",
+          "event": null
+        },
+        {
+          "shiftNumber": 6,
+          "period": 2,
+          "startTime": "02:13",
+          "endTime": "02:27",
+          "duration": "00:14",
+          "event": "P"
+        },
+        {
+          "shiftNumber": 7,
+          "period": 2,
+          "startTime": "02:31",
+          "endTime": "03:36",
+          "duration": "01:05",
+          "event": "G"
+        },
+        {
+          "shiftNumber": 8,
+          "period": 2,
+          "startTime": "06:54",
+          "endTime": "07:32",
+          "duration": "00:38",
+          "event": null
+        },
+        {
+          "shiftNumber": 9,
+          "period": 2,
+          "startTime": "13:36",
+          "endTime": "14:20",
+          "duration": "00:44",
+          "event": null
+        },
+        {
+          "shiftNumber": 10,
+          "period": 2,
+          "startTime": "17:14",
+          "endTime": "17:18",
+          "duration": "00:04",
+          "event": null
+        },
+        {
+          "shiftNumber": 11,
+          "period": 3,
+          "startTime": "01:35",
+          "endTime": "02:12",
+          "duration": "00:37",
+          "event": null
+        },
+        {
+          "shiftNumber": 12,
+          "period": 3,
+          "startTime": "04:05",
+          "endTime": "04:57",
+          "duration": "00:52",
+          "event": null
+        },
+        {
+          "shiftNumber": 13,
+          "period": 3,
+          "startTime": "06:26",
+          "endTime": "07:16",
+          "duration": "00:50",
+          "event": null
+        },
+        {
+          "shiftNumber": 14,
+          "period": 3,
+          "startTime": "08:42",
+          "endTime": "09:23",
+          "duration": "00:41",
+          "event": null
+        },
+        {
+          "shiftNumber": 15,
+          "period": 3,
+          "startTime": "11:09",
+          "endTime": "12:03",
+          "duration": "00:54",
+          "event": "G"
+        },
+        {
+          "shiftNumber": 16,
+          "period": 3,
+          "startTime": "14:48",
+          "endTime": "15:16",
+          "duration": "00:28",
+          "event": null
+        },
+        {
+          "shiftNumber": 17,
+          "period": 3,
+          "startTime": "19:39",
+          "endTime": "20:00",
+          "duration": "00:21",
+          "event": null
+        }
+      ],
+      "periodSummary": [
+        {
+          "period": 1,
+          "shifts": 5,
+          "avgDuration": "01:05",
+          "toi": "05:28",
+          "evToi": "05:28",
+          "ppToi": "00:00",
+          "shToi": "00:00"
+        },
+        {
+          "period": 2,
+          "shifts": 5,
+          "avgDuration": "00:33",
+          "toi": "02:45",
+          "evToi": "02:19",
+          "ppToi": "00:26",
+          "shToi": "00:00"
+        },
+        {
+          "period": 3,
+          "shifts": 7,
+          "avgDuration": "00:40",
+          "toi": "04:43",
+          "evToi": "04:43",
+          "ppToi": "00:00",
+          "shToi": "00:00"
+        }
+      ],
+      "gameTotals": {
+        "shifts": 17,
+        "avgDuration": "00:45",
+        "toi": "12:56",
+        "evToi": "12:30",
+        "ppToi": "00:26",
+        "shToi": "00:00"
+      }
+    },
+    {
+      "number": 21,
+      "name": "ROBERTSON, JASON",
+      "shifts": [
+        {
+          "shiftNumber": 1,
+          "period": 1,
+          "startTime": "00:43",
+          "endTime": "02:26",
+          "duration": "01:43",
+          "event": null
+        },
+        {
+          "shiftNumber": 2,
+          "period": 1,
+          "startTime": "03:55",
+          "endTime": "04:41",
+          "duration": "00:46",
+          "event": null
+        },
+        {
+          "shiftNumber": 3,
+          "period": 1,
+          "startTime": "09:04",
+          "endTime": "10:44",
+          "duration": "01:40",
+          "event": null
+        },
+        {
+          "shiftNumber": 4,
+          "period": 1,
+          "startTime": "13:34",
+          "endTime": "14:18",
+          "duration": "00:44",
+          "event": null
+        },
+        {
+          "shiftNumber": 5,
+          "period": 1,
+          "startTime": "17:14",
+          "endTime": "18:19",
+          "duration": "01:05",
+          "event": null
+        },
+        {
+          "shiftNumber": 6,
+          "period": 2,
+          "startTime": "00:43",
+          "endTime": "02:31",
+          "duration": "01:48",
+          "event": "P"
+        },
+        {
+          "shiftNumber": 7,
+          "period": 2,
+          "startTime": "04:31",
+          "endTime": "05:01",
+          "duration": "00:30",
+          "event": null
+        },
+        {
+          "shiftNumber": 8,
+          "period": 2,
+          "startTime": "08:45",
+          "endTime": "09:43",
+          "duration": "00:58",
+          "event": null
+        },
+        {
+          "shiftNumber": 9,
+          "period": 2,
+          "startTime": "11:35",
+          "endTime": "12:23",
+          "duration": "00:48",
+          "event": null
+        },
+        {
+          "shiftNumber": 10,
+          "period": 2,
+          "startTime": "16:43",
+          "endTime": "17:18",
+          "duration": "00:35",
+          "event": null
+        },
+        {
+          "shiftNumber": 11,
+          "period": 2,
+          "startTime": "18:12",
+          "endTime": "20:00",
+          "duration": "01:48",
+          "event": null
+        },
+        {
+          "shiftNumber": 12,
+          "period": 3,
+          "startTime": "00:57",
+          "endTime": "01:35",
+          "duration": "00:38",
+          "event": null
+        },
+        {
+          "shiftNumber": 13,
+          "period": 3,
+          "startTime": "04:09",
+          "endTime": "05:01",
+          "duration": "00:52",
+          "event": null
+        },
+        {
+          "shiftNumber": 14,
+          "period": 3,
+          "startTime": "07:14",
+          "endTime": "07:51",
+          "duration": "00:37",
+          "event": null
+        },
+        {
+          "shiftNumber": 15,
+          "period": 3,
+          "startTime": "08:44",
+          "endTime": "09:23",
+          "duration": "00:39",
+          "event": null
+        },
+        {
+          "shiftNumber": 16,
+          "period": 3,
+          "startTime": "11:11",
+          "endTime": "12:03",
+          "duration": "00:52",
+          "event": "G"
+        },
+        {
+          "shiftNumber": 17,
+          "period": 3,
+          "startTime": "14:06",
+          "endTime": "15:02",
+          "duration": "00:56",
+          "event": null
+        },
+        {
+          "shiftNumber": 18,
+          "period": 3,
+          "startTime": "15:16",
+          "endTime": "17:48",
+          "duration": "02:32",
+          "event": "G"
+        },
+        {
+          "shiftNumber": 19,
+          "period": 3,
+          "startTime": "18:31",
+          "endTime": "19:39",
+          "duration": "01:08",
+          "event": "G"
+        }
+      ],
+      "periodSummary": [
+        {
+          "period": 1,
+          "shifts": 5,
+          "avgDuration": "01:11",
+          "toi": "05:58",
+          "evToi": "05:58",
+          "ppToi": "00:00",
+          "shToi": "00:00"
+        },
+        {
+          "period": 2,
+          "shifts": 6,
+          "avgDuration": "01:04",
+          "toi": "06:27",
+          "evToi": "02:51",
+          "ppToi": "03:36",
+          "shToi": "00:00"
+        },
+        {
+          "period": 3,
+          "shifts": 8,
+          "avgDuration": "01:01",
+          "toi": "08:14",
+          "evToi": "08:14",
+          "ppToi": "00:00",
+          "shToi": "00:00"
+        }
+      ],
+      "gameTotals": {
+        "shifts": 19,
+        "avgDuration": "01:05",
+        "toi": "20:39",
+        "evToi": "17:03",
+        "ppToi": "03:36",
+        "shToi": "00:00"
+      }
+    },
+    {
+      "number": 22,
+      "name": "BOURQUE, MAVRIK",
+      "shifts": [
+        {
+          "shiftNumber": 1,
+          "period": 1,
+          "startTime": "00:41",
+          "endTime": "01:30",
+          "duration": "00:49",
+          "event": null
+        },
+        {
+          "shiftNumber": 2,
+          "period": 1,
+          "startTime": "03:55",
+          "endTime": "04:40",
+          "duration": "00:45",
+          "event": null
+        },
+        {
+          "shiftNumber": 3,
+          "period": 1,
+          "startTime": "08:45",
+          "endTime": "09:58",
+          "duration": "01:13",
+          "event": null
+        },
+        {
+          "shiftNumber": 4,
+          "period": 1,
+          "startTime": "13:34",
+          "endTime": "14:13",
+          "duration": "00:39",
+          "event": null
+        },
+        {
+          "shiftNumber": 5,
+          "period": 1,
+          "startTime": "16:22",
+          "endTime": "16:26",
+          "duration": "00:04",
+          "event": null
+        },
+        {
+          "shiftNumber": 6,
+          "period": 1,
+          "startTime": "17:12",
+          "endTime": "18:38",
+          "duration": "01:26",
+          "event": null
+        },
+        {
+          "shiftNumber": 7,
+          "period": 2,
+          "startTime": "02:02",
+          "endTime": "02:27",
+          "duration": "00:25",
+          "event": "P"
+        },
+        {
+          "shiftNumber": 8,
+          "period": 2,
+          "startTime": "04:35",
+          "endTime": "05:35",
+          "duration": "01:00",
+          "event": null
+        },
+        {
+          "shiftNumber": 9,
+          "period": 2,
+          "startTime": "08:45",
+          "endTime": "09:31",
+          "duration": "00:46",
+          "event": null
+        },
+        {
+          "shiftNumber": 10,
+          "period": 2,
+          "startTime": "11:35",
+          "endTime": "12:23",
+          "duration": "00:48",
+          "event": null
+        },
+        {
+          "shiftNumber": 11,
+          "period": 2,
+          "startTime": "16:41",
+          "endTime": "17:18",
+          "duration": "00:37",
+          "event": null
+        },
+        {
+          "shiftNumber": 12,
+          "period": 3,
+          "startTime": "00:26",
+          "endTime": "01:35",
+          "duration": "01:09",
+          "event": null
+        },
+        {
+          "shiftNumber": 13,
+          "period": 3,
+          "startTime": "02:53",
+          "endTime": "04:09",
+          "duration": "01:16",
+          "event": null
+        },
+        {
+          "shiftNumber": 14,
+          "period": 3,
+          "startTime": "06:21",
+          "endTime": "07:24",
+          "duration": "01:03",
+          "event": null
+        },
+        {
+          "shiftNumber": 15,
+          "period": 3,
+          "startTime": "09:23",
+          "endTime": "10:21",
+          "duration": "00:58",
+          "event": null
+        },
+        {
+          "shiftNumber": 16,
+          "period": 3,
+          "startTime": "12:39",
+          "endTime": "13:26",
+          "duration": "00:47",
+          "event": null
+        },
+        {
+          "shiftNumber": 17,
+          "period": 3,
+          "startTime": "17:48",
+          "endTime": "18:31",
+          "duration": "00:43",
+          "event": null
+        },
+        {
+          "shiftNumber": 18,
+          "period": 3,
+          "startTime": "19:39",
+          "endTime": "20:00",
+          "duration": "00:21",
+          "event": null
+        }
+      ],
+      "periodSummary": [
+        {
+          "period": 1,
+          "shifts": 6,
+          "avgDuration": "00:49",
+          "toi": "04:56",
+          "evToi": "04:53",
+          "ppToi": "00:00",
+          "shToi": "00:03"
+        },
+        {
+          "period": 2,
+          "shifts": 5,
+          "avgDuration": "00:43",
+          "toi": "03:36",
+          "evToi": "03:11",
+          "ppToi": "00:25",
+          "shToi": "00:00"
+        },
+        {
+          "period": 3,
+          "shifts": 7,
+          "avgDuration": "00:53",
+          "toi": "06:17",
+          "evToi": "06:17",
+          "ppToi": "00:00",
+          "shToi": "00:00"
+        }
+      ],
+      "gameTotals": {
+        "shifts": 18,
+        "avgDuration": "00:49",
+        "toi": "14:49",
+        "evToi": "14:21",
+        "ppToi": "00:25",
+        "shToi": "00:03"
+      }
+    },
+    {
+      "number": 23,
+      "name": "LINDELL, ESA",
+      "shifts": [
+        {
+          "shiftNumber": 1,
+          "period": 1,
+          "startTime": "00:00",
+          "endTime": "00:39",
+          "duration": "00:39",
+          "event": null
+        },
+        {
+          "shiftNumber": 2,
+          "period": 1,
+          "startTime": "02:25",
+          "endTime": "03:08",
+          "duration": "00:43",
+          "event": null
+        },
+        {
+          "shiftNumber": 3,
+          "period": 1,
+          "startTime": "03:54",
+          "endTime": "04:45",
+          "duration": "00:51",
+          "event": null
+        },
+        {
+          "shiftNumber": 4,
+          "period": 1,
+          "startTime": "06:23",
+          "endTime": "08:45",
+          "duration": "02:22",
+          "event": "P"
+        },
+        {
+          "shiftNumber": 5,
+          "period": 1,
+          "startTime": "10:40",
+          "endTime": "11:41",
+          "duration": "01:01",
+          "event": null
+        },
+        {
+          "shiftNumber": 6,
+          "period": 1,
+          "startTime": "12:21",
+          "endTime": "13:15",
+          "duration": "00:54",
+          "event": null
+        },
+        {
+          "shiftNumber": 7,
+          "period": 1,
+          "startTime": "15:48",
+          "endTime": "16:26",
+          "duration": "00:38",
+          "event": null
+        },
+        {
+          "shiftNumber": 8,
+          "period": 1,
+          "startTime": "18:38",
+          "endTime": "19:15",
+          "duration": "00:37",
+          "event": null
+        },
+        {
+          "shiftNumber": 9,
+          "period": 1,
+          "startTime": "19:37",
+          "endTime": "20:00",
+          "duration": "00:23",
+          "event": null
+        },
+        {
+          "shiftNumber": 10,
+          "period": 2,
+          "startTime": "00:00",
+          "endTime": "00:43",
+          "duration": "00:43",
+          "event": "P"
+        },
+        {
+          "shiftNumber": 11,
+          "period": 2,
+          "startTime": "03:36",
+          "endTime": "05:02",
+          "duration": "01:26",
+          "event": null
+        },
+        {
+          "shiftNumber": 12,
+          "period": 2,
+          "startTime": "07:42",
+          "endTime": "08:45",
+          "duration": "01:03",
+          "event": null
+        },
+        {
+          "shiftNumber": 13,
+          "period": 2,
+          "startTime": "09:43",
+          "endTime": "10:45",
+          "duration": "01:02",
+          "event": null
+        },
+        {
+          "shiftNumber": 14,
+          "period": 2,
+          "startTime": "11:35",
+          "endTime": "12:23",
+          "duration": "00:48",
+          "event": null
+        },
+        {
+          "shiftNumber": 15,
+          "period": 2,
+          "startTime": "14:20",
+          "endTime": "16:12",
+          "duration": "01:52",
+          "event": null
+        },
+        {
+          "shiftNumber": 16,
+          "period": 2,
+          "startTime": "17:18",
+          "endTime": "18:12",
+          "duration": "00:54",
+          "event": "P"
+        },
+        {
+          "shiftNumber": 17,
+          "period": 3,
+          "startTime": "00:48",
+          "endTime": "01:35",
+          "duration": "00:47",
+          "event": null
+        },
+        {
+          "shiftNumber": 18,
+          "period": 3,
+          "startTime": "02:53",
+          "endTime": "04:07",
+          "duration": "01:14",
+          "event": null
+        },
+        {
+          "shiftNumber": 19,
+          "period": 3,
+          "startTime": "05:39",
+          "endTime": "06:26",
+          "duration": "00:47",
+          "event": null
+        },
+        {
+          "shiftNumber": 20,
+          "period": 3,
+          "startTime": "09:23",
+          "endTime": "10:05",
+          "duration": "00:42",
+          "event": null
+        },
+        {
+          "shiftNumber": 21,
+          "period": 3,
+          "startTime": "12:03",
+          "endTime": "13:04",
+          "duration": "01:01",
+          "event": null
+        },
+        {
+          "shiftNumber": 22,
+          "period": 3,
+          "startTime": "14:04",
+          "endTime": "14:48",
+          "duration": "00:44",
+          "event": null
+        },
+        {
+          "shiftNumber": 23,
+          "period": 3,
+          "startTime": "17:48",
+          "endTime": "18:14",
+          "duration": "00:26",
+          "event": null
+        }
+      ],
+      "periodSummary": [
+        {
+          "period": 1,
+          "shifts": 9,
+          "avgDuration": "00:54",
+          "toi": "08:08",
+          "evToi": "06:11",
+          "ppToi": "00:00",
+          "shToi": "01:57"
+        },
+        {
+          "period": 2,
+          "shifts": 7,
+          "avgDuration": "01:06",
+          "toi": "07:48",
+          "evToi": "07:44",
+          "ppToi": "00:00",
+          "shToi": "00:04"
+        },
+        {
+          "period": 3,
+          "shifts": 7,
+          "avgDuration": "00:48",
+          "toi": "05:41",
+          "evToi": "05:41",
+          "ppToi": "00:00",
+          "shToi": "00:00"
+        }
+      ],
+      "gameTotals": {
+        "shifts": 23,
+        "avgDuration": "00:56",
+        "toi": "21:37",
+        "evToi": "19:36",
+        "ppToi": "00:00",
+        "shToi": "02:01"
+      }
+    },
+    {
+      "number": 24,
+      "name": "HINTZ, ROOPE",
+      "shifts": [
+        {
+          "shiftNumber": 1,
+          "period": 1,
+          "startTime": "00:51",
+          "endTime": "01:31",
+          "duration": "00:40",
+          "event": null
+        },
+        {
+          "shiftNumber": 2,
+          "period": 1,
+          "startTime": "03:55",
+          "endTime": "04:36",
+          "duration": "00:41",
+          "event": null
+        },
+        {
+          "shiftNumber": 3,
+          "period": 1,
+          "startTime": "08:45",
+          "endTime": "10:43",
+          "duration": "01:58",
+          "event": null
+        },
+        {
+          "shiftNumber": 4,
+          "period": 1,
+          "startTime": "13:34",
+          "endTime": "14:17",
+          "duration": "00:43",
+          "event": null
+        },
+        {
+          "shiftNumber": 5,
+          "period": 1,
+          "startTime": "17:25",
+          "endTime": "18:21",
+          "duration": "00:56",
+          "event": null
+        },
+        {
+          "shiftNumber": 6,
+          "period": 2,
+          "startTime": "00:43",
+          "endTime": "02:31",
+          "duration": "01:48",
+          "event": "P"
+        },
+        {
+          "shiftNumber": 7,
+          "period": 2,
+          "startTime": "04:40",
+          "endTime": "05:19",
+          "duration": "00:39",
+          "event": null
+        },
+        {
+          "shiftNumber": 8,
+          "period": 2,
+          "startTime": "08:45",
+          "endTime": "09:35",
+          "duration": "00:50",
+          "event": null
+        },
+        {
+          "shiftNumber": 9,
+          "period": 2,
+          "startTime": "11:35",
+          "endTime": "12:23",
+          "duration": "00:48",
+          "event": null
+        },
+        {
+          "shiftNumber": 10,
+          "period": 2,
+          "startTime": "16:42",
+          "endTime": "17:18",
+          "duration": "00:36",
+          "event": null
+        },
+        {
+          "shiftNumber": 11,
+          "period": 2,
+          "startTime": "18:12",
+          "endTime": "20:00",
+          "duration": "01:48",
+          "event": null
+        },
+        {
+          "shiftNumber": 12,
+          "period": 3,
+          "startTime": "00:47",
+          "endTime": "01:35",
+          "duration": "00:48",
+          "event": null
+        },
+        {
+          "shiftNumber": 13,
+          "period": 3,
+          "startTime": "04:07",
+          "endTime": "04:57",
+          "duration": "00:50",
+          "event": null
+        },
+        {
+          "shiftNumber": 14,
+          "period": 3,
+          "startTime": "07:27",
+          "endTime": "07:51",
+          "duration": "00:24",
+          "event": null
+        },
+        {
+          "shiftNumber": 15,
+          "period": 3,
+          "startTime": "08:46",
+          "endTime": "09:23",
+          "duration": "00:37",
+          "event": null
+        },
+        {
+          "shiftNumber": 16,
+          "period": 3,
+          "startTime": "11:38",
+          "endTime": "12:03",
+          "duration": "00:25",
+          "event": "G"
+        },
+        {
+          "shiftNumber": 17,
+          "period": 3,
+          "startTime": "14:04",
+          "endTime": "14:28",
+          "duration": "00:24",
+          "event": null
+        },
+        {
+          "shiftNumber": 18,
+          "period": 3,
+          "startTime": "15:16",
+          "endTime": "17:48",
+          "duration": "02:32",
+          "event": "G"
+        },
+        {
+          "shiftNumber": 19,
+          "period": 3,
+          "startTime": "18:29",
+          "endTime": "19:39",
+          "duration": "01:10",
+          "event": "G"
+        }
+      ],
+      "periodSummary": [
+        {
+          "period": 1,
+          "shifts": 5,
+          "avgDuration": "00:59",
+          "toi": "04:58",
+          "evToi": "04:55",
+          "ppToi": "00:00",
+          "shToi": "00:03"
+        },
+        {
+          "period": 2,
+          "shifts": 6,
+          "avgDuration": "01:04",
+          "toi": "06:29",
+          "evToi": "02:53",
+          "ppToi": "03:36",
+          "shToi": "00:00"
+        },
+        {
+          "period": 3,
+          "shifts": 8,
+          "avgDuration": "00:53",
+          "toi": "07:10",
+          "evToi": "07:10",
+          "ppToi": "00:00",
+          "shToi": "00:00"
+        }
+      ],
+      "gameTotals": {
+        "shifts": 19,
+        "avgDuration": "00:58",
+        "toi": "18:37",
+        "evToi": "14:58",
+        "ppToi": "03:36",
+        "shToi": "00:03"
+      }
+    },
+    {
+      "number": 28,
+      "name": "PETROVIC, ALEXANDER",
+      "shifts": [
+        {
+          "shiftNumber": 1,
+          "period": 1,
+          "startTime": "00:41",
+          "endTime": "01:30",
+          "duration": "00:49",
+          "event": null
+        },
+        {
+          "shiftNumber": 2,
+          "period": 1,
+          "startTime": "03:08",
+          "endTime": "03:54",
+          "duration": "00:46",
+          "event": null
+        },
+        {
+          "shiftNumber": 3,
+          "period": 1,
+          "startTime": "05:40",
+          "endTime": "06:23",
+          "duration": "00:43",
+          "event": null
+        },
+        {
+          "shiftNumber": 4,
+          "period": 1,
+          "startTime": "08:45",
+          "endTime": "09:08",
+          "duration": "00:23",
+          "event": null
+        },
+        {
+          "shiftNumber": 5,
+          "period": 1,
+          "startTime": "11:39",
+          "endTime": "12:21",
+          "duration": "00:42",
+          "event": null
+        },
+        {
+          "shiftNumber": 6,
+          "period": 1,
+          "startTime": "14:10",
+          "endTime": "15:48",
+          "duration": "01:38",
+          "event": null
+        },
+        {
+          "shiftNumber": 7,
+          "period": 1,
+          "startTime": "17:44",
+          "endTime": "18:38",
+          "duration": "00:54",
+          "event": null
+        },
+        {
+          "shiftNumber": 8,
+          "period": 2,
+          "startTime": "05:01",
+          "endTime": "06:54",
+          "duration": "01:53",
+          "event": null
+        },
+        {
+          "shiftNumber": 9,
+          "period": 2,
+          "startTime": "08:45",
+          "endTime": "09:43",
+          "duration": "00:58",
+          "event": null
+        },
+        {
+          "shiftNumber": 10,
+          "period": 2,
+          "startTime": "10:45",
+          "endTime": "11:28",
+          "duration": "00:43",
+          "event": null
+        },
+        {
+          "shiftNumber": 11,
+          "period": 2,
+          "startTime": "12:23",
+          "endTime": "13:36",
+          "duration": "01:13",
+          "event": null
+        },
+        {
+          "shiftNumber": 12,
+          "period": 2,
+          "startTime": "16:12",
+          "endTime": "17:14",
+          "duration": "01:02",
+          "event": null
+        },
+        {
+          "shiftNumber": 13,
+          "period": 3,
+          "startTime": "00:49",
+          "endTime": "01:35",
+          "duration": "00:46",
+          "event": null
+        },
+        {
+          "shiftNumber": 14,
+          "period": 3,
+          "startTime": "02:16",
+          "endTime": "02:53",
+          "duration": "00:37",
+          "event": null
+        },
+        {
+          "shiftNumber": 15,
+          "period": 3,
+          "startTime": "05:03",
+          "endTime": "05:39",
+          "duration": "00:36",
+          "event": null
+        },
+        {
+          "shiftNumber": 16,
+          "period": 3,
+          "startTime": "07:16",
+          "endTime": "08:42",
+          "duration": "01:26",
+          "event": null
+        },
+        {
+          "shiftNumber": 17,
+          "period": 3,
+          "startTime": "10:05",
+          "endTime": "11:09",
+          "duration": "01:04",
+          "event": null
+        },
+        {
+          "shiftNumber": 18,
+          "period": 3,
+          "startTime": "13:04",
+          "endTime": "14:06",
+          "duration": "01:02",
+          "event": null
+        },
+        {
+          "shiftNumber": 19,
+          "period": 3,
+          "startTime": "19:39",
+          "endTime": "20:00",
+          "duration": "00:21",
+          "event": null
+        }
+      ],
+      "periodSummary": [
+        {
+          "period": 1,
+          "shifts": 7,
+          "avgDuration": "00:50",
+          "toi": "05:55",
+          "evToi": "05:52",
+          "ppToi": "00:00",
+          "shToi": "00:03"
+        },
+        {
+          "period": 2,
+          "shifts": 5,
+          "avgDuration": "01:09",
+          "toi": "05:49",
+          "evToi": "05:49",
+          "ppToi": "00:00",
+          "shToi": "00:00"
+        },
+        {
+          "period": 3,
+          "shifts": 7,
+          "avgDuration": "00:50",
+          "toi": "05:52",
+          "evToi": "05:52",
+          "ppToi": "00:00",
+          "shToi": "00:00"
+        }
+      ],
+      "gameTotals": {
+        "shifts": 19,
+        "avgDuration": "00:55",
+        "toi": "17:36",
+        "evToi": "17:33",
+        "ppToi": "00:00",
+        "shToi": "00:03"
+      }
+    },
+    {
+      "number": 46,
+      "name": "LYUBUSHKIN, ILYA",
+      "shifts": [
+        {
+          "shiftNumber": 1,
+          "period": 1,
+          "startTime": "01:33",
+          "endTime": "02:25",
+          "duration": "00:52",
+          "event": null
+        },
+        {
+          "shiftNumber": 2,
+          "period": 1,
+          "startTime": "04:45",
+          "endTime": "05:39",
+          "duration": "00:54",
+          "event": null
+        },
+        {
+          "shiftNumber": 3,
+          "period": 1,
+          "startTime": "07:37",
+          "endTime": "08:45",
+          "duration": "01:08",
+          "event": null
+        },
+        {
+          "shiftNumber": 4,
+          "period": 1,
+          "startTime": "10:42",
+          "endTime": "11:39",
+          "duration": "00:57",
+          "event": null
+        },
+        {
+          "shiftNumber": 5,
+          "period": 1,
+          "startTime": "13:15",
+          "endTime": "14:00",
+          "duration": "00:45",
+          "event": null
+        },
+        {
+          "shiftNumber": 6,
+          "period": 1,
+          "startTime": "16:26",
+          "endTime": "17:44",
+          "duration": "01:18",
+          "event": null
+        },
+        {
+          "shiftNumber": 7,
+          "period": 1,
+          "startTime": "19:15",
+          "endTime": "20:00",
+          "duration": "00:45",
+          "event": null
+        },
+        {
+          "shiftNumber": 8,
+          "period": 2,
+          "startTime": "05:02",
+          "endTime": "05:35",
+          "duration": "00:33",
+          "event": null
+        },
+        {
+          "shiftNumber": 9,
+          "period": 2,
+          "startTime": "06:53",
+          "endTime": "07:42",
+          "duration": "00:49",
+          "event": null
+        },
+        {
+          "shiftNumber": 10,
+          "period": 2,
+          "startTime": "09:38",
+          "endTime": "10:33",
+          "duration": "00:55",
+          "event": null
+        },
+        {
+          "shiftNumber": 11,
+          "period": 2,
+          "startTime": "13:35",
+          "endTime": "14:11",
+          "duration": "00:36",
+          "event": null
+        },
+        {
+          "shiftNumber": 12,
+          "period": 2,
+          "startTime": "17:12",
+          "endTime": "17:18",
+          "duration": "00:06",
+          "event": null
+        },
+        {
+          "shiftNumber": 13,
+          "period": 3,
+          "startTime": "01:35",
+          "endTime": "02:16",
+          "duration": "00:41",
+          "event": null
+        },
+        {
+          "shiftNumber": 14,
+          "period": 3,
+          "startTime": "04:08",
+          "endTime": "05:03",
+          "duration": "00:55",
+          "event": null
+        },
+        {
+          "shiftNumber": 15,
+          "period": 3,
+          "startTime": "06:25",
+          "endTime": "07:13",
+          "duration": "00:48",
+          "event": null
+        },
+        {
+          "shiftNumber": 16,
+          "period": 3,
+          "startTime": "08:44",
+          "endTime": "09:23",
+          "duration": "00:39",
+          "event": null
+        },
+        {
+          "shiftNumber": 17,
+          "period": 3,
+          "startTime": "11:22",
+          "endTime": "12:03",
+          "duration": "00:41",
+          "event": "G"
+        },
+        {
+          "shiftNumber": 18,
+          "period": 3,
+          "startTime": "14:28",
+          "endTime": "15:03",
+          "duration": "00:35",
+          "event": null
+        }
+      ],
+      "periodSummary": [
+        {
+          "period": 1,
+          "shifts": 7,
+          "avgDuration": "00:57",
+          "toi": "06:39",
+          "evToi": "05:31",
+          "ppToi": "00:00",
+          "shToi": "01:08"
+        },
+        {
+          "period": 2,
+          "shifts": 5,
+          "avgDuration": "00:35",
+          "toi": "02:59",
+          "evToi": "02:59",
+          "ppToi": "00:00",
+          "shToi": "00:00"
+        },
+        {
+          "period": 3,
+          "shifts": 6,
+          "avgDuration": "00:43",
+          "toi": "04:19",
+          "evToi": "04:19",
+          "ppToi": "00:00",
+          "shToi": "00:00"
+        }
+      ],
+      "gameTotals": {
+        "shifts": 18,
+        "avgDuration": "00:46",
+        "toi": "13:57",
+        "evToi": "12:49",
+        "ppToi": "00:00",
+        "shToi": "01:08"
+      }
+    },
+    {
+      "number": 49,
+      "name": "HRYCKOWIAN, JUSTIN",
+      "shifts": [
+        {
+          "shiftNumber": 1,
+          "period": 1,
+          "startTime": "02:25",
+          "endTime": "02:59",
+          "duration": "00:34",
+          "event": null
+        },
+        {
+          "shiftNumber": 2,
+          "period": 1,
+          "startTime": "04:40",
+          "endTime": "05:41",
+          "duration": "01:01",
+          "event": null
+        },
+        {
+          "shiftNumber": 3,
+          "period": 1,
+          "startTime": "11:01",
+          "endTime": "12:21",
+          "duration": "01:20",
+          "event": null
+        },
+        {
+          "shiftNumber": 4,
+          "period": 1,
+          "startTime": "14:17",
+          "endTime": "15:26",
+          "duration": "01:09",
+          "event": null
+        },
+        {
+          "shiftNumber": 5,
+          "period": 1,
+          "startTime": "18:21",
+          "endTime": "19:24",
+          "duration": "01:03",
+          "event": null
+        },
+        {
+          "shiftNumber": 6,
+          "period": 2,
+          "startTime": "05:02",
+          "endTime": "06:42",
+          "duration": "01:40",
+          "event": null
+        },
+        {
+          "shiftNumber": 7,
+          "period": 2,
+          "startTime": "09:43",
+          "endTime": "10:45",
+          "duration": "01:02",
+          "event": null
+        },
+        {
+          "shiftNumber": 8,
+          "period": 2,
+          "startTime": "12:23",
+          "endTime": "13:10",
+          "duration": "00:47",
+          "event": null
+        },
+        {
+          "shiftNumber": 9,
+          "period": 2,
+          "startTime": "17:18",
+          "endTime": "18:12",
+          "duration": "00:54",
+          "event": "P"
+        },
+        {
+          "shiftNumber": 10,
+          "period": 3,
+          "startTime": "02:53",
+          "endTime": "04:08",
+          "duration": "01:15",
+          "event": null
+        },
+        {
+          "shiftNumber": 11,
+          "period": 3,
+          "startTime": "06:39",
+          "endTime": "07:27",
+          "duration": "00:48",
+          "event": null
+        },
+        {
+          "shiftNumber": 12,
+          "period": 3,
+          "startTime": "09:23",
+          "endTime": "10:20",
+          "duration": "00:57",
+          "event": null
+        },
+        {
+          "shiftNumber": 13,
+          "period": 3,
+          "startTime": "12:42",
+          "endTime": "13:18",
+          "duration": "00:36",
+          "event": null
+        },
+        {
+          "shiftNumber": 14,
+          "period": 3,
+          "startTime": "17:48",
+          "endTime": "18:31",
+          "duration": "00:43",
+          "event": null
+        },
+        {
+          "shiftNumber": 15,
+          "period": 3,
+          "startTime": "19:39",
+          "endTime": "20:00",
+          "duration": "00:21",
+          "event": null
+        }
+      ],
+      "periodSummary": [
+        {
+          "period": 1,
+          "shifts": 5,
+          "avgDuration": "01:01",
+          "toi": "05:07",
+          "evToi": "05:07",
+          "ppToi": "00:00",
+          "shToi": "00:00"
+        },
+        {
+          "period": 2,
+          "shifts": 4,
+          "avgDuration": "01:05",
+          "toi": "04:23",
+          "evToi": "04:23",
+          "ppToi": "00:00",
+          "shToi": "00:00"
+        },
+        {
+          "period": 3,
+          "shifts": 6,
+          "avgDuration": "00:46",
+          "toi": "04:40",
+          "evToi": "04:40",
+          "ppToi": "00:00",
+          "shToi": "00:00"
+        }
+      ],
+      "gameTotals": {
+        "shifts": 15,
+        "avgDuration": "00:56",
+        "toi": "14:10",
+        "evToi": "14:10",
+        "ppToi": "00:00",
+        "shToi": "00:00"
+      }
+    },
+    {
+      "number": 53,
+      "name": "JOHNSTON, WYATT",
+      "shifts": [
+        {
+          "shiftNumber": 1,
+          "period": 1,
+          "startTime": "00:00",
+          "endTime": "00:51",
+          "duration": "00:51",
+          "event": null
+        },
+        {
+          "shiftNumber": 2,
+          "period": 1,
+          "startTime": "03:07",
+          "endTime": "03:55",
+          "duration": "00:48",
+          "event": null
+        },
+        {
+          "shiftNumber": 3,
+          "period": 1,
+          "startTime": "06:27",
+          "endTime": "06:48",
+          "duration": "00:21",
+          "event": "P"
+        },
+        {
+          "shiftNumber": 4,
+          "period": 1,
+          "startTime": "10:43",
+          "endTime": "11:01",
+          "duration": "00:18",
+          "event": null
+        },
+        {
+          "shiftNumber": 5,
+          "period": 1,
+          "startTime": "11:39",
+          "endTime": "12:50",
+          "duration": "01:11",
+          "event": null
+        },
+        {
+          "shiftNumber": 6,
+          "period": 1,
+          "startTime": "15:29",
+          "endTime": "16:26",
+          "duration": "00:57",
+          "event": null
+        },
+        {
+          "shiftNumber": 7,
+          "period": 1,
+          "startTime": "19:24",
+          "endTime": "20:00",
+          "duration": "00:36",
+          "event": null
+        },
+        {
+          "shiftNumber": 8,
+          "period": 2,
+          "startTime": "00:00",
+          "endTime": "02:02",
+          "duration": "02:02",
+          "event": "P"
+        },
+        {
+          "shiftNumber": 9,
+          "period": 2,
+          "startTime": "02:27",
+          "endTime": "02:31",
+          "duration": "00:04",
+          "event": "P"
+        },
+        {
+          "shiftNumber": 10,
+          "period": 2,
+          "startTime": "03:36",
+          "endTime": "04:40",
+          "duration": "01:04",
+          "event": null
+        },
+        {
+          "shiftNumber": 11,
+          "period": 2,
+          "startTime": "07:58",
+          "endTime": "08:45",
+          "duration": "00:47",
+          "event": null
+        },
+        {
+          "shiftNumber": 12,
+          "period": 2,
+          "startTime": "10:40",
+          "endTime": "11:35",
+          "duration": "00:55",
+          "event": null
+        },
+        {
+          "shiftNumber": 13,
+          "period": 2,
+          "startTime": "14:11",
+          "endTime": "15:45",
+          "duration": "01:34",
+          "event": null
+        },
+        {
+          "shiftNumber": 14,
+          "period": 2,
+          "startTime": "18:03",
+          "endTime": "20:00",
+          "duration": "01:57",
+          "event": "P"
+        },
+        {
+          "shiftNumber": 15,
+          "period": 3,
+          "startTime": "00:00",
+          "endTime": "00:47",
+          "duration": "00:47",
+          "event": null
+        },
+        {
+          "shiftNumber": 16,
+          "period": 3,
+          "startTime": "02:24",
+          "endTime": "02:53",
+          "duration": "00:29",
+          "event": null
+        },
+        {
+          "shiftNumber": 17,
+          "period": 3,
+          "startTime": "04:57",
+          "endTime": "05:46",
+          "duration": "00:49",
+          "event": null
+        },
+        {
+          "shiftNumber": 18,
+          "period": 3,
+          "startTime": "07:51",
+          "endTime": "08:46",
+          "duration": "00:55",
+          "event": null
+        },
+        {
+          "shiftNumber": 19,
+          "period": 3,
+          "startTime": "10:21",
+          "endTime": "11:38",
+          "duration": "01:17",
+          "event": null
+        },
+        {
+          "shiftNumber": 20,
+          "period": 3,
+          "startTime": "13:18",
+          "endTime": "14:04",
+          "duration": "00:46",
+          "event": null
+        },
+        {
+          "shiftNumber": 21,
+          "period": 3,
+          "startTime": "15:16",
+          "endTime": "17:48",
+          "duration": "02:32",
+          "event": "G"
+        },
+        {
+          "shiftNumber": 22,
+          "period": 3,
+          "startTime": "18:31",
+          "endTime": "19:39",
+          "duration": "01:08",
+          "event": "G"
+        }
+      ],
+      "periodSummary": [
+        {
+          "period": 1,
+          "shifts": 7,
+          "avgDuration": "00:43",
+          "toi": "05:02",
+          "evToi": "05:02",
+          "ppToi": "00:00",
+          "shToi": "00:00"
+        },
+        {
+          "period": 2,
+          "shifts": 7,
+          "avgDuration": "01:11",
+          "toi": "08:23",
+          "evToi": "05:08",
+          "ppToi": "03:11",
+          "shToi": "00:04"
+        },
+        {
+          "period": 3,
+          "shifts": 8,
+          "avgDuration": "01:05",
+          "toi": "08:43",
+          "evToi": "08:31",
+          "ppToi": "00:12",
+          "shToi": "00:00"
+        }
+      ],
+      "gameTotals": {
+        "shifts": 22,
+        "avgDuration": "01:00",
+        "toi": "22:08",
+        "evToi": "18:41",
+        "ppToi": "03:23",
+        "shToi": "00:04"
+      }
+    },
+    {
+      "number": 55,
+      "name": "HARLEY, THOMAS",
+      "shifts": [
+        {
+          "shiftNumber": 1,
+          "period": 1,
+          "startTime": "00:39",
+          "endTime": "01:33",
+          "duration": "00:54",
+          "event": null
+        },
+        {
+          "shiftNumber": 2,
+          "period": 1,
+          "startTime": "03:08",
+          "endTime": "03:55",
+          "duration": "00:47",
+          "event": null
+        },
+        {
+          "shiftNumber": 3,
+          "period": 1,
+          "startTime": "05:39",
+          "endTime": "06:27",
+          "duration": "00:48",
+          "event": null
+        },
+        {
+          "shiftNumber": 4,
+          "period": 1,
+          "startTime": "06:48",
+          "endTime": "07:37",
+          "duration": "00:49",
+          "event": null
+        },
+        {
+          "shiftNumber": 5,
+          "period": 1,
+          "startTime": "08:45",
+          "endTime": "09:08",
+          "duration": "00:23",
+          "event": null
+        },
+        {
+          "shiftNumber": 6,
+          "period": 1,
+          "startTime": "11:37",
+          "endTime": "12:23",
+          "duration": "00:46",
+          "event": null
+        },
+        {
+          "shiftNumber": 7,
+          "period": 1,
+          "startTime": "14:00",
+          "endTime": "15:49",
+          "duration": "01:49",
+          "event": null
+        },
+        {
+          "shiftNumber": 8,
+          "period": 1,
+          "startTime": "17:25",
+          "endTime": "18:40",
+          "duration": "01:15",
+          "event": null
+        },
+        {
+          "shiftNumber": 9,
+          "period": 1,
+          "startTime": "19:05",
+          "endTime": "19:36",
+          "duration": "00:31",
+          "event": null
+        },
+        {
+          "shiftNumber": 10,
+          "period": 2,
+          "startTime": "00:43",
+          "endTime": "02:13",
+          "duration": "01:30",
+          "event": null
+        },
+        {
+          "shiftNumber": 11,
+          "period": 2,
+          "startTime": "02:27",
+          "endTime": "03:36",
+          "duration": "01:09",
+          "event": "GP"
+        },
+        {
+          "shiftNumber": 12,
+          "period": 2,
+          "startTime": "05:35",
+          "endTime": "06:54",
+          "duration": "01:19",
+          "event": null
+        },
+        {
+          "shiftNumber": 13,
+          "period": 2,
+          "startTime": "08:45",
+          "endTime": "09:38",
+          "duration": "00:53",
+          "event": null
+        },
+        {
+          "shiftNumber": 14,
+          "period": 2,
+          "startTime": "10:45",
+          "endTime": "11:35",
+          "duration": "00:50",
+          "event": null
+        },
+        {
+          "shiftNumber": 15,
+          "period": 2,
+          "startTime": "12:23",
+          "endTime": "13:35",
+          "duration": "01:12",
+          "event": null
+        },
+        {
+          "shiftNumber": 16,
+          "period": 2,
+          "startTime": "14:11",
+          "endTime": "14:20",
+          "duration": "00:09",
+          "event": null
+        },
+        {
+          "shiftNumber": 17,
+          "period": 2,
+          "startTime": "16:12",
+          "endTime": "17:12",
+          "duration": "01:00",
+          "event": null
+        },
+        {
+          "shiftNumber": 18,
+          "period": 2,
+          "startTime": "18:11",
+          "endTime": "20:00",
+          "duration": "01:49",
+          "event": "P"
+        },
+        {
+          "shiftNumber": 19,
+          "period": 3,
+          "startTime": "00:00",
+          "endTime": "00:49",
+          "duration": "00:49",
+          "event": null
+        },
+        {
+          "shiftNumber": 20,
+          "period": 3,
+          "startTime": "02:12",
+          "endTime": "02:53",
+          "duration": "00:41",
+          "event": null
+        },
+        {
+          "shiftNumber": 21,
+          "period": 3,
+          "startTime": "04:57",
+          "endTime": "05:53",
+          "duration": "00:56",
+          "event": null
+        },
+        {
+          "shiftNumber": 22,
+          "period": 3,
+          "startTime": "07:13",
+          "endTime": "08:44",
+          "duration": "01:31",
+          "event": null
+        },
+        {
+          "shiftNumber": 23,
+          "period": 3,
+          "startTime": "10:03",
+          "endTime": "11:22",
+          "duration": "01:19",
+          "event": null
+        },
+        {
+          "shiftNumber": 24,
+          "period": 3,
+          "startTime": "12:40",
+          "endTime": "14:32",
+          "duration": "01:52",
+          "event": null
+        },
+        {
+          "shiftNumber": 25,
+          "period": 3,
+          "startTime": "15:16",
+          "endTime": "17:48",
+          "duration": "02:32",
+          "event": "G"
+        },
+        {
+          "shiftNumber": 26,
+          "period": 3,
+          "startTime": "18:14",
+          "endTime": "19:39",
+          "duration": "01:25",
+          "event": "G"
+        }
+      ],
+      "periodSummary": [
+        {
+          "period": 1,
+          "shifts": 9,
+          "avgDuration": "00:53",
+          "toi": "08:02",
+          "evToi": "07:10",
+          "ppToi": "00:00",
+          "shToi": "00:52"
+        },
+        {
+          "period": 2,
+          "shifts": 9,
+          "avgDuration": "01:05",
+          "toi": "09:51",
+          "evToi": "06:17",
+          "ppToi": "03:34",
+          "shToi": "00:00"
+        },
+        {
+          "period": 3,
+          "shifts": 8,
+          "avgDuration": "01:23",
+          "toi": "11:05",
+          "evToi": "10:53",
+          "ppToi": "00:12",
+          "shToi": "00:00"
+        }
+      ],
+      "gameTotals": {
+        "shifts": 26,
+        "avgDuration": "01:06",
+        "toi": "28:58",
+        "evToi": "24:20",
+        "ppToi": "03:46",
+        "shToi": "00:52"
+      }
+    },
+    {
+      "number": 95,
+      "name": "DUCHENE, MATT",
+      "shifts": [
+        {
+          "shiftNumber": 1,
+          "period": 1,
+          "startTime": "01:31",
+          "endTime": "02:25",
+          "duration": "00:54",
+          "event": null
+        },
+        {
+          "shiftNumber": 2,
+          "period": 1,
+          "startTime": "04:36",
+          "endTime": "05:40",
+          "duration": "01:04",
+          "event": null
+        },
+        {
+          "shiftNumber": 3,
+          "period": 1,
+          "startTime": "10:44",
+          "endTime": "11:39",
+          "duration": "00:55",
+          "event": null
+        },
+        {
+          "shiftNumber": 4,
+          "period": 1,
+          "startTime": "14:18",
+          "endTime": "15:29",
+          "duration": "01:11",
+          "event": null
+        },
+        {
+          "shiftNumber": 5,
+          "period": 1,
+          "startTime": "18:19",
+          "endTime": "19:25",
+          "duration": "01:06",
+          "event": null
+        },
+        {
+          "shiftNumber": 6,
+          "period": 2,
+          "startTime": "02:20",
+          "endTime": "02:27",
+          "duration": "00:07",
+          "event": "P"
+        },
+        {
+          "shiftNumber": 7,
+          "period": 2,
+          "startTime": "02:31",
+          "endTime": "03:36",
+          "duration": "01:05",
+          "event": "G"
+        },
+        {
+          "shiftNumber": 8,
+          "period": 2,
+          "startTime": "05:19",
+          "endTime": "06:53",
+          "duration": "01:34",
+          "event": null
+        },
+        {
+          "shiftNumber": 9,
+          "period": 2,
+          "startTime": "09:35",
+          "endTime": "10:40",
+          "duration": "01:05",
+          "event": null
+        },
+        {
+          "shiftNumber": 10,
+          "period": 2,
+          "startTime": "13:27",
+          "endTime": "15:44",
+          "duration": "02:17",
+          "event": null
+        },
+        {
+          "shiftNumber": 11,
+          "period": 3,
+          "startTime": "00:00",
+          "endTime": "00:57",
+          "duration": "00:57",
+          "event": null
+        },
+        {
+          "shiftNumber": 12,
+          "period": 3,
+          "startTime": "04:09",
+          "endTime": "04:59",
+          "duration": "00:50",
+          "event": null
+        },
+        {
+          "shiftNumber": 13,
+          "period": 3,
+          "startTime": "07:24",
+          "endTime": "07:51",
+          "duration": "00:27",
+          "event": null
+        },
+        {
+          "shiftNumber": 14,
+          "period": 3,
+          "startTime": "08:42",
+          "endTime": "09:23",
+          "duration": "00:41",
+          "event": null
+        },
+        {
+          "shiftNumber": 15,
+          "period": 3,
+          "startTime": "11:40",
+          "endTime": "12:03",
+          "duration": "00:23",
+          "event": "G"
+        },
+        {
+          "shiftNumber": 16,
+          "period": 3,
+          "startTime": "14:08",
+          "endTime": "14:47",
+          "duration": "00:39",
+          "event": null
+        },
+        {
+          "shiftNumber": 17,
+          "period": 3,
+          "startTime": "15:16",
+          "endTime": "15:38",
+          "duration": "00:22",
+          "event": null
+        },
+        {
+          "shiftNumber": 18,
+          "period": 3,
+          "startTime": "16:14",
+          "endTime": "17:48",
+          "duration": "01:34",
+          "event": "G"
+        },
+        {
+          "shiftNumber": 19,
+          "period": 3,
+          "startTime": "18:38",
+          "endTime": "19:39",
+          "duration": "01:01",
+          "event": "G"
+        }
+      ],
+      "periodSummary": [
+        {
+          "period": 1,
+          "shifts": 5,
+          "avgDuration": "01:02",
+          "toi": "05:10",
+          "evToi": "05:10",
+          "ppToi": "00:00",
+          "shToi": "00:00"
+        },
+        {
+          "period": 2,
+          "shifts": 5,
+          "avgDuration": "01:13",
+          "toi": "06:08",
+          "evToi": "05:49",
+          "ppToi": "00:19",
+          "shToi": "00:00"
+        },
+        {
+          "period": 3,
+          "shifts": 9,
+          "avgDuration": "00:46",
+          "toi": "06:54",
+          "evToi": "06:42",
+          "ppToi": "00:12",
+          "shToi": "00:00"
+        }
+      ],
+      "gameTotals": {
+        "shifts": 19,
+        "avgDuration": "00:57",
+        "toi": "18:12",
+        "evToi": "17:41",
+        "ppToi": "00:31",
+        "shToi": "00:00"
+      }
+    },
+    {
+      "number": 96,
+      "name": "RANTANEN, MIKKO",
+      "shifts": [
+        {
+          "shiftNumber": 1,
+          "period": 1,
+          "startTime": "00:00",
+          "endTime": "00:41",
+          "duration": "00:41",
+          "event": null
+        },
+        {
+          "shiftNumber": 2,
+          "period": 1,
+          "startTime": "03:08",
+          "endTime": "03:55",
+          "duration": "00:47",
+          "event": null
+        },
+        {
+          "shiftNumber": 3,
+          "period": 1,
+          "startTime": "06:26",
+          "endTime": "06:48",
+          "duration": "00:22",
+          "event": "P"
+        },
+        {
+          "shiftNumber": 4,
+          "period": 1,
+          "startTime": "09:58",
+          "endTime": "11:01",
+          "duration": "01:03",
+          "event": null
+        },
+        {
+          "shiftNumber": 5,
+          "period": 1,
+          "startTime": "11:41",
+          "endTime": "12:51",
+          "duration": "01:10",
+          "event": null
+        },
+        {
+          "shiftNumber": 6,
+          "period": 1,
+          "startTime": "14:53",
+          "endTime": "16:22",
+          "duration": "01:29",
+          "event": null
+        },
+        {
+          "shiftNumber": 7,
+          "period": 1,
+          "startTime": "19:36",
+          "endTime": "20:00",
+          "duration": "00:24",
+          "event": null
+        },
+        {
+          "shiftNumber": 8,
+          "period": 2,
+          "startTime": "00:00",
+          "endTime": "03:36",
+          "duration": "03:36",
+          "event": "GP"
+        },
+        {
+          "shiftNumber": 9,
+          "period": 2,
+          "startTime": "07:47",
+          "endTime": "08:45",
+          "duration": "00:58",
+          "event": null
+        },
+        {
+          "shiftNumber": 10,
+          "period": 2,
+          "startTime": "10:34",
+          "endTime": "11:35",
+          "duration": "01:01",
+          "event": null
+        },
+        {
+          "shiftNumber": 11,
+          "period": 2,
+          "startTime": "14:01",
+          "endTime": "15:57",
+          "duration": "01:56",
+          "event": null
+        },
+        {
+          "shiftNumber": 12,
+          "period": 2,
+          "startTime": "18:12",
+          "endTime": "20:00",
+          "duration": "01:48",
+          "event": null
+        },
+        {
+          "shiftNumber": 13,
+          "period": 3,
+          "startTime": "00:00",
+          "endTime": "00:26",
+          "duration": "00:26",
+          "event": null
+        },
+        {
+          "shiftNumber": 14,
+          "period": 3,
+          "startTime": "02:32",
+          "endTime": "02:53",
+          "duration": "00:21",
+          "event": null
+        },
+        {
+          "shiftNumber": 15,
+          "period": 3,
+          "startTime": "04:59",
+          "endTime": "05:36",
+          "duration": "00:37",
+          "event": null
+        },
+        {
+          "shiftNumber": 16,
+          "period": 3,
+          "startTime": "07:51",
+          "endTime": "08:42",
+          "duration": "00:51",
+          "event": null
+        },
+        {
+          "shiftNumber": 17,
+          "period": 3,
+          "startTime": "10:23",
+          "endTime": "11:40",
+          "duration": "01:17",
+          "event": null
+        },
+        {
+          "shiftNumber": 18,
+          "period": 3,
+          "startTime": "13:26",
+          "endTime": "14:08",
+          "duration": "00:42",
+          "event": null
+        },
+        {
+          "shiftNumber": 19,
+          "period": 3,
+          "startTime": "15:16",
+          "endTime": "17:48",
+          "duration": "02:32",
+          "event": "G"
+        },
+        {
+          "shiftNumber": 20,
+          "period": 3,
+          "startTime": "18:16",
+          "endTime": "19:39",
+          "duration": "01:23",
+          "event": "G"
+        }
+      ],
+      "periodSummary": [
+        {
+          "period": 1,
+          "shifts": 7,
+          "avgDuration": "00:50",
+          "toi": "05:56",
+          "evToi": "05:56",
+          "ppToi": "00:00",
+          "shToi": "00:00"
+        },
+        {
+          "period": 2,
+          "shifts": 5,
+          "avgDuration": "01:51",
+          "toi": "09:19",
+          "evToi": "05:31",
+          "ppToi": "03:48",
+          "shToi": "00:00"
+        },
+        {
+          "period": 3,
+          "shifts": 8,
+          "avgDuration": "01:01",
+          "toi": "08:09",
+          "evToi": "07:57",
+          "ppToi": "00:12",
+          "shToi": "00:00"
+        }
+      ],
+      "gameTotals": {
+        "shifts": 20,
+        "avgDuration": "01:10",
+        "toi": "23:24",
+        "evToi": "19:24",
+        "ppToi": "04:00",
+        "shToi": "00:00"
+      }
+    }
+  ]
+}
