@@ -97,6 +97,7 @@ All outputs must be validated against official sources:
 3. **Implement**: Write clean, well-documented code
 4. **Test**: Verify outputs match official statistics exactly
 5. **Handle Failures**: Implement robust error handling and fallback mechanisms
+6. **Git**: Do no commit files to the git repo. Those actions will be done manually
 
 ## Known Edge Cases to Handle
 - Coincidental penalties creating 4v4 situations (Rule 19.1)
