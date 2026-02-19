@@ -50,6 +50,8 @@ Every entry in the `plays` array contains:
 
 ## Event Types (`typeDescKey`)
 
+Fields listed below are from the `details` object only. `xCoord`, `yCoord`, and `zoneCode` are present on most event types and are omitted here for brevity — see the Notes section.
+
 ### Administrative / Game Flow
 
 | typeDescKey | typeCode | details fields |
@@ -58,49 +60,49 @@ Every entry in the `plays` array contains:
 | `period-end` | 521 | *(none)* |
 | `game-end` | 524 | *(none)* |
 | `shootout-complete` | 523 | *(none)* |
-| `stoppage` | 516 | `reason` |
+| `stoppage` | 516 | `reason`, `secondaryReason` |
 | `delayed-penalty` | 535 | `eventOwnerTeamId` |
 
 ### Faceoffs
 
 | typeDescKey | typeCode | details fields |
 |-------------|----------|----------------|
-| `faceoff` | 502 | `xCoord`, `yCoord`, `zoneCode`, `winningPlayerId`, `losingPlayerId`, `eventOwnerTeamId` |
+| `faceoff` | 502 | `eventOwnerTeamId`, `winningPlayerId`, `losingPlayerId` |
 
 ### Shots & Scoring
 
 | typeDescKey | typeCode | details fields |
 |-------------|----------|----------------|
-| `shot-on-goal` | 506 | `xCoord`, `yCoord`, `zoneCode`, `shotType`, `shootingPlayerId`, `goalieInNetId`, `eventOwnerTeamId`, `awaySOG`, `homeSOG` |
-| `goal` | 505 | `xCoord`, `yCoord`, `zoneCode`, `shotType`, `scoringPlayerId`, `scoringPlayerTotal`, `assist1PlayerId`, `assist1PlayerTotal`, `assist2PlayerId`, `assist2PlayerTotal`, `goalieInNetId`, `eventOwnerTeamId`, `awayScore`, `homeScore`, highlight clip fields |
-| `missed-shot` | 507 | `xCoord`, `yCoord`, `zoneCode`, `shotType`, `reason`, `shootingPlayerId`, `goalieInNetId`, `eventOwnerTeamId` |
-| `blocked-shot` | 508 | `xCoord`, `yCoord`, `zoneCode`, `shootingPlayerId`, `blockingPlayerId`, `eventOwnerTeamId`, `reason` |
-| `failed-shot-attempt` | 537 | `xCoord`, `yCoord`, `zoneCode`, `shootingPlayerId`, `goalieInNetId`, `eventOwnerTeamId`, `awaySOG`, `homeSOG` |
+| `shot-on-goal` | 506 | `eventOwnerTeamId`, `shootingPlayerId`, `goalieInNetId`, `shotType`, `awaySOG`, `homeSOG` |
+| `missed-shot` | 507 | `eventOwnerTeamId`, `shootingPlayerId`, `goalieInNetId`, `shotType`, `reason` |
+| `blocked-shot` | 508 | `eventOwnerTeamId`, `shootingPlayerId`, `blockingPlayerId`, `reason` |
+| `failed-shot-attempt` | 537 | `eventOwnerTeamId`, `shootingPlayerId`, `goalieInNetId`, `awaySOG`, `homeSOG` |
+| `goal` | 505 | `eventOwnerTeamId`, `scoringPlayerId`, `scoringPlayerTotal`, `assist1PlayerId`, `assist1PlayerTotal`, `assist2PlayerId`, `assist2PlayerTotal`, `goalieInNetId`, `shotType`, `awayScore`, `homeScore`, `highlightClip`, `highlightClipFr`, `highlightClipSharingUrl`, `highlightClipSharingUrlFr`, `discreteClip`, `discreteClipFr` |
 
 ### Physical Play
 
 | typeDescKey | typeCode | details fields |
 |-------------|----------|----------------|
-| `hit` | 503 | `xCoord`, `yCoord`, `zoneCode`, `hittingPlayerId`, `hitteePlayerId`, `eventOwnerTeamId` |
+| `hit` | 503 | `eventOwnerTeamId`, `hittingPlayerId`, `hitteePlayerId` |
 
 ### Penalties
 
 | typeDescKey | typeCode | details fields |
 |-------------|----------|----------------|
-| `penalty` | 509 | `xCoord`, `yCoord`, `zoneCode`, `typeCode` (MIN/MAJ/etc.), `descKey` (infraction name), `duration` (minutes), `committedByPlayerId`, `drawnByPlayerId`, `eventOwnerTeamId` |
+| `penalty` | 509 | `eventOwnerTeamId`, `committedByPlayerId`, `drawnByPlayerId`, `servedByPlayerId`, `typeCode`, `descKey`, `duration` |
 
 ### Puck Possession
 
 | typeDescKey | typeCode | details fields |
 |-------------|----------|----------------|
-| `giveaway` | 504 | `xCoord`, `yCoord`, `zoneCode`, `playerId`, `eventOwnerTeamId` |
-| `takeaway` | 525 | `xCoord`, `yCoord`, `zoneCode`, `playerId`, `eventOwnerTeamId` |
+| `giveaway` | 504 | `eventOwnerTeamId`, `playerId` |
+| `takeaway` | 525 | `eventOwnerTeamId`, `playerId` |
 
 ---
 
 ## Notes
 
-- **`zoneCode`** values: `O` = offensive zone, `D` = defensive zone, `N` = neutral zone. Zone is relative to the `eventOwnerTeamId`.
+- **Coordinates** (`xCoord`, `yCoord`, `zoneCode`) are present on most event types with a location (shots, hits, faceoffs, penalties, possession events). They are omitted from the details tables above since they appear consistently. `zoneCode` values: `O` = offensive zone, `D` = defensive zone, `N` = neutral zone — always relative to `eventOwnerTeamId`.
 - **`situationCode`** format: `[awayGoalie][awaySkaters][homeSkaters][homeGoalie]`. See `SITUATIONCODE_REFERENCE.md` for full details.
 - **`details`** is absent entirely on some plays (e.g. `period-start`). Always use `.get("details", {})` when accessing.
 - **Coordinates**: `xCoord` / `yCoord` are in feet from center ice. Rink is roughly ±100 ft on x-axis, ±42.5 ft on y-axis.
