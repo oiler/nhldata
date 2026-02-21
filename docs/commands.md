@@ -49,3 +49,17 @@ uv run python v2/timelines/generate_timeline.py 591 2025
 uv run python v2/timelines/generate_timeline.py 1 100 2025
 ```
 
+## Competition Scores
+
+### compute_competition.py - Per-skater competition difficulty scores (5v5)
+Requires timeline and plays data for the game. Outputs `comp_fwd` and `comp_def`
+(mean 5v5 TOI of opposing forwards/defensemen) for every skater.
+```bash
+# Single game
+uv run python v2/competition/compute_competition.py 1 2025
+
+# Range of games
+uv run python v2/competition/compute_competition.py 1 900 2025
+```
+Output: `data/{season}/generated/competition/{gameId}.csv`
+
