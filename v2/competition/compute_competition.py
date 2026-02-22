@@ -17,7 +17,7 @@ import csv
 import json
 import sys
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Set, Tuple
 
 DATA_DIR = Path("data")
 SCORED_SITUATIONS = {"1551", "0651", "1560"}
@@ -73,6 +73,101 @@ def compute_game_toi(rows: List[dict]) -> Dict[int, int]:
                 pid = int(pid_str)
                 toi[pid] = toi.get(pid, 0) + 1
     return toi
+
+
+def build_top_competition(
+    toi: Dict[int, int],
+    positions: Dict[int, str],
+    teams: Dict[int, str],
+) -> Dict[str, Dict[str, Set[int]]]:
+    """
+    Identify top-6 forwards and top-4 defensemen per team by 5v5 TOI.
+
+    Returns:
+        {teamAbbrev: {"top_fwd": {playerId, ...}, "top_def": {playerId, ...}}}
+    """
+    team_fwds: Dict[str, List] = {}
+    team_defs: Dict[str, List] = {}
+
+    for pid, seconds in toi.items():
+        team = teams.get(pid, "")
+        pos = positions.get(pid, "F")
+        if pos == "F":
+            team_fwds.setdefault(team, []).append((pid, seconds))
+        elif pos == "D":
+            team_defs.setdefault(team, []).append((pid, seconds))
+
+    result: Dict[str, Dict[str, Set[int]]] = {}
+    all_teams = set(team_fwds) | set(team_defs)
+    for team in all_teams:
+        fwds = sorted(team_fwds.get(team, []), key=lambda x: x[1], reverse=True)
+        defs = sorted(team_defs.get(team, []), key=lambda x: x[1], reverse=True)
+        result[team] = {
+            "top_fwd": {pid for pid, _ in fwds[:6]},
+            "top_def": {pid for pid, _ in defs[:4]},
+        }
+
+    return result
+
+
+def score_game_pct(
+    rows: List[dict],
+    positions: Dict[int, str],
+    teams: Dict[int, str],
+    top_comp: Dict[str, Dict[str, Set[int]]],
+) -> Dict[int, dict]:
+    """
+    For every skater in every 5v5 second, compute the fraction of opposing
+    forwards who are top-6 and opposing defensemen who are top-4 by game TOI.
+
+    Returns:
+        {playerId: {"pct_vs_top_fwd": float, "pct_vs_top_def": float}}
+    """
+    accum: Dict[int, dict] = {}
+
+    for row in rows:
+        if row["situationCode"] not in SCORED_SITUATIONS:
+            continue
+
+        away = [int(p) for p in row["awaySkaters"].split("|")] if row.get("awaySkaters") else []
+        home = [int(p) for p in row["homeSkaters"].split("|")] if row.get("homeSkaters") else []
+
+        for player_id, opponents in (
+            [(p, home) for p in away] +
+            [(p, away) for p in home]
+        ):
+            if positions.get(player_id, "F") == "G":
+                continue
+
+            if player_id not in accum:
+                accum[player_id] = {"fwd_fracs": [], "def_fracs": []}
+
+            opp_team = teams.get(opponents[0], "") if opponents else ""  # all opponents are same team in 5v5
+            if not opp_team:
+                continue
+            opp_top = top_comp.get(opp_team, {"top_fwd": set(), "top_def": set()})
+
+            opp_fwds = [p for p in opponents if positions.get(p, "F") == "F"]
+            opp_defs = [p for p in opponents if positions.get(p, "F") == "D"]
+
+            if opp_fwds:
+                top_count = sum(1 for p in opp_fwds if p in opp_top["top_fwd"])
+                accum[player_id]["fwd_fracs"].append(top_count / len(opp_fwds))
+
+            if opp_defs:
+                top_count = sum(1 for p in opp_defs if p in opp_top["top_def"])
+                accum[player_id]["def_fracs"].append(top_count / len(opp_defs))
+
+    result: Dict[int, dict] = {}
+    for pid, data in accum.items():
+        fwd_fracs = data["fwd_fracs"]
+        def_fracs = data["def_fracs"]
+        result[pid] = {
+            "pct_vs_top_fwd": sum(fwd_fracs) / len(fwd_fracs) if fwd_fracs else 0.0,
+            "pct_vs_top_def": sum(def_fracs) / len(def_fracs) if def_fracs else 0.0,
+        }
+
+    return result
 
 
 def score_game(
@@ -154,18 +249,23 @@ def write_output(game_id: str, season: str, scores: Dict[int, dict],
     rows = []
     for pid, data in scores.items():
         rows.append({
-            "gameId":      game_id,
-            "playerId":    pid,
-            "team":        teams.get(pid, ""),
-            "position":    positions.get(pid, "F"),
-            "toi_seconds": toi.get(pid, 0),
-            "comp_fwd":    round(data["comp_fwd"], 2),
-            "comp_def":    round(data["comp_def"], 2),
+            "gameId":           game_id,
+            "playerId":         pid,
+            "team":             teams.get(pid, ""),
+            "position":         positions.get(pid, "F"),
+            "toi_seconds":      toi.get(pid, 0),
+            "comp_fwd":         round(data["comp_fwd"], 2),
+            "comp_def":         round(data["comp_def"], 2),
+            "pct_vs_top_fwd":   round(data.get("pct_vs_top_fwd", 0.0), 4),
+            "pct_vs_top_def":   round(data.get("pct_vs_top_def", 0.0), 4),
         })
 
     rows.sort(key=lambda r: r["toi_seconds"], reverse=True)
 
-    fieldnames = ["gameId", "playerId", "team", "position", "toi_seconds", "comp_fwd", "comp_def"]
+    fieldnames = [
+        "gameId", "playerId", "team", "position", "toi_seconds",
+        "comp_fwd", "comp_def", "pct_vs_top_fwd", "pct_vs_top_def",
+    ]
     with open(out_path, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
@@ -183,7 +283,14 @@ def run_game(game_number: int, season: str) -> Path:
 
     timeline_rows = load_timeline(season, game_id)
     toi = compute_game_toi(timeline_rows)
+
     scores = score_game(timeline_rows, toi, positions)
+    top_comp = build_top_competition(toi, positions, teams)
+    pct_scores = score_game_pct(timeline_rows, positions, teams, top_comp)
+
+    for pid in scores:
+        if pid in pct_scores:  # goalies and edge-case players may be absent from pct_scores
+            scores[pid].update(pct_scores[pid])
 
     return write_output(game_id, season, scores, toi, positions, teams)
 

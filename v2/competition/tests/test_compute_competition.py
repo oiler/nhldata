@@ -159,7 +159,8 @@ def test_run_game_produces_output():
     assert len(rows) > 0, "Output CSV is empty"
 
     # Check required columns
-    required = {"gameId", "playerId", "team", "position", "toi_seconds", "comp_fwd", "comp_def"}
+    required = {"gameId", "playerId", "team", "position", "toi_seconds",
+                "comp_fwd", "comp_def", "pct_vs_top_fwd", "pct_vs_top_def"}
     assert required.issubset(set(rows[0].keys())), f"Missing columns: {required - set(rows[0].keys())}"
 
     # comp_fwd and comp_def must be non-negative (0.0 is valid for edge cases)
@@ -170,3 +171,118 @@ def test_run_game_produces_output():
     # position values must be F or D (no goalies in output)
     for row in rows:
         assert row["position"] in {"F", "D"}, f"Unexpected position value: {row['position']}"
+
+    # pct columns must be in [0.0, 1.0]
+    for row in rows:
+        assert 0.0 <= float(row["pct_vs_top_fwd"]) <= 1.0, \
+            f"Player {row['playerId']} pct_vs_top_fwd out of range: {row['pct_vs_top_fwd']}"
+        assert 0.0 <= float(row["pct_vs_top_def"]) <= 1.0, \
+            f"Player {row['playerId']} pct_vs_top_def out of range: {row['pct_vs_top_def']}"
+
+    # At least one player must have a non-zero pct (catches silent all-zero regressions)
+    assert any(float(row["pct_vs_top_fwd"]) > 0.0 for row in rows), \
+        "Expected at least one player with non-zero pct_vs_top_fwd"
+
+
+from compute_competition import build_top_competition
+
+
+def test_build_top_competition_top6_fwd_top4_def():
+    """Top-6 forwards and top-4 defensemen selected per team by TOI."""
+    toi = {
+        # EDM forwards — 17 has lowest TOI, excluded from top-6
+        11: 1000, 12: 900, 13: 800, 14: 700, 15: 600, 16: 500, 17: 100,
+        # EDM defense — 25 has lowest TOI, excluded from top-4
+        21: 1000, 22: 900, 23: 800, 24: 700, 25: 100,
+        # FLA forwards
+        31: 1000, 32: 900, 33: 800, 34: 700, 35: 600, 36: 500, 37: 100,
+        # FLA defense
+        41: 1000, 42: 900, 43: 800, 44: 700, 45: 100,
+    }
+    positions = {
+        11: "F", 12: "F", 13: "F", 14: "F", 15: "F", 16: "F", 17: "F",
+        21: "D", 22: "D", 23: "D", 24: "D", 25: "D",
+        31: "F", 32: "F", 33: "F", 34: "F", 35: "F", 36: "F", 37: "F",
+        41: "D", 42: "D", 43: "D", 44: "D", 45: "D",
+    }
+    teams = {
+        11: "EDM", 12: "EDM", 13: "EDM", 14: "EDM", 15: "EDM", 16: "EDM", 17: "EDM",
+        21: "EDM", 22: "EDM", 23: "EDM", 24: "EDM", 25: "EDM",
+        31: "FLA", 32: "FLA", 33: "FLA", 34: "FLA", 35: "FLA", 36: "FLA", 37: "FLA",
+        41: "FLA", 42: "FLA", 43: "FLA", 44: "FLA", 45: "FLA",
+    }
+
+    top = build_top_competition(toi, positions, teams)
+
+    assert top["EDM"]["top_fwd"] == {11, 12, 13, 14, 15, 16}  # not 17
+    assert top["EDM"]["top_def"] == {21, 22, 23, 24}           # not 25
+    assert top["FLA"]["top_fwd"] == {31, 32, 33, 34, 35, 36}  # not 37
+    assert top["FLA"]["top_def"] == {41, 42, 43, 44}           # not 45
+
+
+def test_build_top_competition_fewer_than_threshold():
+    """If a team has fewer players than the threshold, all qualify."""
+    toi = {1: 500, 2: 400, 3: 300}
+    positions = {1: "F", 2: "F", 3: "F"}
+    teams = {1: "EDM", 2: "EDM", 3: "EDM"}
+
+    top = build_top_competition(toi, positions, teams)
+
+    assert top["EDM"]["top_fwd"] == {1, 2, 3}
+    assert top["EDM"]["top_def"] == set()
+
+
+from compute_competition import score_game_pct
+
+
+def test_score_game_pct_single_row():
+    rows = [{"situationCode": "1551",
+             "awaySkaters": "1|2|3|4|5",
+             "homeSkaters": "6|7|20|9|10"}]
+    positions = {1: "F", 2: "F", 3: "F", 4: "D", 5: "D",
+                 6: "F", 7: "F", 20: "F", 9: "D", 10: "D",
+                 50: "F", 51: "F", 52: "F", 53: "F"}
+    teams = {1: "EDM", 2: "EDM", 3: "EDM", 4: "EDM", 5: "EDM",
+             6: "FLA", 7: "FLA", 20: "FLA", 9: "FLA", 10: "FLA",
+             50: "FLA", 51: "FLA", 52: "FLA", 53: "FLA"}
+    # FLA has 7 forwards: {6,7,50,51,52,53,20}. Top-6 by TOI = {6,7,50,51,52,53}; 20 (TOI=100) is excluded.
+    # EDM top_fwd = {1,2,3} (only 3 EDM fwds, all qualify), EDM top_def = {4,5}
+    toi = {1: 1000, 2: 900, 3: 800, 4: 700, 5: 600,
+           6: 1000, 7: 900, 20: 100, 9: 800, 10: 700,
+           50: 800, 51: 750, 52: 700, 53: 650}
+    top_comp = build_top_competition(toi, positions, teams)
+
+    result = score_game_pct(rows, positions, teams, top_comp)
+
+    # Away player 1: opp fwds on ice = [6, 7, 20]; in top_fwd: 6 and 7 → 2/3
+    assert abs(result[1]["pct_vs_top_fwd"] - 2/3) < 0.001
+    assert abs(result[1]["pct_vs_top_def"] - 1.0) < 0.001
+
+    # Home player 6: opp fwds [1,2,3], all in EDM top_fwd (EDM has only 3 fwds) → 1.0
+    assert abs(result[6]["pct_vs_top_fwd"] - 1.0) < 0.001
+    assert abs(result[6]["pct_vs_top_def"] - 1.0) < 0.001
+
+
+def test_score_game_pct_skips_non_5v5():
+    rows = [
+        {"situationCode": "1441", "awaySkaters": "1|2|3|4",   "homeSkaters": "6|7|8|9"},
+        {"situationCode": "1551", "awaySkaters": "1|2|3|4|5", "homeSkaters": "6|7|20|9|10"},
+    ]
+    positions = {1: "F", 2: "F", 3: "F", 4: "D", 5: "D",
+                 6: "F", 7: "F", 20: "F", 9: "D", 10: "D",
+                 8: "F",
+                 50: "F", 51: "F", 52: "F", 53: "F"}
+    teams = {1: "EDM", 2: "EDM", 3: "EDM", 4: "EDM", 5: "EDM",
+             6: "FLA", 7: "FLA", 20: "FLA", 8: "FLA", 9: "FLA", 10: "FLA",
+             50: "FLA", 51: "FLA", 52: "FLA", 53: "FLA"}
+    toi = {1: 1000, 2: 900, 3: 800, 4: 700, 5: 600,
+           6: 1000, 7: 900, 20: 100, 9: 800, 10: 700,
+           50: 800, 51: 750, 52: 700, 53: 650}
+    top_comp = build_top_competition(toi, positions, teams)
+
+    result = score_game_pct(rows, positions, teams, top_comp)
+
+    # Player 5 only appears in the 1551 row — must be in result
+    assert 5 in result
+    # Player 1 appears in both rows but only 1551 is scored — opp fwds [6,7,20], 2 of 3 in top_fwd
+    assert abs(result[1]["pct_vs_top_fwd"] - 2/3) < 0.001
