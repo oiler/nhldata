@@ -9,7 +9,7 @@ dash.register_page(__name__, path_template="/game/<game_id>", name="Game")
 
 _META_SQL = """
 SELECT gameId, gameDate, awayTeam_abbrev, homeTeam_abbrev,
-       awayTeam_score, homeTeam_score, periodDescriptor_number
+       awayTeam_score, homeTeam_score
 FROM games WHERE gameId = ?
 """
 
@@ -102,7 +102,7 @@ def _make_player_table(df):
 
 
 def layout(game_id=None):
-    if not game_id:
+    if game_id is None:
         return html.Div("No game specified.")
 
     try:
@@ -135,7 +135,10 @@ def layout(game_id=None):
         heavy[row["team"]] = row
 
     def _h(team, col):
-        val = heavy.get(team, {}).get(col, None)
+        series = heavy.get(team)
+        if series is None:
+            return "\u2014"
+        val = series[col] if col in series.index else None
         return round(float(val), 4) if val is not None else "\u2014"
 
     th_style = {
