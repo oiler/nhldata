@@ -26,6 +26,7 @@ app.layout = html.Div([
         html.Div([
             dcc.Link(page["name"], href=page["relative_path"])
             for page in dash.page_registry.values()
+            if page["path_template"] is None
         ], className="app-nav"),
     ], className="app-header"),
 
