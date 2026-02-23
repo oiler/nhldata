@@ -31,3 +31,17 @@ def test_pages_registered():
     paths = [p["relative_path"] for p in dash.page_registry.values()]
     assert "/" in paths, "Home page not registered"
     assert "/games" in paths, "Games page not registered"
+
+
+def test_league_db_exists():
+    """league.db has been built and contains the three expected tables."""
+    from pathlib import Path
+    db_path = Path(__file__).resolve().parents[3] / "data" / "2025" / "generated" / "browser" / "league.db"
+    assert db_path.exists(), f"league.db not found at {db_path}. Run build_league_db.py first."
+    import sqlite3
+    conn = sqlite3.connect(str(db_path))
+    tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
+    conn.close()
+    assert "competition" in tables
+    assert "players" in tables
+    assert "games" in tables
