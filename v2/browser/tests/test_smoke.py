@@ -45,3 +45,11 @@ def test_league_db_exists():
     assert "competition" in tables
     assert "players" in tables
     assert "games" in tables
+
+
+def test_league_query_returns_dataframe():
+    """league_query() always returns a DataFrame, even for missing DB."""
+    import pandas as pd
+    from db import league_query
+    result = league_query("SELECT 1", season="2099")  # nonexistent season
+    assert isinstance(result, pd.DataFrame)

@@ -32,3 +32,31 @@ def available_teams(season: str) -> list[str]:
     if df.empty:
         return []
     return df["opponent"].tolist()
+
+
+_LEAGUE_DB_PATHS = {
+    "2025": _PROJECT_ROOT / "data" / "2025" / "generated" / "browser" / "league.db",
+}
+
+
+def league_query(sql: str, params=(), season: str = "2025") -> "pd.DataFrame":
+    """Run parameterized sql against the league DB. Returns empty DataFrame if DB is missing.
+
+    IMPORTANT: Only pass string literals as sql. Never interpolate user input.
+    """
+    db_path = _LEAGUE_DB_PATHS.get(season)
+    if db_path is None or not db_path.exists():
+        return pd.DataFrame()
+    conn = sqlite3.connect(str(db_path))
+    try:
+        return pd.read_sql_query(sql, conn, params=list(params))
+    finally:
+        conn.close()
+
+
+def all_teams(season: str = "2025") -> list[str]:
+    """Return sorted list of all team abbreviations present in the competition table."""
+    df = league_query("SELECT DISTINCT team FROM competition ORDER BY team", season=season)
+    if df.empty:
+        return []
+    return df["team"].tolist()
