@@ -1,13 +1,13 @@
 # v2/browser/app.py
 import dash
-from dash import Dash, html, dcc, callback, Input, Output
+from dash import html, dcc, callback, Input, Output
 import dash_bootstrap_components as dbc
 from db import available_teams
 
 SEASONS = ["2024", "2025"]
 DEFAULT_SEASON = "2025"
 
-app = Dash(
+app = dash.Dash(
     __name__,
     use_pages=True,
     suppress_callback_exceptions=True,

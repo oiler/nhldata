@@ -112,7 +112,7 @@ def update_games_table(page_current, page_size, sort_by, filter_query, season, t
     if filter_query:
         for expr in filter_query.split(" && "):
             col_name, operator, value = _parse_filter(expr)
-            if col_name is None:
+            if col_name is None or col_name not in dff.columns:
                 continue
             col = dff[col_name].astype(str) if operator in ("contains", "datestartswith") else dff[col_name]
             if operator == "contains":

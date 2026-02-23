@@ -12,7 +12,10 @@ _DB_PATHS = {
 
 
 def query(season: str, sql: str) -> pd.DataFrame:
-    """Run sql against the season DB. Returns empty DataFrame if DB is missing."""
+    """Run sql against the season DB. Returns empty DataFrame if DB is missing.
+
+    IMPORTANT: Only pass string literals as sql. Never interpolate user input.
+    """
     db_path = _DB_PATHS.get(season)
     if db_path is None or not db_path.exists():
         return pd.DataFrame()
