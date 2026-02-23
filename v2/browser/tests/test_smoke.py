@@ -69,3 +69,11 @@ def test_team_page_registered():
     import app as _  # noqa: F401
     templates = [p.get("path_template", "") for p in dash.page_registry.values()]
     assert "/team/<abbrev>" in templates, "Team page not registered"
+
+
+def test_game_page_registered():
+    """Game page is registered with path template /game/<game_id>."""
+    import dash
+    import app as _  # noqa: F401
+    templates = [p.get("path_template", "") for p in dash.page_registry.values()]
+    assert "/game/<game_id>" in templates, "Game page not registered"
