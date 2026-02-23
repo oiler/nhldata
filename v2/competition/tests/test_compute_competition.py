@@ -160,7 +160,9 @@ def test_run_game_produces_output():
 
     # Check required columns
     required = {"gameId", "playerId", "team", "position", "toi_seconds",
-                "comp_fwd", "comp_def", "pct_vs_top_fwd", "pct_vs_top_def"}
+                "comp_fwd", "comp_def", "pct_vs_top_fwd", "pct_vs_top_def",
+                "height_in", "weight_lbs", "heaviness",
+                "weighted_forward_heaviness", "weighted_defense_heaviness", "weighted_team_heaviness"}
     assert required.issubset(set(rows[0].keys())), f"Missing columns: {required - set(rows[0].keys())}"
 
     # comp_fwd and comp_def must be non-negative (0.0 is valid for edge cases)
@@ -182,6 +184,22 @@ def test_run_game_produces_output():
     # At least one player must have a non-zero pct (catches silent all-zero regressions)
     assert any(float(row["pct_vs_top_fwd"]) > 0.0 for row in rows), \
         "Expected at least one player with non-zero pct_vs_top_fwd"
+
+    # heaviness columns must be >= 0.0; at least one player should have non-zero values
+    for row in rows:
+        assert float(row["heaviness"]) >= 0.0, \
+            f"Player {row['playerId']} has negative heaviness"
+        assert float(row["weighted_forward_heaviness"]) >= 0.0, \
+            f"Player {row['playerId']} has negative weighted_forward_heaviness"
+        assert float(row["weighted_defense_heaviness"]) >= 0.0, \
+            f"Player {row['playerId']} has negative weighted_defense_heaviness"
+        assert float(row["weighted_team_heaviness"]) >= 0.0, \
+            f"Player {row['playerId']} has negative weighted_team_heaviness"
+
+    assert any(float(row["heaviness"]) > 0.0 for row in rows), \
+        "Expected at least one player with non-zero heaviness"
+    assert any(float(row["weighted_team_heaviness"]) > 0.0 for row in rows), \
+        "Expected at least one player with non-zero weighted_team_heaviness"
 
 
 from compute_competition import build_top_competition
@@ -286,3 +304,97 @@ def test_score_game_pct_skips_non_5v5():
     assert 5 in result
     # Player 1 appears in both rows but only 1551 is scored — opp fwds [6,7,20], 2 of 3 in top_fwd
     assert abs(result[1]["pct_vs_top_fwd"] - 2/3) < 0.001
+
+
+from compute_competition import load_player_physicals, compute_heaviness
+
+
+def test_load_player_physicals_returns_height_weight():
+    """Load height/weight for a known player from real data files.
+
+    NOTE: Must be run from project root (data/ is relative to cwd).
+    Uses Connor McDavid (8478402) as a known stable test case.
+    """
+    physicals = load_player_physicals([8478402], "2025")
+    assert 8478402 in physicals
+    assert physicals[8478402]["height_in"] > 0
+    assert physicals[8478402]["weight_lbs"] > 0
+
+
+def test_load_player_physicals_missing_player_skipped():
+    """A player ID with no file is silently skipped, not an error."""
+    physicals = load_player_physicals([999999999], "2025")
+    assert 999999999 not in physicals
+
+
+def test_compute_heaviness_200lbs_72in():
+    """200 / 72 = 2.7778"""
+    assert abs(compute_heaviness(72, 200) - 200 / 72) < 0.0001
+
+
+def test_compute_heaviness_zero_height_returns_zero():
+    """Guard against division by zero when height is missing."""
+    assert compute_heaviness(0, 200) == 0.0
+
+
+from compute_competition import compute_team_heaviness
+
+
+def test_compute_team_heaviness_toi_weighted_average():
+    """Team heaviness is the TOI-weighted mean split by position."""
+    toi       = {1: 600, 2: 300, 3: 500}
+    positions = {1: "F", 2: "F", 3: "D"}
+    teams     = {1: "EDM", 2: "EDM", 3: "EDM"}
+    physicals = {
+        1: {"height_in": 72, "weight_lbs": 200},
+        2: {"height_in": 74, "weight_lbs": 220},
+        3: {"height_in": 76, "weight_lbs": 230},
+    }
+    result = compute_team_heaviness(toi, positions, teams, physicals)
+    h1, h2, h3 = 200 / 72, 220 / 74, 230 / 76
+    expected_fwd = (h1 * 600 + h2 * 300) / (600 + 300)
+    expected_def = h3  # only one D
+    expected_all = (h1 * 600 + h2 * 300 + h3 * 500) / (600 + 300 + 500)
+    assert abs(result["EDM"]["fwd"] - expected_fwd) < 0.0001
+    assert abs(result["EDM"]["def"] - expected_def) < 0.0001
+    assert abs(result["EDM"]["all"] - expected_all) < 0.0001
+
+
+def test_compute_team_heaviness_skips_missing_physicals():
+    """Players with no physicals entry are excluded from the average."""
+    toi       = {1: 600, 2: 300}
+    positions = {1: "F", 2: "F"}
+    teams     = {1: "EDM", 2: "EDM"}
+    physicals = {1: {"height_in": 72, "weight_lbs": 200}}  # player 2 absent
+    result    = compute_team_heaviness(toi, positions, teams, physicals)
+    assert abs(result["EDM"]["fwd"] - 200 / 72) < 0.0001
+    assert abs(result["EDM"]["all"] - 200 / 72) < 0.0001
+
+
+def test_compute_team_heaviness_skips_goalies():
+    """Goalies are excluded even if they have physicals."""
+    toi       = {1: 600, 99: 1200}
+    positions = {1: "F", 99: "G"}
+    teams     = {1: "EDM", 99: "EDM"}
+    physicals = {
+        1:  {"height_in": 72, "weight_lbs": 200},
+        99: {"height_in": 75, "weight_lbs": 215},
+    }
+    result = compute_team_heaviness(toi, positions, teams, physicals)
+    assert abs(result["EDM"]["fwd"] - 200 / 72) < 0.0001
+    assert result["EDM"]["def"] == 0.0  # no D skaters
+    assert abs(result["EDM"]["all"] - 200 / 72) < 0.0001
+
+
+def test_compute_team_heaviness_two_teams():
+    """Produces separate entries for each team."""
+    toi       = {1: 600, 2: 600}
+    positions = {1: "F", 2: "F"}
+    teams     = {1: "EDM", 2: "CGY"}
+    physicals = {
+        1: {"height_in": 72, "weight_lbs": 200},
+        2: {"height_in": 76, "weight_lbs": 240},
+    }
+    result = compute_team_heaviness(toi, positions, teams, physicals)
+    assert abs(result["EDM"]["fwd"] - 200 / 72) < 0.0001
+    assert abs(result["CGY"]["fwd"] - 240 / 76) < 0.0001

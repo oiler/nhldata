@@ -238,6 +238,96 @@ def load_plays(season: str, game_id: str) -> dict:
         return json.load(f)
 
 
+def load_player_physicals(
+    player_ids: List[int],
+    season: str,
+) -> Dict[int, dict]:
+    """
+    Load height and weight from per-player JSON files.
+
+    Returns:
+        {playerId: {"height_in": int, "weight_lbs": int}}
+        Players with no file are absent from the result.
+    """
+    physicals: Dict[int, dict] = {}
+    for pid in player_ids:
+        path = DATA_DIR / season / "players" / f"{pid}.json"
+        try:
+            with open(path) as f:
+                data = json.load(f)
+            physicals[pid] = {
+                "height_in":  data.get("heightInInches", 0),
+                "weight_lbs": data.get("weightInPounds", 0),
+            }
+        except FileNotFoundError:
+            pass
+    return physicals
+
+
+def compute_heaviness(height_in: int, weight_lbs: int) -> float:
+    """
+    Compute heaviness score: weight_lbs / height_in.
+
+    Returns 0.0 if height is zero (missing data guard).
+    """
+    if height_in == 0:
+        return 0.0
+    return weight_lbs / height_in
+
+
+def compute_team_heaviness(
+    toi: Dict[int, int],
+    positions: Dict[int, str],
+    teams: Dict[int, str],
+    physicals: Dict[int, dict],
+) -> Dict[str, Dict[str, float]]:
+    """
+    Compute TOI-weighted mean heaviness per team, split by position.
+
+    Players absent from physicals or with zero heaviness are excluded.
+    Goalies are excluded.
+
+    Returns:
+        {teamAbbrev: {
+            "fwd": weighted_forward_heaviness,
+            "def": weighted_defense_heaviness,
+            "all": weighted_team_heaviness,
+        }}
+    """
+    # Accumulators: team -> {fwd/def/all -> [weighted_sum, toi_sum]}
+    acc: Dict[str, Dict[str, List[float]]] = {}
+
+    for pid, seconds in toi.items():
+        pos = positions.get(pid, "F")
+        if pos == "G":
+            continue
+        if pid not in physicals:
+            continue
+        h = physicals[pid]["height_in"]
+        w = physicals[pid]["weight_lbs"]
+        score = compute_heaviness(h, w)
+        if score == 0.0:
+            continue
+        team = teams.get(pid, "")
+        if not team:
+            continue
+        if team not in acc:
+            acc[team] = {"fwd": [0.0, 0], "def": [0.0, 0], "all": [0.0, 0]}
+        bucket = "fwd" if pos == "F" else "def"
+        acc[team][bucket][0] += score * seconds
+        acc[team][bucket][1] += seconds
+        acc[team]["all"][0]  += score * seconds
+        acc[team]["all"][1]  += seconds
+
+    result: Dict[str, Dict[str, float]] = {}
+    for team, buckets in acc.items():
+        result[team] = {
+            key: (vals[0] / vals[1] if vals[1] > 0 else 0.0)
+            for key, vals in buckets.items()
+        }
+    return result
+
+
 def write_output(game_id: str, season: str, scores: Dict[int, dict],
                  toi: Dict[int, int], positions: Dict[int, str],
                  teams: Dict[int, str]) -> Path:
@@ -258,6 +348,12 @@ def write_output(game_id: str, season: str, scores: Dict[int, dict],
             "comp_def":         round(data["comp_def"], 2),
             "pct_vs_top_fwd":   round(data.get("pct_vs_top_fwd", 0.0), 4),
             "pct_vs_top_def":   round(data.get("pct_vs_top_def", 0.0), 4),
+            "height_in":                  data.get("height_in", 0),
+            "weight_lbs":                 data.get("weight_lbs", 0),
+            "heaviness":                  round(data.get("heaviness", 0.0), 4),
+            "weighted_forward_heaviness": round(data.get("weighted_forward_heaviness", 0.0), 4),
+            "weighted_defense_heaviness": round(data.get("weighted_defense_heaviness", 0.0), 4),
+            "weighted_team_heaviness":    round(data.get("weighted_team_heaviness", 0.0), 4),
         })
 
     rows.sort(key=lambda r: r["toi_seconds"], reverse=True)
@@ -265,6 +361,8 @@ def write_output(game_id: str, season: str, scores: Dict[int, dict],
     fieldnames = [
         "gameId", "playerId", "team", "position", "toi_seconds",
         "comp_fwd", "comp_def", "pct_vs_top_fwd", "pct_vs_top_def",
+        "height_in", "weight_lbs", "heaviness",
+        "weighted_forward_heaviness", "weighted_defense_heaviness", "weighted_team_heaviness",
     ]
     with open(out_path, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -291,6 +389,22 @@ def run_game(game_number: int, season: str) -> Path:
     for pid in scores:
         if pid in pct_scores:  # goalies and edge-case players may be absent from pct_scores
             scores[pid].update(pct_scores[pid])
+
+    physicals      = load_player_physicals(list(toi.keys()), season)
+    team_heaviness = compute_team_heaviness(toi, positions, teams, physicals)
+
+    for pid in scores:
+        ph    = physicals.get(pid, {})
+        h_in  = ph.get("height_in", 0)
+        w_lbs = ph.get("weight_lbs", 0)
+        team  = teams.get(pid, "")
+        th = team_heaviness.get(team, {"fwd": 0.0, "def": 0.0, "all": 0.0})
+        scores[pid]["height_in"]                 = h_in
+        scores[pid]["weight_lbs"]                = w_lbs
+        scores[pid]["heaviness"]                 = compute_heaviness(h_in, w_lbs)
+        scores[pid]["weighted_forward_heaviness"] = th["fwd"]
+        scores[pid]["weighted_defense_heaviness"] = th["def"]
+        scores[pid]["weighted_team_heaviness"]    = th["all"]
 
     return write_output(game_id, season, scores, toi, positions, teams)
 

@@ -9,6 +9,7 @@ Usage:
     python v2/players/get_players.py <season>
     python v2/players/get_players.py <team_abbrev> <season>
     python v2/players/get_players.py <player_id> <season>
+    python v2/players/get_players.py backfill <season>
 
 Examples:
     python v2/players/get_players.py 2025
@@ -19,6 +20,10 @@ Examples:
 
     python v2/players/get_players.py 8478402 2025
         -> Downloads Connor McDavid's data only
+
+    python v2/players/get_players.py backfill 2025
+        -> Fetches any players found in competition data who are missing
+           a raw JSON file in data/2025/players/
 """
 
 import sys
@@ -357,6 +362,30 @@ def resolve_player_ids(arg: str, season_id: str) -> Tuple[List[int], str]:
     sys.exit(1)
 
 
+def find_missing_player_ids(season: str) -> List[int]:
+    """
+    Scan competition CSVs to find player IDs with no raw JSON file.
+
+    Returns a sorted list of player IDs that appear in
+    data/{season}/generated/competition/ but have no corresponding
+    data/{season}/players/{pid}.json.
+    """
+    import glob
+    comp_dir = Path("data") / season / "generated" / "competition"
+    players_dir = Path("data") / season / "players"
+
+    seen: Set[int] = set()
+    for path in glob.glob(str(comp_dir / "*.csv")):
+        with open(path, newline="") as f:
+            for row in csv.DictReader(f):
+                pid = row.get("playerId")
+                if pid:
+                    seen.add(int(pid))
+
+    missing = sorted(pid for pid in seen if not (players_dir / f"{pid}.json").exists())
+    return missing
+
+
 def main():
     """Main entry point."""
     if len(sys.argv) == 2:
@@ -364,10 +393,9 @@ def main():
         season = sys.argv[1]
         mode = "all"
     elif len(sys.argv) == 3:
-        # Team or player mode
         first_arg = sys.argv[1]
         season = sys.argv[2]
-        mode = "targeted"
+        mode = "backfill" if first_arg.lower() == "backfill" else "targeted"
     else:
         print(__doc__)
         sys.exit(1)
@@ -394,6 +422,18 @@ def main():
         player_ids = sorted(all_ids)
         desc = "all active players"
         print(f"\nTotal unique players: {len(player_ids)}")
+    elif mode == "backfill":
+        print(f"\nNHL Player Data Fetcher — Backfill Mode")
+        print(f"Season: {season} ({season_id})")
+        print(f"Scanning competition data for missing player files...\n")
+
+        player_ids = find_missing_player_ids(season)
+        if not player_ids:
+            print("All players already have data files. Nothing to fetch.")
+            sys.exit(0)
+
+        print(f"Found {len(player_ids)} players missing a data file.")
+        desc = "missing players (backfill)"
     else:
         print(f"\nNHL Player Data Fetcher")
         print(f"Season: {season} ({season_id})")
