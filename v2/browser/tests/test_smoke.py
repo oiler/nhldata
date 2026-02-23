@@ -53,3 +53,11 @@ def test_league_query_returns_dataframe():
     from db import league_query
     result = league_query("SELECT 1", season="2099")  # nonexistent season
     assert isinstance(result, pd.DataFrame)
+
+
+def test_skaters_page_registered():
+    """Skaters page is registered at /skaters."""
+    import dash
+    import app as _  # noqa: F401
+    paths = [p["relative_path"] for p in dash.page_registry.values()]
+    assert "/skaters" in paths, "Skaters page not registered"
