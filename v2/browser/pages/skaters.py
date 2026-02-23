@@ -3,7 +3,6 @@ from urllib.parse import parse_qs, urlencode
 
 import dash
 from dash import Input, Output, callback, dcc, dash_table, html
-from dash.exceptions import PreventUpdate
 
 from db import league_query
 from utils import seconds_to_mmss
