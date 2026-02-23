@@ -39,6 +39,9 @@ def build_competition_table(conn):
 
 def build_players_table(conn):
     """Load players CSV into the players table (key columns only)."""
+    if not os.path.exists(PLAYERS_CSV):
+        print(f"  players: SKIPPED (file not found: {PLAYERS_CSV})")
+        return
     keep = [
         "playerId", "firstName", "lastName",
         "currentTeamAbbrev", "position",
@@ -51,6 +54,9 @@ def build_players_table(conn):
 
 def build_games_table(conn):
     """Load flat boxscores CSV into the games table (key columns only)."""
+    if not os.path.exists(FLATBOXSCORES_CSV):
+        print(f"  games: SKIPPED (file not found: {FLATBOXSCORES_CSV})")
+        return
     keep = [
         "id", "gameDate",
         "awayTeam_abbrev", "homeTeam_abbrev",
@@ -69,11 +75,13 @@ def main():
         os.remove(OUTPUT_DB)
         print(f"Removed existing {OUTPUT_DB}")
     conn = sqlite3.connect(OUTPUT_DB)
-    print(f"Building {OUTPUT_DB} ...\n")
-    build_competition_table(conn)
-    build_players_table(conn)
-    build_games_table(conn)
-    conn.close()
+    try:
+        print(f"Building {OUTPUT_DB} ...\n")
+        build_competition_table(conn)
+        build_players_table(conn)
+        build_games_table(conn)
+    finally:
+        conn.close()
     size_mb = os.path.getsize(OUTPUT_DB) / (1024 * 1024)
     print(f"\nDone. Database: {OUTPUT_DB} ({size_mb:.1f} MB)")
 
