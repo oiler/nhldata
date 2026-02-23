@@ -1,5 +1,6 @@
 # v2/browser/pages/team.py
 import dash
+import pandas as pd
 from dash import html, dash_table
 
 from db import league_query
@@ -100,11 +101,14 @@ def layout(abbrev=None):
 
     # Build heaviness lookup: {game_id: {team: value}}
     game_ids = games_df["gameId"].tolist()
-    placeholders = ",".join("?" * len(game_ids))
-    heaviness_df = league_query(
-        _HEAVINESS_SQL.format(placeholders=placeholders),
-        params=tuple(game_ids),
-    )
+    if game_ids:
+        placeholders = ",".join("?" * len(game_ids))
+        heaviness_df = league_query(
+            _HEAVINESS_SQL.format(placeholders=placeholders),
+            params=tuple(game_ids),
+        )
+    else:
+        heaviness_df = pd.DataFrame()
     heaviness_map = {}
     for _, row in heaviness_df.iterrows():
         gid = row["gameId"]
@@ -117,12 +121,12 @@ def layout(abbrev=None):
     for _, row in games_df.iterrows():
         is_home   = row["homeTeam_abbrev"] == abbrev
         opponent  = row["awayTeam_abbrev"] if is_home else row["homeTeam_abbrev"]
-        own_score = int(row["homeTeam_score"]) if is_home else int(row["awayTeam_score"])
-        opp_score = int(row["awayTeam_score"]) if is_home else int(row["homeTeam_score"])
+        own_score = int(row["homeTeam_score"] or 0) if is_home else int(row["awayTeam_score"] or 0)
+        opp_score = int(row["awayTeam_score"] or 0) if is_home else int(row["homeTeam_score"] or 0)
 
         if own_score > opp_score:
             result = "W"
-        elif int(row["periodDescriptor_number"]) > 3:
+        elif int(row["periodDescriptor_number"] or 0) > 3:
             result = "OTL"
         else:
             result = "L"
