@@ -1,6 +1,7 @@
 # v2/browser/pages/game.py
 import dash
 from dash import html, dash_table
+from dash.dash_table import FormatTemplate
 
 from db import league_query
 from utils import seconds_to_mmss
@@ -41,42 +42,30 @@ ORDER BY c.toi_seconds DESC
 """
 
 
-def _make_player_table(df):
-    """Build a DataTable with F/D group headers, sorted by TOI desc within each group."""
+def _make_position_table(df):
+    """Build a single sortable DataTable for one position group."""
     df = df.copy().sort_values("toi_seconds", ascending=False)
     df["toi_display"]      = df["toi_seconds"].apply(seconds_to_mmss)
     df["comp_fwd_display"] = df["comp_fwd"].apply(seconds_to_mmss)
     df["comp_def_display"] = df["comp_def"].apply(seconds_to_mmss)
-    df["pct_vs_top_fwd"]   = df["pct_vs_top_fwd"].round(4)
-    df["pct_vs_top_def"]   = df["pct_vs_top_def"].round(4)
 
     columns = [
         {"name": "Player",       "id": "playerName"},
         {"name": "5v5 TOI",      "id": "toi_display"},
         {"name": "OPP F TOI",    "id": "comp_fwd_display"},
         {"name": "OPP D TOI",    "id": "comp_def_display"},
-        {"name": "vs Top Fwd %", "id": "pct_vs_top_fwd", "type": "numeric"},
-        {"name": "vs Top Def %", "id": "pct_vs_top_def", "type": "numeric"},
+        {"name": "vs Top Fwd %", "id": "pct_vs_top_fwd", "type": "numeric", "format": FormatTemplate.percentage(2)},
+        {"name": "vs Top Def %", "id": "pct_vs_top_def", "type": "numeric", "format": FormatTemplate.percentage(2)},
     ]
     display_cols = [
         "playerName", "toi_display", "comp_fwd_display",
         "comp_def_display", "pct_vs_top_fwd", "pct_vs_top_def",
     ]
 
-    # Build rows with position group separators
-    rows = []
-    header_indices = []
-    for pos, label in [("F", "Forwards"), ("D", "Defensemen")]:
-        pos_df = df[df["position"] == pos]
-        if pos_df.empty:
-            continue
-        header_indices.append(len(rows))
-        rows.append({col["id"]: (label if col["id"] == "playerName" else "") for col in columns})
-        rows.extend(pos_df[display_cols].to_dict("records"))
-
     return dash_table.DataTable(
         columns=columns,
-        data=rows,
+        data=df[display_cols].to_dict("records"),
+        sort_action="native",
         style_table={"overflowX": "auto"},
         style_header={
             "backgroundColor": "#f8f9fa", "fontWeight": "bold",
@@ -88,17 +77,20 @@ def _make_player_table(df):
         },
         style_data_conditional=[
             {"if": {"row_index": "odd"}, "backgroundColor": "#f8f9fa"},
-            *[
-                {
-                    "if": {"row_index": i},
-                    "backgroundColor": "#e9ecef",
-                    "fontWeight": "bold",
-                    "color": "#495057",
-                }
-                for i in header_indices
-            ],
         ],
     )
+
+
+def _make_player_tables(df):
+    """Return an html.Div with separate sortable Forwards and Defensemen tables."""
+    sections = []
+    for pos, label in [("F", "Forwards"), ("D", "Defensemen")]:
+        pos_df = df[df["position"] == pos]
+        if pos_df.empty:
+            continue
+        sections.append(html.H5(label, style={"marginTop": "1rem", "marginBottom": "0.25rem"}))
+        sections.append(_make_position_table(pos_df))
+    return html.Div(sections) if sections else html.Div("No player data.")
 
 
 def layout(game_id=None):
@@ -177,8 +169,8 @@ def layout(game_id=None):
     else:
         away_df = players_df[players_df["team"] == away]
         home_df = players_df[players_df["team"] == home]
-        away_table = _make_player_table(away_df) if not away_df.empty else html.Div("No player data.")
-        home_table = _make_player_table(home_df) if not home_df.empty else html.Div("No player data.")
+        away_table = _make_player_tables(away_df) if not away_df.empty else html.Div("No player data.")
+        home_table = _make_player_tables(home_df) if not home_df.empty else html.Div("No player data.")
 
     return html.Div([
         html.H2(f"Game {gid}"),

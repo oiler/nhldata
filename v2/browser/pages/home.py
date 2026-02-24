@@ -10,6 +10,7 @@ layout = html.Div([
     html.Ul([
         html.Li(dcc.Link("Skaters Leaderboard", href="/skaters")),
         html.Li(dcc.Link("Games", href="/games")),
+        html.Li(dcc.Link("Teams", href="/teams")),
     ], style={"lineHeight": "2", "marginBottom": "1rem"}),
     html.P("Navigate to a specific team or game:"),
     html.Ul([

@@ -2,6 +2,7 @@
 import dash
 import pandas as pd
 from dash import html, dash_table
+from dash.dash_table import FormatTemplate
 
 from db import league_query
 from utils import seconds_to_mmss
@@ -12,7 +13,10 @@ _PLAYER_SQL = """
 SELECT
     c.playerId,
     COALESCE(p.firstName || ' ' || p.lastName, 'Player ' || c.playerId) AS playerName,
-    SUM(c.toi_seconds)                                                   AS total_toi,
+    c.position,
+    COUNT(DISTINCT c.gameId)                                             AS games_played,
+    CAST(SUM(c.toi_seconds) AS REAL)
+        / NULLIF(COUNT(DISTINCT c.gameId), 0)                           AS toi_per_game,
     MAX(c.heaviness)                                                     AS heaviness,
     CAST(SUM(c.pct_vs_top_fwd * c.toi_seconds) AS REAL)
         / NULLIF(SUM(c.toi_seconds), 0)                                  AS avg_pct_vs_top_fwd,
@@ -26,7 +30,7 @@ FROM competition c
 LEFT JOIN players p ON c.playerId = p.playerId
 WHERE c.position IN ('F', 'D') AND c.team = ?
 GROUP BY c.playerId
-ORDER BY total_toi DESC
+ORDER BY toi_per_game DESC
 """
 
 _GAMES_SQL = """
@@ -45,26 +49,27 @@ GROUP BY gameId, team
 """
 
 
-def _make_player_table(df):
+def _make_position_table(df):
+    """Build a single sortable DataTable for one position group."""
     df = df.copy()
-    df["toi_display"]        = df["total_toi"].apply(seconds_to_mmss)
-    df["comp_fwd_display"]   = df["avg_comp_fwd"].apply(seconds_to_mmss)
-    df["comp_def_display"]   = df["avg_comp_def"].apply(seconds_to_mmss)
-    df["heaviness"]          = df["heaviness"].round(4)
-    df["avg_pct_vs_top_fwd"] = df["avg_pct_vs_top_fwd"].round(4)
-    df["avg_pct_vs_top_def"] = df["avg_pct_vs_top_def"].round(4)
+    df["player_link"]      = df.apply(lambda r: f"[{r['playerName']}](/player/{r['playerId']})", axis=1)
+    df["toi_display"]      = df["toi_per_game"].apply(seconds_to_mmss)
+    df["comp_fwd_display"] = df["avg_comp_fwd"].apply(seconds_to_mmss)
+    df["comp_def_display"] = df["avg_comp_def"].apply(seconds_to_mmss)
+    df["heaviness"]        = df["heaviness"].round(4)
 
     columns = [
-        {"name": "Player",        "id": "playerName"},
-        {"name": "5v5 TOI",       "id": "toi_display"},
-        {"name": "Heaviness",     "id": "heaviness",           "type": "numeric"},
-        {"name": "vs Top Fwd %",  "id": "avg_pct_vs_top_fwd",  "type": "numeric"},
-        {"name": "vs Top Def %",  "id": "avg_pct_vs_top_def",  "type": "numeric"},
-        {"name": "OPP F TOI",     "id": "comp_fwd_display"},
-        {"name": "OPP D TOI",     "id": "comp_def_display"},
+        {"name": "Player",       "id": "player_link",        "presentation": "markdown"},
+        {"name": "GP",           "id": "games_played",       "type": "numeric"},
+        {"name": "5v5 TOI/GP",   "id": "toi_display"},
+        {"name": "Heaviness",    "id": "heaviness",          "type": "numeric"},
+        {"name": "vs Top Fwd %", "id": "avg_pct_vs_top_fwd", "type": "numeric", "format": FormatTemplate.percentage(2)},
+        {"name": "vs Top Def %", "id": "avg_pct_vs_top_def", "type": "numeric", "format": FormatTemplate.percentage(2)},
+        {"name": "OPP F TOI",    "id": "comp_fwd_display"},
+        {"name": "OPP D TOI",    "id": "comp_def_display"},
     ]
     display_cols = [
-        "playerName", "toi_display", "heaviness",
+        "player_link", "games_played", "toi_display", "heaviness",
         "avg_pct_vs_top_fwd", "avg_pct_vs_top_def",
         "comp_fwd_display", "comp_def_display",
     ]
@@ -72,6 +77,8 @@ def _make_player_table(df):
     return dash_table.DataTable(
         columns=columns,
         data=df[display_cols].to_dict("records"),
+        markdown_options={"link_target": "_self"},
+        sort_action="native",
         style_table={"overflowX": "auto"},
         style_header={
             "backgroundColor": "#f8f9fa", "fontWeight": "bold",
@@ -85,6 +92,18 @@ def _make_player_table(df):
             {"if": {"row_index": "odd"}, "backgroundColor": "#f8f9fa"},
         ],
     )
+
+
+def _make_player_tables(df):
+    """Return an html.Div with separate sortable Forwards and Defensemen tables."""
+    sections = []
+    for pos, label in [("F", "Forwards"), ("D", "Defensemen")]:
+        pos_df = df[df["position"] == pos]
+        if pos_df.empty:
+            continue
+        sections.append(html.H4(label, style={"marginTop": "1.5rem", "marginBottom": "0.25rem"}))
+        sections.append(_make_position_table(pos_df))
+    return html.Div(sections) if sections else html.Div("No player data.")
 
 
 def layout(abbrev=None):
@@ -189,7 +208,7 @@ def layout(abbrev=None):
     return html.Div([
         html.H2(f"{abbrev} — Season Overview"),
         html.H3("Players"),
-        _make_player_table(player_df) if not player_df.empty else html.Div("No player data."),
+        _make_player_tables(player_df) if not player_df.empty else html.Div("No player data."),
         html.H3("Game Log", style={"marginTop": "2rem"}),
         game_table,
     ])
