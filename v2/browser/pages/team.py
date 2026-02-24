@@ -3,6 +3,7 @@ import dash
 import pandas as pd
 from dash import html, dash_table
 from dash.dash_table import FormatTemplate
+from dash.dash_table.Format import Format, Scheme
 
 from db import league_query
 from utils import seconds_to_mmss
@@ -17,7 +18,10 @@ SELECT
     COUNT(DISTINCT c.gameId)                                             AS games_played,
     CAST(SUM(c.toi_seconds) AS REAL)
         / NULLIF(COUNT(DISTINCT c.gameId), 0)                           AS toi_per_game,
-    MAX(c.heaviness)                                                     AS heaviness,
+    MAX(pm.ppi)                                                          AS ppi,
+    MAX(pm.ppi_plus)                                                     AS ppi_plus,
+    MAX(pm.wppi)                                                         AS wppi,
+    MAX(pm.wppi_plus)                                                    AS wppi_plus,
     CAST(SUM(c.pct_vs_top_fwd * c.toi_seconds) AS REAL)
         / NULLIF(SUM(c.toi_seconds), 0)                                  AS avg_pct_vs_top_fwd,
     CAST(SUM(c.pct_vs_top_def * c.toi_seconds) AS REAL)
@@ -28,6 +32,7 @@ SELECT
         / NULLIF(SUM(c.toi_seconds), 0)                                  AS avg_comp_def
 FROM competition c
 LEFT JOIN players p ON c.playerId = p.playerId
+LEFT JOIN player_metrics pm ON c.playerId = pm.playerId
 WHERE c.position IN ('F', 'D') AND c.team = ?
 GROUP BY c.playerId
 ORDER BY toi_per_game DESC
@@ -56,20 +61,22 @@ def _make_position_table(df):
     df["toi_display"]      = df["toi_per_game"].apply(seconds_to_mmss)
     df["comp_fwd_display"] = df["avg_comp_fwd"].apply(seconds_to_mmss)
     df["comp_def_display"] = df["avg_comp_def"].apply(seconds_to_mmss)
-    df["heaviness"]        = df["heaviness"].round(4)
-
     columns = [
         {"name": "Player",       "id": "player_link",        "presentation": "markdown"},
         {"name": "GP",           "id": "games_played",       "type": "numeric"},
         {"name": "5v5 TOI/GP",   "id": "toi_display"},
-        {"name": "Heaviness",    "id": "heaviness",          "type": "numeric"},
+        {"name": "PPI",   "id": "ppi",       "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed)},
+        {"name": "PPI+",  "id": "ppi_plus",  "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
+        {"name": "wPPI",  "id": "wppi",      "type": "numeric", "format": Format(precision=4, scheme=Scheme.fixed)},
+        {"name": "wPPI+", "id": "wppi_plus", "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
         {"name": "vs Top Fwd %", "id": "avg_pct_vs_top_fwd", "type": "numeric", "format": FormatTemplate.percentage(2)},
         {"name": "vs Top Def %", "id": "avg_pct_vs_top_def", "type": "numeric", "format": FormatTemplate.percentage(2)},
         {"name": "OPP F TOI",    "id": "comp_fwd_display"},
         {"name": "OPP D TOI",    "id": "comp_def_display"},
     ]
     display_cols = [
-        "player_link", "games_played", "toi_display", "heaviness",
+        "player_link", "games_played", "toi_display",
+        "ppi", "ppi_plus", "wppi", "wppi_plus",
         "avg_pct_vs_top_fwd", "avg_pct_vs_top_def",
         "comp_fwd_display", "comp_def_display",
     ]

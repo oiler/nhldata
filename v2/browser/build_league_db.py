@@ -1,10 +1,11 @@
 """
 Build a league-wide SQLite database for the NHL Data Browser.
 
-Creates 3 tables:
-  - competition: all rows from data/2025/generated/competition/*.csv
-  - players:     from data/2025/generated/players/csv/players.csv
-  - games:       from data/2025/generated/flatboxscores/boxscores.csv
+Creates 4 tables:
+  - competition:     all rows from data/2025/generated/competition/*.csv
+  - players:         from data/2025/generated/players/csv/players.csv
+  - games:           from data/2025/generated/flatboxscores/boxscores.csv
+  - player_metrics:  PPI, PPI+, wPPI, wPPI+ per eligible skater (GP >= 5)
 
 Usage:
     python v2/browser/build_league_db.py
@@ -69,6 +70,79 @@ def build_games_table(conn):
     print(f"  games: {len(df)} rows")
 
 
+def build_player_metrics_table(conn):
+    """Compute PPI, PPI+, wPPI, wPPI+ for eligible skaters and write to player_metrics."""
+    comp = pd.read_sql_query(
+        "SELECT playerId, team, gameId, position, toi_seconds, height_in, weight_lbs"
+        " FROM competition WHERE position IN ('F', 'D')",
+        conn,
+    )
+    if comp.empty:
+        print("  player_metrics: 0 rows (no competition data)")
+        return
+
+    # Games played per player
+    gp = comp.groupby("playerId")["gameId"].nunique().rename("games_played")
+
+    # Physical data per player (all rows for a player have the same height/weight)
+    phys = comp.groupby("playerId")[["height_in", "weight_lbs"]].max()
+    phys["ppi"] = phys["weight_lbs"] / phys["height_in"]
+
+    # Eligible: GP >= 5, non-null PPI
+    player_df = gp.to_frame().join(phys[["ppi"]])
+    eligible = player_df[(player_df["games_played"] >= 5) & player_df["ppi"].notna()].copy()
+
+    if eligible.empty:
+        print("  player_metrics: 0 rows (no eligible players)")
+        return
+
+    # PPI+
+    mean_ppi = eligible["ppi"].mean()
+    eligible["ppi_plus"] = 100.0 * eligible["ppi"] / mean_ppi
+
+    # wPPI: PPI × games-weighted average TOI share across team stints.
+    # Weighted average (not sum) ensures traded players aren't double-counted
+    # relative to single-team players with identical per-game deployment.
+    eligible_comp = comp[comp["playerId"].isin(eligible.index)]
+    player_team_toi   = eligible_comp.groupby(["playerId", "team"])["toi_seconds"].sum()
+    player_team_games = eligible_comp.groupby(["playerId", "team"])["gameId"].nunique()
+    player_avg_toi    = player_team_toi / player_team_games  # avg seconds/game per stint
+
+    team_total_toi    = eligible_comp.groupby("team")["toi_seconds"].sum()
+    team_unique_games = eligible_comp.groupby("team")["gameId"].nunique()
+    team_avg_toi      = team_total_toi / team_unique_games   # team avg eligible-seconds/game
+
+    share_numerator: dict[int, float] = {}
+    share_denominator: dict[int, int] = {}
+    for (pid, team), avg_toi in player_avg_toi.items():
+        team_avg = team_avg_toi.get(team, 0)
+        if team_avg == 0:
+            continue
+        share = avg_toi / team_avg
+        games = int(player_team_games[(pid, team)])
+        share_numerator[pid] = share_numerator.get(pid, 0.0) + share * games
+        share_denominator[pid] = share_denominator.get(pid, 0) + games
+
+    wppi_map: dict[int, float] = {}
+    for pid, numerator in share_numerator.items():
+        denom = share_denominator.get(pid, 0)
+        if denom == 0:
+            continue
+        weighted_avg_share = numerator / denom
+        wppi_map[pid] = eligible.loc[pid, "ppi"] * weighted_avg_share
+
+    eligible["wppi"] = pd.Series(wppi_map)
+    eligible = eligible[eligible["wppi"].notna()]
+
+    # wPPI+
+    mean_wppi = eligible["wppi"].mean()
+    eligible["wppi_plus"] = 100.0 * eligible["wppi"] / mean_wppi
+
+    out = eligible[["ppi", "ppi_plus", "wppi", "wppi_plus"]].reset_index()
+    out.to_sql("player_metrics", conn, if_exists="replace", index=False)
+    print(f"  player_metrics: {len(out)} rows")
+
+
 def main():
     os.makedirs(os.path.dirname(OUTPUT_DB), exist_ok=True)
     if os.path.exists(OUTPUT_DB):
@@ -80,6 +154,7 @@ def main():
         build_competition_table(conn)
         build_players_table(conn)
         build_games_table(conn)
+        build_player_metrics_table(conn)
     finally:
         conn.close()
     size_mb = os.path.getsize(OUTPUT_DB) / (1024 * 1024)

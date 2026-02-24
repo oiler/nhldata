@@ -45,6 +45,7 @@ def test_league_db_exists():
     assert "competition" in tables
     assert "players" in tables
     assert "games" in tables
+    assert "player_metrics" in tables
 
 
 def test_league_query_returns_dataframe():

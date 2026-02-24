@@ -1,4 +1,6 @@
 # v2/browser/pages/game.py
+import math
+
 import dash
 from dash import html, dash_table
 from dash.dash_table import FormatTemplate
@@ -15,13 +17,20 @@ FROM games WHERE gameId = ?
 """
 
 _HEAVINESS_SQL = """
-SELECT team,
-       MAX(weighted_forward_heaviness) AS fwd_heaviness,
-       MAX(weighted_defense_heaviness) AS def_heaviness,
-       MAX(weighted_team_heaviness)    AS team_heaviness
-FROM competition
-WHERE gameId = ?
-GROUP BY team
+SELECT c.team,
+       MAX(c.weighted_forward_heaviness)                                        AS fwd_ppi,
+       MAX(c.weighted_defense_heaviness)                                        AS def_ppi,
+       MAX(c.weighted_team_heaviness)                                           AS team_ppi,
+       SUM(CASE WHEN c.position = 'F' THEN pm.wppi * c.toi_seconds ELSE 0 END)
+           / NULLIF(SUM(CASE WHEN c.position = 'F' THEN c.toi_seconds ELSE 0 END), 0) AS fwd_wppi,
+       SUM(CASE WHEN c.position = 'D' THEN pm.wppi * c.toi_seconds ELSE 0 END)
+           / NULLIF(SUM(CASE WHEN c.position = 'D' THEN c.toi_seconds ELSE 0 END), 0) AS def_wppi,
+       SUM(pm.wppi * c.toi_seconds)
+           / NULLIF(SUM(c.toi_seconds), 0)                                     AS team_wppi
+FROM competition c
+LEFT JOIN player_metrics pm ON c.playerId = pm.playerId
+WHERE c.gameId = ? AND c.position IN ('F', 'D')
+GROUP BY c.team
 """
 
 _PLAYERS_SQL = """
@@ -131,7 +140,9 @@ def layout(game_id=None):
         if series is None:
             return "\u2014"
         val = series[col] if col in series.index else None
-        return round(float(val), 4) if val is not None else "\u2014"
+        if val is None or (isinstance(val, float) and math.isnan(val)):
+            return "\u2014"
+        return round(float(val), 4)
 
     th_style = {
         "textAlign": "left", "padding": "6px 10px",
@@ -141,23 +152,32 @@ def layout(game_id=None):
 
     heaviness_table = html.Table([
         html.Thead(html.Tr([
-            html.Th("Team",           style=th_style),
-            html.Th("Fwd Heaviness",  style=th_style),
-            html.Th("Def Heaviness",  style=th_style),
-            html.Th("Team Heaviness", style=th_style),
+            html.Th("Team",      style=th_style),
+            html.Th("FWD PPI",   style=th_style),
+            html.Th("DEF PPI",   style=th_style),
+            html.Th("Team PPI",  style=th_style),
+            html.Th("FWD wPPI",  style=th_style),
+            html.Th("DEF wPPI",  style=th_style),
+            html.Th("Team wPPI", style=th_style),
         ])),
         html.Tbody([
             html.Tr([
                 html.Td(away, style=td_style),
-                html.Td(_h(away, "fwd_heaviness"),  style=td_style),
-                html.Td(_h(away, "def_heaviness"),  style=td_style),
-                html.Td(_h(away, "team_heaviness"), style=td_style),
+                html.Td(_h(away, "fwd_ppi"),   style=td_style),
+                html.Td(_h(away, "def_ppi"),   style=td_style),
+                html.Td(_h(away, "team_ppi"),  style=td_style),
+                html.Td(_h(away, "fwd_wppi"),  style=td_style),
+                html.Td(_h(away, "def_wppi"),  style=td_style),
+                html.Td(_h(away, "team_wppi"), style=td_style),
             ]),
             html.Tr([
                 html.Td(home, style=td_style),
-                html.Td(_h(home, "fwd_heaviness"),  style=td_style),
-                html.Td(_h(home, "def_heaviness"),  style=td_style),
-                html.Td(_h(home, "team_heaviness"), style=td_style),
+                html.Td(_h(home, "fwd_ppi"),   style=td_style),
+                html.Td(_h(home, "def_ppi"),   style=td_style),
+                html.Td(_h(home, "team_ppi"),  style=td_style),
+                html.Td(_h(home, "fwd_wppi"),  style=td_style),
+                html.Td(_h(home, "def_wppi"),  style=td_style),
+                html.Td(_h(home, "team_wppi"), style=td_style),
             ]),
         ]),
     ], style={"borderCollapse": "collapse", "marginBottom": "1.5rem"})
