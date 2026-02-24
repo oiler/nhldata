@@ -6,6 +6,6 @@ def seconds_to_mmss(seconds) -> str:
     try:
         s = int(seconds)
     except (TypeError, ValueError):
-        return "0:00"
+        return "00:00"
     m, sec = divmod(abs(s), 60)
-    return f"{m}:{sec:02d}"
+    return f"{m:02d}:{sec:02d}"

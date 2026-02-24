@@ -7,11 +7,11 @@ from utils import seconds_to_mmss
 
 
 def test_zero():
-    assert seconds_to_mmss(0) == "0:00"
+    assert seconds_to_mmss(0) == "00:00"
 
 
 def test_one_minute():
-    assert seconds_to_mmss(60) == "1:00"
+    assert seconds_to_mmss(60) == "01:00"
 
 
 def test_typical():
@@ -21,11 +21,11 @@ def test_typical():
 
 def test_single_digit_seconds():
     """Seconds < 10 must be zero-padded."""
-    assert seconds_to_mmss(65) == "1:05"
+    assert seconds_to_mmss(65) == "01:05"
 
 
 def test_none_returns_zero():
-    assert seconds_to_mmss(None) == "0:00"
+    assert seconds_to_mmss(None) == "00:00"
 
 
 def test_float_rounds_down():
