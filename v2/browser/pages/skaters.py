@@ -44,6 +44,8 @@ def layout():
     if df.empty:
         return html.Div([html.H2("Skaters"), html.P("No data available.")])
 
+    for col, decimals in [("ppi", 2), ("ppi_plus", 1), ("wppi", 4), ("wppi_plus", 1)]:
+        df[col] = df[col].round(decimals)
     df["team"] = df["teams_raw"].apply(lambda s: "/".join(sorted(s.split(","))) if s else "")
     df["player_link"] = df.apply(lambda r: f"[{r['playerName']}](/player/{r['playerId']})", axis=1)
     df["toi_display"]      = df["toi_per_game"].apply(seconds_to_mmss)
@@ -80,7 +82,6 @@ def layout():
             markdown_options={"link_target": "_self"},
             sort_action="native",
             filter_action="native",
-            filter_options={"case": "insensitive"},
             page_action="native",
             page_size=50,
             style_table={"overflowX": "auto"},
