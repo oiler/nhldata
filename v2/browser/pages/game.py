@@ -40,12 +40,19 @@ SELECT
     c.team,
     c.position,
     c.toi_seconds,
+    5.0 * c.toi_seconds / NULLIF(tt.team_total, 0)                      AS toi_share,
     c.comp_fwd,
     c.comp_def,
     c.pct_vs_top_fwd,
     c.pct_vs_top_def
 FROM competition c
 LEFT JOIN players p ON c.playerId = p.playerId
+JOIN (
+    SELECT gameId, team, SUM(toi_seconds) AS team_total
+    FROM competition
+    WHERE position IN ('F', 'D')
+    GROUP BY gameId, team
+) tt ON c.gameId = tt.gameId AND c.team = tt.team
 WHERE c.gameId = ? AND c.position IN ('F', 'D')
 ORDER BY c.toi_seconds DESC
 """
@@ -61,13 +68,14 @@ def _make_position_table(df):
     columns = [
         {"name": "Player",       "id": "playerName"},
         {"name": "5v5 TOI",      "id": "toi_display"},
+        {"name": "TOI%",         "id": "toi_share", "type": "numeric", "format": FormatTemplate.percentage(1)},
         {"name": "OPP F TOI",    "id": "comp_fwd_display"},
         {"name": "OPP D TOI",    "id": "comp_def_display"},
         {"name": "vs Top Fwd %", "id": "pct_vs_top_fwd", "type": "numeric", "format": FormatTemplate.percentage(2)},
         {"name": "vs Top Def %", "id": "pct_vs_top_def", "type": "numeric", "format": FormatTemplate.percentage(2)},
     ]
     display_cols = [
-        "playerName", "toi_display", "comp_fwd_display",
+        "playerName", "toi_display", "toi_share", "comp_fwd_display",
         "comp_def_display", "pct_vs_top_fwd", "pct_vs_top_def",
     ]
 

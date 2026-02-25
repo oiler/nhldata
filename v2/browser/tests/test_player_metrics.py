@@ -136,3 +136,37 @@ def test_wppi_traded_player_no_inflation():
     p10 = conn.execute("SELECT wppi FROM player_metrics WHERE playerId = 10").fetchone()[0]
     p11 = conn.execute("SELECT wppi FROM player_metrics WHERE playerId = 11").fetchone()[0]
     assert abs(p10 - p11) < 0.001, f"Traded player inflation: p10={p10:.4f}, p11={p11:.4f}"
+
+
+def test_avg_toi_share():
+    """
+    10 FLA skaters per game (5 games each):
+      5 high-TOI players: 600s/game each
+      5 low-TOI  players: 300s/game each
+    team_total = 5×600 + 5×300 = 4500s/game
+    game_5v5   = 4500 / 5     =  900s
+    high share = 600 / 900    =  2/3
+    low  share = 300 / 900    =  1/3
+    """
+    conn = sqlite3.connect(":memory:")
+    rows = []
+    for game in range(1, 6):
+        for pid in range(1, 6):    # high-TOI players
+            rows.append({"playerId": pid, "team": "FLA", "gameId": game,
+                         "position": "F", "toi_seconds": 600,
+                         "height_in": 72, "weight_lbs": 198})
+        for pid in range(6, 11):   # low-TOI players
+            rows.append({"playerId": pid, "team": "FLA", "gameId": game,
+                         "position": "F", "toi_seconds": 300,
+                         "height_in": 72, "weight_lbs": 198})
+    df = pd.DataFrame(rows)
+    df.to_sql("competition", conn, index=False, if_exists="replace")
+    build_player_metrics_table(conn)
+    high = conn.execute(
+        "SELECT avg_toi_share FROM player_metrics WHERE playerId = 1"
+    ).fetchone()[0]
+    low = conn.execute(
+        "SELECT avg_toi_share FROM player_metrics WHERE playerId = 6"
+    ).fetchone()[0]
+    assert abs(high - 2/3) < 0.001, f"Expected 0.667, got {high}"
+    assert abs(low  - 1/3) < 0.001, f"Expected 0.333, got {low}"

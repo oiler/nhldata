@@ -5,7 +5,7 @@ Creates 4 tables:
   - competition:     all rows from data/2025/generated/competition/*.csv
   - players:         from data/2025/generated/players/csv/players.csv
   - games:           from data/2025/generated/flatboxscores/boxscores.csv
-  - player_metrics:  PPI, PPI+, wPPI, wPPI+ per eligible skater (GP >= 5)
+  - player_metrics:  PPI, PPI+, wPPI, wPPI+, avg_toi_share per eligible skater (GP >= 5)
 
 Usage:
     python v2/browser/build_league_db.py
@@ -71,7 +71,7 @@ def build_games_table(conn):
 
 
 def build_player_metrics_table(conn):
-    """Compute PPI, PPI+, wPPI, wPPI+ for eligible skaters and write to player_metrics."""
+    """Compute PPI, PPI+, wPPI, wPPI+, avg_toi_share for eligible skaters and write to player_metrics."""
     comp = pd.read_sql_query(
         "SELECT playerId, team, gameId, position, toi_seconds, height_in, weight_lbs"
         " FROM competition WHERE position IN ('F', 'D')",
@@ -138,7 +138,20 @@ def build_player_metrics_table(conn):
     mean_wppi = eligible["wppi"].mean()
     eligible["wppi_plus"] = 100.0 * eligible["wppi"] / mean_wppi
 
-    out = eligible[["ppi", "ppi_plus", "wppi", "wppi_plus"]].reset_index()
+    # avg_toi_share: mean of per-game (5 × player_toi / team_toi) across player's games.
+    # team_toi uses full comp (all skaters, not just eligible), matching real game deployment totals.
+    game_team_toi = comp.groupby(["team", "gameId"])["toi_seconds"].transform("sum")
+    comp_share = comp.copy()
+    comp_share["toi_share"] = 5.0 * comp_share["toi_seconds"] / game_team_toi.where(game_team_toi > 0)
+    avg_toi_share = (
+        comp_share[comp_share["playerId"].isin(eligible.index)]
+        .groupby("playerId")["toi_share"]
+        .mean()
+        .rename("avg_toi_share")
+    )
+    eligible = eligible.join(avg_toi_share)
+
+    out = eligible[["ppi", "ppi_plus", "wppi", "wppi_plus", "avg_toi_share"]].reset_index()
     out.to_sql("player_metrics", conn, if_exists="replace", index=False)
     print(f"  player_metrics: {len(out)} rows")
 

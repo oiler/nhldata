@@ -18,10 +18,18 @@ SELECT c.gameId, g.gameDate, c.team,
        g.awayTeam_abbrev, g.homeTeam_abbrev,
        g.awayTeam_score, g.homeTeam_score,
        g.periodDescriptor_number,
-       c.toi_seconds, c.comp_fwd, c.comp_def,
+       c.toi_seconds,
+       5.0 * c.toi_seconds / NULLIF(tt.team_total, 0) AS toi_share,
+       c.comp_fwd, c.comp_def,
        c.pct_vs_top_fwd, c.pct_vs_top_def
 FROM competition c
 JOIN games g ON c.gameId = g.gameId
+JOIN (
+    SELECT gameId, team, SUM(toi_seconds) AS team_total
+    FROM competition
+    WHERE position IN ('F', 'D')
+    GROUP BY gameId, team
+) tt ON c.gameId = tt.gameId AND c.team = tt.team
 WHERE c.playerId = ?
 ORDER BY g.gameDate ASC
 """
@@ -73,6 +81,7 @@ def layout(player_id=None):
             "score":          f"{own_score}\u2013{opp_score}",
             "result":         result,
             "toi_display":    seconds_to_mmss(r["toi_seconds"]),
+            "toi_share":      round(float(r["toi_share"]), 4) if r["toi_share"] is not None else None,
             "comp_fwd":       seconds_to_mmss(r["comp_fwd"]),
             "comp_def":       seconds_to_mmss(r["comp_def"]),
             "pct_vs_top_fwd": round(float(r["pct_vs_top_fwd"]), 4) if r["pct_vs_top_fwd"] is not None else None,
@@ -88,6 +97,7 @@ def layout(player_id=None):
         {"name": "Score",        "id": "score",           "type": "text"},
         {"name": "Result",       "id": "result",          "type": "text"},
         {"name": "5v5 TOI",      "id": "toi_display",     "type": "text"},
+        {"name": "TOI%",         "id": "toi_share",        "type": "numeric", "format": FormatTemplate.percentage(1)},
         {"name": "OPP F TOI",    "id": "comp_fwd",        "type": "text"},
         {"name": "OPP D TOI",    "id": "comp_def",        "type": "text"},
         {"name": "vs Top Fwd %", "id": "pct_vs_top_fwd",  "type": "numeric", "format": FormatTemplate.percentage(2)},
@@ -103,7 +113,6 @@ def layout(player_id=None):
             markdown_options={"link_target": "_self"},
             sort_action="native",
             filter_action="native",
-            filter_options={"case": "insensitive"},
             page_action="native",
             page_size=50,
             style_table={"overflowX": "auto"},

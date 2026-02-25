@@ -22,6 +22,7 @@ SELECT
     MAX(pm.ppi_plus)                                                     AS ppi_plus,
     MAX(pm.wppi)                                                         AS wppi,
     MAX(pm.wppi_plus)                                                    AS wppi_plus,
+    MAX(pm.avg_toi_share)                                                AS avg_toi_share,
     CAST(SUM(c.pct_vs_top_fwd * c.toi_seconds) AS REAL)
         / NULLIF(SUM(c.toi_seconds), 0)                                  AS avg_pct_vs_top_fwd,
     CAST(SUM(c.pct_vs_top_def * c.toi_seconds) AS REAL)
@@ -58,6 +59,7 @@ def layout():
         {"name": "Pos",          "id": "position"},
         {"name": "GP",           "id": "games_played",       "type": "numeric"},
         {"name": "5v5 TOI/GP",   "id": "toi_display"},
+        {"name": "TOI%",         "id": "avg_toi_share", "type": "numeric", "format": FormatTemplate.percentage(1)},
         {"name": "PPI",   "id": "ppi",       "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed)},
         {"name": "PPI+",  "id": "ppi_plus",  "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
         {"name": "wPPI",  "id": "wppi",      "type": "numeric", "format": Format(precision=4, scheme=Scheme.fixed)},
@@ -69,6 +71,7 @@ def layout():
     ]
     display_cols = [
         "player_link", "team", "position", "games_played", "toi_display",
+        "avg_toi_share",
         "ppi", "ppi_plus", "wppi", "wppi_plus",
         "avg_pct_vs_top_fwd", "avg_pct_vs_top_def",
         "comp_fwd_display", "comp_def_display",
