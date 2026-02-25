@@ -22,6 +22,7 @@ SELECT
     MAX(pm.ppi_plus)                                                     AS ppi_plus,
     MAX(pm.wppi)                                                         AS wppi,
     MAX(pm.wppi_plus)                                                    AS wppi_plus,
+    MAX(pm.avg_toi_share)                                                AS avg_toi_share,
     CAST(SUM(c.pct_vs_top_fwd * c.toi_seconds) AS REAL)
         / NULLIF(SUM(c.toi_seconds), 0)                                  AS avg_pct_vs_top_fwd,
     CAST(SUM(c.pct_vs_top_def * c.toi_seconds) AS REAL)
@@ -65,20 +66,21 @@ def _make_position_table(df):
         {"name": "Player",       "id": "player_link",        "presentation": "markdown"},
         {"name": "GP",           "id": "games_played",       "type": "numeric"},
         {"name": "5v5 TOI/GP",   "id": "toi_display"},
-        {"name": "PPI",   "id": "ppi",       "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed)},
-        {"name": "PPI+",  "id": "ppi_plus",  "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
-        {"name": "wPPI",  "id": "wppi",      "type": "numeric", "format": Format(precision=4, scheme=Scheme.fixed)},
-        {"name": "wPPI+", "id": "wppi_plus", "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
+        {"name": "TOI%",         "id": "avg_toi_share", "type": "numeric", "format": FormatTemplate.percentage(1)},
         {"name": "vs Top Fwd %", "id": "avg_pct_vs_top_fwd", "type": "numeric", "format": FormatTemplate.percentage(2)},
         {"name": "vs Top Def %", "id": "avg_pct_vs_top_def", "type": "numeric", "format": FormatTemplate.percentage(2)},
         {"name": "OPP F TOI",    "id": "comp_fwd_display"},
         {"name": "OPP D TOI",    "id": "comp_def_display"},
+        {"name": "PPI",   "id": "ppi",       "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed)},
+        {"name": "PPI+",  "id": "ppi_plus",  "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
+        {"name": "wPPI",  "id": "wppi",      "type": "numeric", "format": Format(precision=4, scheme=Scheme.fixed)},
+        {"name": "wPPI+", "id": "wppi_plus", "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
     ]
     display_cols = [
-        "player_link", "games_played", "toi_display",
-        "ppi", "ppi_plus", "wppi", "wppi_plus",
+        "player_link", "games_played", "toi_display", "avg_toi_share",
         "avg_pct_vs_top_fwd", "avg_pct_vs_top_def",
         "comp_fwd_display", "comp_def_display",
+        "ppi", "ppi_plus", "wppi", "wppi_plus",
     ]
 
     return dash_table.DataTable(

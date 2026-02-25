@@ -88,18 +88,19 @@ def layout(player_id=None):
             "pct_vs_top_def": round(float(r["pct_vs_top_def"]), 4) if r["pct_vs_top_def"] is not None else None,
         })
 
+    _ci = {"case": "insensitive"}
     columns = [
-        {"name": "Game",         "id": "game_link",      "presentation": "markdown"},
-        {"name": "Date",         "id": "gameDate",        "type": "text"},
-        {"name": "Team",         "id": "team",            "type": "text"},
-        {"name": "H/A",          "id": "homeAway",        "type": "text"},
-        {"name": "Opp",          "id": "opponent",        "type": "text"},
-        {"name": "Score",        "id": "score",           "type": "text"},
-        {"name": "Result",       "id": "result",          "type": "text"},
-        {"name": "5v5 TOI",      "id": "toi_display",     "type": "text"},
+        {"name": "Game",         "id": "game_link",      "presentation": "markdown", "filter_options": _ci},
+        {"name": "Date",         "id": "gameDate",        "type": "text",    "filter_options": _ci},
+        {"name": "Team",         "id": "team",            "type": "text",    "filter_options": _ci},
+        {"name": "H/A",          "id": "homeAway",        "type": "text",    "filter_options": _ci},
+        {"name": "Opp",          "id": "opponent",        "type": "text",    "filter_options": _ci},
+        {"name": "Score",        "id": "score",           "type": "text",    "filter_options": _ci},
+        {"name": "Result",       "id": "result",          "type": "text",    "filter_options": _ci},
+        {"name": "5v5 TOI",      "id": "toi_display",     "type": "text",    "filter_options": _ci},
         {"name": "TOI%",         "id": "toi_share",        "type": "numeric", "format": FormatTemplate.percentage(1)},
-        {"name": "OPP F TOI",    "id": "comp_fwd",        "type": "text"},
-        {"name": "OPP D TOI",    "id": "comp_def",        "type": "text"},
+        {"name": "OPP F TOI",    "id": "comp_fwd",        "type": "text",    "filter_options": _ci},
+        {"name": "OPP D TOI",    "id": "comp_def",        "type": "text",    "filter_options": _ci},
         {"name": "vs Top Fwd %", "id": "pct_vs_top_fwd",  "type": "numeric", "format": FormatTemplate.percentage(2)},
         {"name": "vs Top Def %", "id": "pct_vs_top_def",  "type": "numeric", "format": FormatTemplate.percentage(2)},
     ]

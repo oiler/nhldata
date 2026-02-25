@@ -53,28 +53,29 @@ def layout():
     df["comp_fwd_display"] = df["avg_comp_fwd"].apply(seconds_to_mmss)
     df["comp_def_display"] = df["avg_comp_def"].apply(seconds_to_mmss)
 
+    _ci = {"case": "insensitive"}
     columns = [
-        {"name": "Player",       "id": "player_link",       "presentation": "markdown"},
-        {"name": "Team",         "id": "team"},
-        {"name": "Pos",          "id": "position"},
+        {"name": "Player",       "id": "player_link",       "presentation": "markdown", "filter_options": _ci},
+        {"name": "Team",         "id": "team",               "filter_options": _ci},
+        {"name": "Pos",          "id": "position",           "filter_options": _ci},
         {"name": "GP",           "id": "games_played",       "type": "numeric"},
-        {"name": "5v5 TOI/GP",   "id": "toi_display"},
+        {"name": "5v5 TOI/GP",   "id": "toi_display",        "filter_options": _ci},
         {"name": "TOI%",         "id": "avg_toi_share", "type": "numeric", "format": FormatTemplate.percentage(1)},
+        {"name": "vs Top Fwd %", "id": "avg_pct_vs_top_fwd", "type": "numeric", "format": FormatTemplate.percentage(2)},
+        {"name": "vs Top Def %", "id": "avg_pct_vs_top_def", "type": "numeric", "format": FormatTemplate.percentage(2)},
+        {"name": "OPP F TOI",    "id": "comp_fwd_display",   "filter_options": _ci},
+        {"name": "OPP D TOI",    "id": "comp_def_display",   "filter_options": _ci},
         {"name": "PPI",   "id": "ppi",       "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed)},
         {"name": "PPI+",  "id": "ppi_plus",  "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
         {"name": "wPPI",  "id": "wppi",      "type": "numeric", "format": Format(precision=4, scheme=Scheme.fixed)},
         {"name": "wPPI+", "id": "wppi_plus", "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
-        {"name": "vs Top Fwd %", "id": "avg_pct_vs_top_fwd", "type": "numeric", "format": FormatTemplate.percentage(2)},
-        {"name": "vs Top Def %", "id": "avg_pct_vs_top_def", "type": "numeric", "format": FormatTemplate.percentage(2)},
-        {"name": "OPP F TOI",    "id": "comp_fwd_display"},
-        {"name": "OPP D TOI",    "id": "comp_def_display"},
     ]
     display_cols = [
         "player_link", "team", "position", "games_played", "toi_display",
         "avg_toi_share",
-        "ppi", "ppi_plus", "wppi", "wppi_plus",
         "avg_pct_vs_top_fwd", "avg_pct_vs_top_def",
         "comp_fwd_display", "comp_def_display",
+        "ppi", "ppi_plus", "wppi", "wppi_plus",
     ]
 
     return html.Div([
