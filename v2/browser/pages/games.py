@@ -11,6 +11,7 @@ _SQL = """
 SELECT gameId, gameDate, awayTeam_abbrev, homeTeam_abbrev,
        awayTeam_score, homeTeam_score, periodDescriptor_number
 FROM games
+WHERE awayTeam_score IS NOT NULL
 ORDER BY gameDate DESC
 """
 
