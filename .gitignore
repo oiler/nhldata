@@ -3,3 +3,4 @@ errors.json
 data/
 temp/
 __pycache__
+.env

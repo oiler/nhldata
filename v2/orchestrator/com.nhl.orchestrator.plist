@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  NHL Pipeline Orchestrator — launchd scheduling
+
+  To install:
+    1. Paste your API key in .env at the project root (gitignored)
+    2. Copy to LaunchAgents:
+       cp v2/orchestrator/com.nhl.orchestrator.plist ~/Library/LaunchAgents/
+    3. Load it:
+       launchctl load ~/Library/LaunchAgents/com.nhl.orchestrator.plist
+    4. To unload:
+       launchctl unload ~/Library/LaunchAgents/com.nhl.orchestrator.plist
+    5. To test immediately:
+       launchctl start com.nhl.orchestrator
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.nhl.orchestrator</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/jrf1039/files/projects/nhl/v2/orchestrator/run.sh</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>/Users/jrf1039/files/projects/nhl</string>
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>9</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>NHL_SEASON</key>
+        <string>2025</string>
+    </dict>
+    <key>StandardOutPath</key>
+    <string>/Users/jrf1039/files/projects/nhl/data/2025/logs/launchd-stdout.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/jrf1039/files/projects/nhl/data/2025/logs/launchd-stderr.log</string>
+</dict>
+</plist>

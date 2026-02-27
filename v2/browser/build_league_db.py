@@ -2,22 +2,25 @@
 Build a league-wide SQLite database for the NHL Data Browser.
 
 Creates 4 tables:
-  - competition:     all rows from data/2025/generated/competition/*.csv
-  - players:         from data/2025/generated/players/csv/players.csv
-  - games:           from data/2025/generated/flatboxscores/boxscores.csv
+  - competition:     all rows from data/<season>/generated/competition/*.csv
+  - players:         from data/<season>/generated/players/csv/players.csv
+  - games:           from data/<season>/generated/flatboxscores/boxscores.csv
   - player_metrics:  PPI, PPI+, wPPI, wPPI+, avg_toi_share per eligible skater (GP >= 5)
 
 Usage:
-    python v2/browser/build_league_db.py
+    python v2/browser/build_league_db.py          # defaults to 2025
+    python v2/browser/build_league_db.py 2024      # builds 2024 database
 """
 
 import glob
 import os
 import sqlite3
+import sys as _sys
 
 import pandas as pd
 
-SEASON_DIR = "data/2025"
+_season = _sys.argv[1] if len(_sys.argv) > 1 else "2025"
+SEASON_DIR = f"data/{_season}"
 OUTPUT_DB = os.path.join(SEASON_DIR, "generated", "browser", "league.db")
 COMPETITION_DIR = os.path.join(SEASON_DIR, "generated", "competition")
 PLAYERS_CSV = os.path.join(SEASON_DIR, "generated", "players", "csv", "players.csv")
