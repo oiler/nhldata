@@ -75,6 +75,7 @@ def update_games(date_start, date_end):
         sort_action="native",
         filter_action="native",
         filter_options={"case": "insensitive"},
+        css=[{"selector": ".dash-filter--case", "rule": "display: none"}],
         page_action="native",
         page_size=50,
         style_table={"overflowX": "auto"},

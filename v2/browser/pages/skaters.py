@@ -155,6 +155,7 @@ def update_skaters(date_start, date_end, home_away):
         markdown_options={"link_target": "_self"},
         sort_action="native",
         filter_action="native",
+        css=[{"selector": ".dash-filter--case", "rule": "display: none"}],
         page_action="native",
         page_size=50,
         style_table={"overflowX": "auto"},
