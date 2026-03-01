@@ -58,18 +58,18 @@ _COMP_HA_AWAY = " AND c.team = g.awayTeam_abbrev"
 _PPI_SQL = "SELECT playerId, ppi, ppi_plus FROM player_metrics"
 _POINTS_SQL = "SELECT playerId, gameId, goals, assists, points FROM points_5v5"
 
-_LEAGUE_COMP_SQL = """
+_ALL_COMP_SQL = """
 SELECT c.playerId, c.position, c.team, c.gameId, c.toi_seconds,
        c.pct_vs_top_fwd, c.pct_vs_top_def, c.comp_fwd, c.comp_def,
        g.homeTeam_abbrev, g.awayTeam_abbrev
 FROM competition c
 JOIN games g ON c.gameId = g.gameId
-WHERE c.position = ?
+WHERE c.position IN ('F', 'D')
   AND g.gameDate BETWEEN ? AND ?
 """
 
-_LEAGUE_HA_HOME = " AND c.team = g.homeTeam_abbrev"
-_LEAGUE_HA_AWAY = " AND c.team = g.awayTeam_abbrev"
+_ALL_COMP_HA_HOME = " AND c.team = g.homeTeam_abbrev"
+_ALL_COMP_HA_AWAY = " AND c.team = g.awayTeam_abbrev"
 
 
 def layout(player_id=None):
@@ -159,16 +159,23 @@ def update_player(date_start, date_end, home_away, pid, position):
             total_points = int(player_pts["points"].sum())
         p_per_60 = total_points * 3600 / total_toi if total_toi > 0 else 0
 
-        # PPI / wPPI
+        # PPI / wPPI — need all F+D data for correct team-relative TOI share
         ppi_df = league_query(_PPI_SQL)
+        all_comp_sql = _ALL_COMP_SQL
+        if home_away == "home":
+            all_comp_sql += _ALL_COMP_HA_HOME
+        elif home_away == "away":
+            all_comp_sql += _ALL_COMP_HA_AWAY
+        all_comp_df = league_query(all_comp_sql, params=(date_start, date_end))
+
         ppi_val = wppi_val = ppi_plus_val = wppi_plus_val = None
         if not ppi_df.empty:
             player_ppi = ppi_df[ppi_df["playerId"] == pid]
             if not player_ppi.empty:
                 ppi_val = round(float(player_ppi.iloc[0]["ppi"]), 2)
                 ppi_plus_val = round(float(player_ppi.iloc[0]["ppi_plus"]), 1)
-            # wPPI from filtered data
-            metrics = compute_deployment_metrics(comp_df, ppi_df)
+            # wPPI from full league data (not single-player comp_df)
+            metrics = compute_deployment_metrics(all_comp_df, ppi_df)
             if not metrics.empty and pid in metrics.index:
                 wppi_val = round(float(metrics.loc[pid, "wppi"]), 4)
                 wppi_plus_val = round(float(metrics.loc[pid, "wppi_plus"]), 1)
@@ -186,13 +193,8 @@ def update_player(date_start, date_end, home_away, pid, position):
             else:
                 losses += 1
 
-        # --- League-wide ranks ---
-        league_sql = _LEAGUE_COMP_SQL
-        if home_away == "home":
-            league_sql += _LEAGUE_HA_HOME
-        elif home_away == "away":
-            league_sql += _LEAGUE_HA_AWAY
-        league_comp_df = league_query(league_sql, params=(position, date_start, date_end))
+        # --- League-wide ranks (filtered to same position) ---
+        league_comp_df = all_comp_df[all_comp_df["position"] == position]
 
         ranks = {}
         if not league_comp_df.empty:
