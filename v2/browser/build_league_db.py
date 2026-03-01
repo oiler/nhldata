@@ -50,7 +50,7 @@ def build_players_table(conn):
         return
     keep = [
         "playerId", "firstName", "lastName",
-        "currentTeamAbbrev", "position",
+        "currentTeamAbbrev", "position", "shootsCatches",
         "heightInInches", "weightInPounds",
     ]
     df = pd.read_csv(PLAYERS_CSV, usecols=keep)

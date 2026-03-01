@@ -14,7 +14,7 @@ register_home_away_callback("skaters")
 _COMP_SQL = """
 SELECT c.playerId,
        COALESCE(p.firstName || ' ' || p.lastName, 'Player ' || c.playerId) AS playerName,
-       c.position, c.team, c.gameId, c.toi_seconds,
+       c.position, p.shootsCatches, c.team, c.gameId, c.toi_seconds,
        c.pct_vs_top_fwd, c.pct_vs_top_def,
        c.comp_fwd, c.comp_def,
        g.gameDate, g.homeTeam_abbrev, g.awayTeam_abbrev
@@ -70,6 +70,7 @@ def update_skaters(date_start, date_end, home_away):
         playerName=("playerName", "first"),
         teams_raw=("team", lambda x: ",".join(sorted(x.unique()))),
         position=("position", "first"),
+        shoots=("shootsCatches", "first"),
         games_played=("gameId", "nunique"),
         total_toi=("toi_seconds", "sum"),
         weighted_pct_fwd=("pct_vs_top_fwd", lambda x: (x * comp_df.loc[x.index, "toi_seconds"]).sum()),
@@ -123,6 +124,7 @@ def update_skaters(date_start, date_end, home_away):
     columns = [
         {"name": "Player",       "id": "player_link",       "presentation": "markdown", "filter_options": _ci},
         {"name": "Team",         "id": "team",               "filter_options": _ci},
+        {"name": "Shoots",      "id": "shoots",              "filter_options": _ci},
         {"name": "Pos",          "id": "position",           "filter_options": _ci},
         {"name": "GP",           "id": "games_played",       "type": "numeric"},
         {"name": "G",     "id": "total_goals",   "type": "numeric"},
@@ -141,7 +143,7 @@ def update_skaters(date_start, date_end, home_away):
         {"name": "wPPI+", "id": "wppi_plus", "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
     ]
     display_cols = [
-        "player_link", "team", "position", "games_played",
+        "player_link", "team", "shoots", "position", "games_played",
         "total_goals", "total_assists", "total_points", "p_per_60",
         "toi_display",
         "avg_toi_share", "avg_pct_vs_top_fwd", "avg_pct_vs_top_def",
