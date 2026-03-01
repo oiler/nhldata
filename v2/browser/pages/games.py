@@ -1,28 +1,44 @@
 # v2/browser/pages/games.py
 import dash
-from dash import html, dash_table
+from dash import html, dash_table, callback, Input, Output
 
 from db import league_query
+from filters import make_filter_bar
 
 dash.register_page(__name__, path="/games", name="Games")
-
 
 _SQL = """
 SELECT gameId, gameDate, awayTeam_abbrev, homeTeam_abbrev,
        awayTeam_score, homeTeam_score, periodDescriptor_number
 FROM games
 WHERE awayTeam_score IS NOT NULL
+  AND gameDate BETWEEN ? AND ?
 ORDER BY gameDate DESC
 """
 
 
 def layout():
-    df = league_query(_SQL)
+    return html.Div([
+        html.H2("Games"),
+        make_filter_bar("games", include_home_away=False),
+        html.Div(id="games-content"),
+    ])
+
+
+@callback(
+    Output("games-content", "children"),
+    Input("games-date-start", "date"),
+    Input("games-date-end", "date"),
+)
+def update_games(date_start, date_end):
+    if not date_start or not date_end:
+        return html.P("Select a date range.")
+
+    df = league_query(_SQL, params=(date_start, date_end))
     if df.empty:
-        return html.Div([html.H2("Games"), html.P("No game data available.")])
+        return html.P("No games found in this range.")
 
     df["game_link"] = df["gameId"].apply(lambda gid: f"[{gid}](/game/{gid})")
-
     df["score"] = (
         df["awayTeam_score"].fillna(0).astype(int).astype(str)
         + "\u2013"
@@ -52,28 +68,25 @@ def layout():
     ]
     display_cols = ["game_link", "gameDate", "awayTeam_abbrev", "homeTeam_abbrev", "score", "result"]
 
-    return html.Div([
-        html.H2("Games"),
-        dash_table.DataTable(
-            columns=columns,
-            data=df[display_cols].to_dict("records"),
-            markdown_options={"link_target": "_self"},
-            sort_action="native",
-            filter_action="native",
-            filter_options={"case": "insensitive"},
-            page_action="native",
-            page_size=50,
-            style_table={"overflowX": "auto"},
-            style_header={
-                "backgroundColor": "#f8f9fa", "fontWeight": "bold",
-                "border": "1px solid #dee2e6", "fontSize": "13px",
-            },
-            style_cell={
-                "textAlign": "left", "padding": "8px 12px",
-                "border": "1px solid #dee2e6", "fontSize": "14px",
-            },
-            style_data_conditional=[
-                {"if": {"row_index": "odd"}, "backgroundColor": "#f8f9fa"},
-            ],
-        ),
-    ])
+    return dash_table.DataTable(
+        columns=columns,
+        data=df[display_cols].to_dict("records"),
+        markdown_options={"link_target": "_self"},
+        sort_action="native",
+        filter_action="native",
+        filter_options={"case": "insensitive"},
+        page_action="native",
+        page_size=50,
+        style_table={"overflowX": "auto"},
+        style_header={
+            "backgroundColor": "#f8f9fa", "fontWeight": "bold",
+            "border": "1px solid #dee2e6", "fontSize": "13px",
+        },
+        style_cell={
+            "textAlign": "left", "padding": "8px 12px",
+            "border": "1px solid #dee2e6", "fontSize": "14px",
+        },
+        style_data_conditional=[
+            {"if": {"row_index": "odd"}, "backgroundColor": "#f8f9fa"},
+        ],
+    )

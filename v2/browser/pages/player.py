@@ -1,12 +1,14 @@
 # v2/browser/pages/player.py
 import dash
-from dash import html, dash_table
+from dash import html, dash_table, callback, Input, Output, dcc
 from dash.dash_table import FormatTemplate
 
 from db import league_query
+from filters import make_filter_bar, register_home_away_callback
 from utils import seconds_to_mmss
 
 dash.register_page(__name__, path_template="/player/<player_id>", name="Player")
+register_home_away_callback("player")
 
 _META_SQL = """
 SELECT firstName, lastName, currentTeamAbbrev, position
@@ -31,22 +33,24 @@ JOIN (
     GROUP BY gameId, team
 ) tt ON c.gameId = tt.gameId AND c.team = tt.team
 WHERE c.playerId = ?
-ORDER BY g.gameDate ASC
+  AND g.gameDate BETWEEN ? AND ?
 """
+
+_HA_HOME = " AND c.team = g.homeTeam_abbrev"
+_HA_AWAY = " AND c.team = g.awayTeam_abbrev"
+
+_ORDER = " ORDER BY g.gameDate ASC"
 
 
 def layout(player_id=None):
     if player_id is None:
         return html.Div("No player specified.")
-
     try:
         pid = int(player_id)
     except (TypeError, ValueError):
         return html.Div(f"Invalid player ID: {player_id}")
 
-    meta_df  = league_query(_META_SQL, params=(pid,))
-    games_df = league_query(_GAMES_SQL, params=(pid,))
-
+    meta_df = league_query(_META_SQL, params=(pid,))
     if meta_df.empty:
         name = f"Player {pid}"
         subtitle = ""
@@ -55,8 +59,36 @@ def layout(player_id=None):
         name = f"{m['firstName']} {m['lastName']}"
         subtitle = f"{m['currentTeamAbbrev']} · {m['position']}"
 
+    return html.Div([
+        html.H2(name),
+        html.P(subtitle, style={"color": "#6c757d", "marginTop": "-0.5rem", "marginBottom": "1rem"}),
+        dcc.Store(id="player-pid", data=pid),
+        make_filter_bar("player", include_home_away=True),
+        html.Div(id="player-content"),
+    ])
+
+
+@callback(
+    Output("player-content", "children"),
+    Input("player-date-start", "date"),
+    Input("player-date-end", "date"),
+    Input("player-home-away", "data"),
+    Input("player-pid", "data"),
+)
+def update_player(date_start, date_end, home_away, pid):
+    if not date_start or not date_end or pid is None:
+        return html.P("Select a date range.")
+
+    sql = _GAMES_SQL
+    if home_away == "home":
+        sql += _HA_HOME
+    elif home_away == "away":
+        sql += _HA_AWAY
+    sql += _ORDER
+
+    games_df = league_query(sql, params=(pid, date_start, date_end))
     if games_df.empty:
-        return html.Div([html.H2(name), html.P("No game data available.")])
+        return html.P("No game data for this range.")
 
     rows = []
     for _, r in games_df.iterrows():
@@ -106,8 +138,7 @@ def layout(player_id=None):
     ]
 
     return html.Div([
-        html.H2(name),
-        html.P(subtitle, style={"color": "#6c757d", "marginTop": "-0.5rem", "marginBottom": "1rem"}),
+        # Summary stats placeholder — add here when ready
         dash_table.DataTable(
             columns=columns,
             data=rows,

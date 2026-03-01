@@ -25,6 +25,8 @@ OUTPUT_DB = os.path.join(SEASON_DIR, "generated", "browser", "league.db")
 COMPETITION_DIR = os.path.join(SEASON_DIR, "generated", "competition")
 PLAYERS_CSV = os.path.join(SEASON_DIR, "generated", "players", "csv", "players.csv")
 FLATBOXSCORES_CSV = os.path.join(SEASON_DIR, "generated", "flatboxscores", "boxscores.csv")
+FLATPLAYS_DIR = os.path.join(SEASON_DIR, "generated", "flatplays")
+FIVE_V_FIVE = {"1551", "0651", "1560"}
 
 
 def build_competition_table(conn):
@@ -159,6 +161,46 @@ def build_player_metrics_table(conn):
     print(f"  player_metrics: {len(out)} rows")
 
 
+def build_points_5v5_table(conn):
+    """Extract 5v5 goals and assists from flattened plays, write per-game player point counts."""
+    frames = []
+    for path in sorted(glob.glob(os.path.join(FLATPLAYS_DIR, "*.csv"))):
+        game_id = int(os.path.basename(path).replace(".csv", ""))
+        df = pd.read_csv(path, low_memory=False)
+        goals = df[
+            (df["typeDescKey"] == "goal")
+            & (df["situationCode"].astype(str).isin(FIVE_V_FIVE))
+        ]
+        if goals.empty:
+            continue
+
+        records = []
+        for _, g in goals.iterrows():
+            scorer = g.get("details.scoringPlayerId")
+            a1 = g.get("details.assist1PlayerId")
+            a2 = g.get("details.assist2PlayerId")
+            if pd.notna(scorer):
+                records.append({"gameId": game_id, "playerId": int(scorer), "goals": 1, "assists": 0})
+            if pd.notna(a1):
+                records.append({"gameId": game_id, "playerId": int(a1), "goals": 0, "assists": 1})
+            if pd.notna(a2):
+                records.append({"gameId": game_id, "playerId": int(a2), "goals": 0, "assists": 1})
+        if records:
+            frames.append(pd.DataFrame(records))
+
+    if not frames:
+        print("  points_5v5: 0 rows (no 5v5 goals found)")
+        return
+    out = pd.concat(frames, ignore_index=True)
+    out = out.groupby(["gameId", "playerId"]).agg(
+        goals=("goals", "sum"),
+        assists=("assists", "sum"),
+    ).reset_index()
+    out["points"] = out["goals"] + out["assists"]
+    out.to_sql("points_5v5", conn, if_exists="replace", index=False)
+    print(f"  points_5v5: {len(out)} rows from {len(frames)} games")
+
+
 def main():
     os.makedirs(os.path.dirname(OUTPUT_DB), exist_ok=True)
     if os.path.exists(OUTPUT_DB):
@@ -170,6 +212,7 @@ def main():
         build_competition_table(conn)
         build_players_table(conn)
         build_games_table(conn)
+        build_points_5v5_table(conn)
         build_player_metrics_table(conn)
     finally:
         conn.close()
