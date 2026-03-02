@@ -30,6 +30,18 @@ WHERE c.position IN ('F', 'D')
 _PPI_SQL = "SELECT playerId, ppi, ppi_plus FROM player_metrics"
 _POINTS_SQL = "SELECT playerId, gameId, goals FROM points_5v5"
 
+_DIVISIONS = {
+    "BOS": "ATL", "BUF": "ATL", "DET": "ATL", "FLA": "ATL",
+    "MTL": "ATL", "OTT": "ATL", "TBL": "ATL", "TOR": "ATL",
+    "CAR": "MET", "CBJ": "MET", "NJD": "MET", "NYI": "MET",
+    "NYR": "MET", "PHI": "MET", "PIT": "MET", "WSH": "MET",
+    "CHI": "CEN", "COL": "CEN", "DAL": "CEN", "MIN": "CEN",
+    "NSH": "CEN", "STL": "CEN", "WPG": "CEN", "UTA": "CEN",
+    "ANA": "PAC", "CGY": "PAC", "EDM": "PAC", "LAK": "PAC",
+    "SJS": "PAC", "SEA": "PAC", "VAN": "PAC", "VGK": "PAC",
+}
+_CONFERENCES = {"ATL": "East", "MET": "East", "CEN": "West", "PAC": "West"}
+
 
 def layout():
     return html.Div([
@@ -148,12 +160,16 @@ def update_teams(date_start, date_end, home_away):
     df["gd_5v5"] = df["gd_5v5"].fillna(0).astype(int)
 
     df = df.reset_index()
+    df["division"] = df["team"].map(_DIVISIONS)
+    df["conference"] = df["division"].map(_CONFERENCES)
     df = df.sort_values("pct", ascending=False)
     df["team_link"] = df["team"].apply(lambda t: f"[{t}](/team/{t})")
 
     _ci = {"case": "insensitive"}
     columns = [
         {"name": "Team",   "id": "team_link", "presentation": "markdown", "filter_options": _ci},
+        {"name": "Div",   "id": "division",   "filter_options": _ci},
+        {"name": "Conf",  "id": "conference",  "filter_options": _ci},
         {"name": "GP",     "id": "gp",        "type": "numeric"},
         {"name": "P%",     "id": "pct",       "type": "numeric",
          "format": Format(precision=3, scheme=Scheme.fixed)},
@@ -162,7 +178,7 @@ def update_teams(date_start, date_end, home_away):
          "format": Format(precision=1, scheme=Scheme.fixed)},
         {"name": "5v5 GD", "id": "gd_5v5",   "type": "numeric"},
     ]
-    display_cols = ["team_link", "gp", "pct", "rw", "ppi_plus", "gd_5v5"]
+    display_cols = ["team_link", "division", "conference", "gp", "pct", "rw", "ppi_plus", "gd_5v5"]
 
     return dash_table.DataTable(
         columns=columns,
