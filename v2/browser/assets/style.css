@@ -53,3 +53,18 @@ body {
 .page-content {
     padding: 1.5rem;
 }
+
+.dash-spreadsheet-container {
+    counter-reset: row-number;
+}
+
+.dash-spreadsheet-container td:first-child::before {
+    counter-increment: row-number;
+    content: counter(row-number);
+    display: inline-block;
+    min-width: 1.5em;
+    text-align: right;
+    margin-right: 0.5em;
+    color: #adb5bd;
+    font-size: 0.85em;
+}
