@@ -463,18 +463,39 @@ def main():
     csv_path = paths["csv"] / "players.csv"
     json_path = paths["json"] / "players.json"
 
-    try:
-        write_csv(players, csv_path)
-        write_json(players, season, season_id, json_path)
-    except IOError as e:
-        print(f"\nError: Failed to write output files: {e}")
-        sys.exit(1)
-
-    print(f"\nComplete!")
-    print(f"  Raw data: data/{season}/players/ ({len(players)} files)")
-    print(f"  CSV: {csv_path}")
-    print(f"  JSON: {json_path}")
-    print(f"  Players processed: {len(players)}")
+    # In backfill mode, merge new players into existing CSV/JSON
+    if mode == "backfill" and csv_path.exists():
+        new_ids = {p['playerId'] for p in players}
+        existing_rows = []
+        with open(csv_path, 'r', newline='') as f:
+            existing_rows = list(csv.DictReader(f))
+        kept = [r for r in existing_rows if int(r['playerId']) not in new_ids]
+        new_rows = [build_csv_row(p) for p in players]
+        all_rows = kept + new_rows
+        try:
+            with open(csv_path, 'w', newline='') as f:
+                writer = csv.DictWriter(f, fieldnames=CSV_COLUMNS)
+                writer.writeheader()
+                writer.writerows(all_rows)
+        except IOError as e:
+            print(f"\nError: Failed to write CSV: {e}")
+            sys.exit(1)
+        print(f"\nComplete!")
+        print(f"  Raw data: data/{season}/players/ ({len(players)} new files)")
+        print(f"  CSV: {csv_path} ({len(kept)} existing + {len(new_rows)} new = {len(all_rows)} total)")
+        print(f"  Players backfilled: {len(players)}")
+    else:
+        try:
+            write_csv(players, csv_path)
+            write_json(players, season, season_id, json_path)
+        except IOError as e:
+            print(f"\nError: Failed to write output files: {e}")
+            sys.exit(1)
+        print(f"\nComplete!")
+        print(f"  Raw data: data/{season}/players/ ({len(players)} files)")
+        print(f"  CSV: {csv_path}")
+        print(f"  JSON: {json_path}")
+        print(f"  Players processed: {len(players)}")
 
 
 if __name__ == "__main__":
