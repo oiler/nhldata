@@ -5,7 +5,7 @@ import subprocess
 from v2.orchestrator.tools.fetch import fetch_games, fetch_shifts
 from v2.orchestrator.tools.generate import (
     flatten_boxscores, flatten_plays, fetch_players,
-    generate_timelines, compute_competition,
+    generate_timelines, compute_competition, backfill_players,
 )
 from v2.orchestrator.tools.build import build_league_db
 
@@ -60,6 +60,15 @@ def test_compute_competition(mock_run):
     mock_run.return_value = _mock_run_success()
     result = compute_competition(900, 902, season="2025")
     assert result["status"] == "ok"
+
+
+@patch("v2.orchestrator.tools.generate.subprocess.run")
+def test_backfill_players(mock_run):
+    mock_run.return_value = _mock_run_success("Players backfilled: 3")
+    result = backfill_players(season="2025")
+    assert result["status"] == "ok"
+    cmd = mock_run.call_args[0][0]
+    assert "backfill" in cmd
 
 
 @patch("v2.orchestrator.tools.build.subprocess.run")

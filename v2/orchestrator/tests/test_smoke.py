@@ -19,7 +19,7 @@ def test_all_tools_import():
     from v2.orchestrator.tools.fetch import fetch_games, fetch_shifts
     from v2.orchestrator.tools.generate import (
         flatten_boxscores, flatten_plays, fetch_players,
-        generate_timelines, compute_competition,
+        generate_timelines, compute_competition, backfill_players,
     )
     from v2.orchestrator.tools.build import build_league_db
     from v2.orchestrator.tools.notify import send_notification
@@ -27,8 +27,8 @@ def test_all_tools_import():
 
 def test_agent_imports():
     from v2.orchestrator.agent import TOOLS, TOOL_HANDLERS, SYSTEM_PROMPT
-    assert len(TOOLS) == 11
-    assert len(TOOL_HANDLERS) == 11
+    assert len(TOOLS) == 12
+    assert len(TOOL_HANDLERS) == 12
 
 
 def test_runner_imports():

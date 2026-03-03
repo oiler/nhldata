@@ -39,3 +39,8 @@ def generate_timelines(start: int, end: int, season: str = "2025") -> dict:
 def compute_competition(start: int, end: int, season: str = "2025") -> dict:
     """Compute competition scores for a game range."""
     return _run_script("compute_competition", [str(start), str(end), season])
+
+
+def backfill_players(season: str = "2025") -> dict:
+    """Fetch any players in competition data missing from players.csv."""
+    return _run_script("get_players", ["backfill", season])

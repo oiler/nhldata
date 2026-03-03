@@ -9,7 +9,7 @@ from v2.orchestrator.tools.validate import validate_game
 from v2.orchestrator.tools.fetch import fetch_games, fetch_shifts
 from v2.orchestrator.tools.generate import (
     flatten_boxscores, flatten_plays, fetch_players,
-    generate_timelines, compute_competition,
+    generate_timelines, compute_competition, backfill_players,
 )
 from v2.orchestrator.tools.build import build_league_db
 from v2.orchestrator.tools.notify import send_notification
@@ -30,8 +30,9 @@ PIPELINE ORDER (dependencies):
 7. fetch_players → update player metadata (catches new player IDs)
 8. generate_timelines → build second-by-second timelines (requires shifts)
 9. compute_competition → calculate competition scores (requires timelines)
-10. build_league_db → rebuild league.db from all generated data
-11. notify → send summary notification
+10. backfill_players → fetch any players in competition data missing from players.csv
+11. build_league_db → rebuild league.db from all generated data
+12. notify → send summary notification
 
 RULES:
 - If a game's shifts fail after retries, skip its timeline and competition but process other games.
@@ -151,6 +152,15 @@ TOOLS = [
         }
     },
     {
+        "name": "backfill_players",
+        "description": "Fetch any players found in competition data who are missing a raw data file. Run after compute_competition to catch call-ups and recent additions.",
+        "input_schema": {
+            "type": "object",
+            "properties": {"season": {"type": "string"}},
+            "required": ["season"]
+        }
+    },
+    {
         "name": "build_league_db",
         "description": "Rebuild the league SQLite database from all generated data.",
         "input_schema": {
@@ -191,6 +201,8 @@ TOOL_HANDLERS = {
         args["start"], args["end"], season=args["season"]),
     "compute_competition": lambda args: compute_competition(
         args["start"], args["end"], season=args["season"]),
+    "backfill_players": lambda args: backfill_players(
+        season=args["season"]),
     "build_league_db": lambda args: build_league_db(
         season=args["season"]),
     "send_notification": lambda args: send_notification(
