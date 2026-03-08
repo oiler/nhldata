@@ -5,10 +5,11 @@ from dash import html, dash_table, callback, Input, Output
 from dash.dash_table.Format import Format, Scheme
 
 from db import league_query
-from filters import make_filter_bar, register_home_away_callback, compute_deployment_metrics
+from filters import make_filter_bar, register_home_away_callback, register_season_callback, compute_deployment_metrics
 
 dash.register_page(__name__, path="/teams", name="Teams")
 register_home_away_callback("teams")
+register_season_callback("teams")
 
 _GAMES_SQL = """
 SELECT gameId, gameDate, homeTeam_abbrev, awayTeam_abbrev,
@@ -56,18 +57,20 @@ def layout():
     Input("teams-date-start", "date"),
     Input("teams-date-end", "date"),
     Input("teams-home-away", "data"),
+    Input("store-season", "data"),
 )
-def update_teams(date_start, date_end, home_away):
+def update_teams(date_start, date_end, home_away, season):
+    season = season or "2025"
     if not date_start or not date_end:
         return html.P("Select a date range.")
 
-    games_df = league_query(_GAMES_SQL, params=(date_start, date_end))
+    games_df = league_query(_GAMES_SQL, params=(date_start, date_end), season=season)
     if games_df.empty:
         return html.P("No games found for this range.")
 
-    comp_df = league_query(_COMP_SQL, params=(date_start, date_end))
-    pts_df = league_query(_POINTS_SQL)
-    ppi_df = league_query(_PPI_SQL)
+    comp_df = league_query(_COMP_SQL, params=(date_start, date_end), season=season)
+    pts_df = league_query(_POINTS_SQL, season=season)
+    ppi_df = league_query(_PPI_SQL, season=season)
 
     # --- Records (GP, P%, RW) ---
     # Unpivot games to team-game rows

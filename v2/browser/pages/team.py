@@ -6,11 +6,12 @@ from dash.dash_table import FormatTemplate
 from dash.dash_table.Format import Format, Scheme
 
 from db import league_query
-from filters import make_filter_bar, register_home_away_callback, compute_deployment_metrics
+from filters import make_filter_bar, register_home_away_callback, register_season_callback, compute_deployment_metrics
 from utils import seconds_to_mmss
 
 dash.register_page(__name__, path_template="/team/<abbrev>", name="Team")
 register_home_away_callback("team")
+register_season_callback("team")
 
 _COMP_SQL = """
 SELECT c.playerId,
@@ -154,8 +155,10 @@ def layout(abbrev=None):
     Input("team-date-end", "date"),
     Input("team-home-away", "data"),
     Input("team-abbrev", "data"),
+    Input("store-season", "data"),
 )
-def update_team(date_start, date_end, home_away, abbrev):
+def update_team(date_start, date_end, home_away, abbrev, season):
+    season = season or "2025"
     if not date_start or not date_end or not abbrev:
         return html.P("Select a date range.")
 
@@ -166,8 +169,8 @@ def update_team(date_start, date_end, home_away, abbrev):
     elif home_away == "away":
         sql += _HA_AWAY
 
-    comp_df = league_query(sql, params=(abbrev, date_start, date_end))
-    ppi_df = league_query(_PPI_SQL)
+    comp_df = league_query(sql, params=(abbrev, date_start, date_end), season=season)
+    ppi_df = league_query(_PPI_SQL, season=season)
 
     # Aggregate per player
     if not comp_df.empty:
@@ -195,7 +198,7 @@ def update_team(date_start, date_end, home_away, abbrev):
                 grouped[col] = None
 
         # 5v5 points
-        pts_df = league_query(_POINTS_SQL)
+        pts_df = league_query(_POINTS_SQL, season=season)
         if not pts_df.empty:
             valid_games = comp_df[["playerId", "gameId"]].drop_duplicates()
             pts_filtered = pts_df.merge(valid_games, on=["playerId", "gameId"], how="inner")
@@ -217,11 +220,11 @@ def update_team(date_start, date_end, home_away, abbrev):
 
     # Game log
     if home_away == "home":
-        games_df = league_query(_GAMES_HA_HOME, params=(abbrev, date_start, date_end))
+        games_df = league_query(_GAMES_HA_HOME, params=(abbrev, date_start, date_end), season=season)
     elif home_away == "away":
-        games_df = league_query(_GAMES_HA_AWAY, params=(abbrev, date_start, date_end))
+        games_df = league_query(_GAMES_HA_AWAY, params=(abbrev, date_start, date_end), season=season)
     else:
-        games_df = league_query(_GAMES_SQL, params=(abbrev, abbrev, date_start, date_end))
+        games_df = league_query(_GAMES_SQL, params=(abbrev, abbrev, date_start, date_end), season=season)
 
     # Heaviness lookup
     game_ids = games_df["gameId"].tolist() if not games_df.empty else []
@@ -231,6 +234,7 @@ def update_team(date_start, date_end, home_away, abbrev):
         heaviness_df = league_query(
             _HEAVINESS_SQL.format(placeholders=placeholders),
             params=tuple(game_ids),
+            season=season,
         )
         for _, row in heaviness_df.iterrows():
             gid = row["gameId"]

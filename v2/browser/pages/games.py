@@ -3,9 +3,10 @@ import dash
 from dash import html, dash_table, callback, Input, Output
 
 from db import league_query
-from filters import make_filter_bar
+from filters import make_filter_bar, register_season_callback
 
 dash.register_page(__name__, path="/games", name="Games")
+register_season_callback("games")
 
 _SQL = """
 SELECT gameId, gameDate, awayTeam_abbrev, homeTeam_abbrev,
@@ -29,12 +30,14 @@ def layout():
     Output("games-content", "children"),
     Input("games-date-start", "date"),
     Input("games-date-end", "date"),
+    Input("store-season", "data"),
 )
-def update_games(date_start, date_end):
+def update_games(date_start, date_end, season):
+    season = season or "2025"
     if not date_start or not date_end:
         return html.P("Select a date range.")
 
-    df = league_query(_SQL, params=(date_start, date_end))
+    df = league_query(_SQL, params=(date_start, date_end), season=season)
     if df.empty:
         return html.P("No games found in this range.")
 

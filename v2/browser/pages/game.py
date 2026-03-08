@@ -119,9 +119,10 @@ def layout(game_id=None):
     except (TypeError, ValueError):
         return html.Div(f"Invalid game ID: {game_id}")
 
-    meta_df    = league_query(_META_SQL, params=(gid,))
-    heavy_df   = league_query(_HEAVINESS_SQL, params=(gid,))
-    players_df = league_query(_PLAYERS_SQL, params=(gid,))
+    season = str(gid)[:4]
+    meta_df    = league_query(_META_SQL, params=(gid,), season=season)
+    heavy_df   = league_query(_HEAVINESS_SQL, params=(gid,), season=season)
+    players_df = league_query(_PLAYERS_SQL, params=(gid,), season=season)
 
     if meta_df.empty:
         return html.Div(f"Game {gid} not found.")

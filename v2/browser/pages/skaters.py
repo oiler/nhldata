@@ -5,11 +5,12 @@ from dash.dash_table import FormatTemplate
 from dash.dash_table.Format import Format, Scheme
 
 from db import league_query
-from filters import make_filter_bar, register_home_away_callback, compute_deployment_metrics
+from filters import make_filter_bar, register_home_away_callback, register_season_callback, compute_deployment_metrics
 from utils import seconds_to_mmss
 
 dash.register_page(__name__, path="/skaters", name="Skaters")
 register_home_away_callback("skaters")
+register_season_callback("skaters")
 
 _COMP_SQL = """
 SELECT c.playerId,
@@ -48,8 +49,10 @@ def layout():
     Input("skaters-date-start", "date"),
     Input("skaters-date-end", "date"),
     Input("skaters-home-away", "data"),
+    Input("store-season", "data"),
 )
-def update_skaters(date_start, date_end, home_away):
+def update_skaters(date_start, date_end, home_away, season):
+    season = season or "2025"
     if not date_start or not date_end:
         return html.P("Select a date range.")
 
@@ -59,11 +62,11 @@ def update_skaters(date_start, date_end, home_away):
     elif home_away == "away":
         sql += _HA_AWAY
 
-    comp_df = league_query(sql, params=(date_start, date_end))
+    comp_df = league_query(sql, params=(date_start, date_end), season=season)
     if comp_df.empty:
         return html.P("No data found for this range.")
 
-    ppi_df = league_query(_PPI_SQL)
+    ppi_df = league_query(_PPI_SQL, season=season)
 
     # Aggregate per player
     grouped = comp_df.groupby("playerId").agg(
@@ -93,7 +96,7 @@ def update_skaters(date_start, date_end, home_away):
             grouped[col] = None
 
     # 5v5 points
-    pts_df = league_query(_POINTS_SQL)
+    pts_df = league_query(_POINTS_SQL, season=season)
     if not pts_df.empty:
         valid_games = comp_df[["playerId", "gameId"]].drop_duplicates()
         pts_filtered = pts_df.merge(valid_games, on=["playerId", "gameId"], how="inner")

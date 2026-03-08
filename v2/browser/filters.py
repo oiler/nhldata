@@ -13,7 +13,8 @@ def season_date_range(season: str = "2025") -> tuple[str, str]:
         season=season,
     )
     if df.empty or df.iloc[0]["min_d"] is None:
-        return ("2025-10-01", "2026-06-30")
+        yr = int(season) if season else 2025
+        return (f"{yr - 1}-10-01", f"{yr}-06-30")
     return (df.iloc[0]["min_d"], df.iloc[0]["max_d"])
 
 
@@ -78,6 +79,23 @@ def make_filter_bar(page_id: str, include_home_away: bool = True) -> html.Div:
             "marginBottom": "1rem", "flexWrap": "wrap", "gap": "0.5rem",
         },
     )
+
+
+def register_season_callback(page_id: str):
+    """Register a callback that resets date pickers when the season changes."""
+
+    @callback(
+        Output(f"{page_id}-date-start", "date"),
+        Output(f"{page_id}-date-start", "min_date_allowed"),
+        Output(f"{page_id}-date-start", "max_date_allowed"),
+        Output(f"{page_id}-date-end", "date"),
+        Output(f"{page_id}-date-end", "min_date_allowed"),
+        Output(f"{page_id}-date-end", "max_date_allowed"),
+        Input("store-season", "data"),
+    )
+    def update_dates(season):
+        min_d, max_d = season_date_range(season or "2025")
+        return min_d, min_d, max_d, max_d, min_d, max_d
 
 
 def register_home_away_callback(page_id: str):

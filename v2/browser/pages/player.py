@@ -5,11 +5,12 @@ from dash.dash_table import FormatTemplate
 from dash.dash_table.Format import Format, Scheme
 
 from db import league_query
-from filters import make_filter_bar, register_home_away_callback, compute_deployment_metrics
+from filters import make_filter_bar, register_home_away_callback, register_season_callback, compute_deployment_metrics
 from utils import seconds_to_mmss
 
 dash.register_page(__name__, path_template="/player/<player_id>", name="Player")
 register_home_away_callback("player")
+register_season_callback("player")
 
 _META_SQL = """
 SELECT firstName, lastName, currentTeamAbbrev, position
@@ -80,7 +81,9 @@ def layout(player_id=None):
     except (TypeError, ValueError):
         return html.Div(f"Invalid player ID: {player_id}")
 
-    meta_df = league_query(_META_SQL, params=(pid,))
+    meta_df = league_query(_META_SQL, params=(pid,), season="2025")
+    if meta_df.empty:
+        meta_df = league_query(_META_SQL, params=(pid,), season="2024")
     if meta_df.empty:
         name = f"Player {pid}"
         subtitle = ""
@@ -108,8 +111,10 @@ def layout(player_id=None):
     Input("player-home-away", "data"),
     Input("player-pid", "data"),
     Input("player-position", "data"),
+    Input("store-season", "data"),
 )
-def update_player(date_start, date_end, home_away, pid, position):
+def update_player(date_start, date_end, home_away, pid, position, season):
+    season = season or "2025"
     if not date_start or not date_end or pid is None:
         return html.P("Select a date range.")
 
@@ -120,7 +125,7 @@ def update_player(date_start, date_end, home_away, pid, position):
         sql += _HA_AWAY
     sql += _ORDER
 
-    games_df = league_query(sql, params=(pid, date_start, date_end))
+    games_df = league_query(sql, params=(pid, date_start, date_end), season=season)
     if games_df.empty:
         return html.P("No game data for this range.")
 
@@ -130,7 +135,7 @@ def update_player(date_start, date_end, home_away, pid, position):
         comp_sql += _COMP_HA_HOME
     elif home_away == "away":
         comp_sql += _COMP_HA_AWAY
-    comp_df = league_query(comp_sql, params=(pid, date_start, date_end))
+    comp_df = league_query(comp_sql, params=(pid, date_start, date_end), season=season)
 
     summary_section = html.Div()
     if not comp_df.empty:
@@ -147,7 +152,7 @@ def update_player(date_start, date_end, home_away, pid, position):
         avg_toi_share = game_toi_share.mean() if not game_toi_share.empty else 0
 
         # Points
-        pts_df = league_query(_POINTS_SQL)
+        pts_df = league_query(_POINTS_SQL, season=season)
         total_goals = total_assists = total_points = 0
         if not pts_df.empty:
             player_pts = pts_df[
@@ -160,13 +165,13 @@ def update_player(date_start, date_end, home_away, pid, position):
         p_per_60 = total_points * 3600 / total_toi if total_toi > 0 else 0
 
         # PPI / wPPI — need all F+D data for correct team-relative TOI share
-        ppi_df = league_query(_PPI_SQL)
+        ppi_df = league_query(_PPI_SQL, season=season)
         all_comp_sql = _ALL_COMP_SQL
         if home_away == "home":
             all_comp_sql += _ALL_COMP_HA_HOME
         elif home_away == "away":
             all_comp_sql += _ALL_COMP_HA_AWAY
-        all_comp_df = league_query(all_comp_sql, params=(date_start, date_end))
+        all_comp_df = league_query(all_comp_sql, params=(date_start, date_end), season=season)
 
         ppi_val = wppi_val = ppi_plus_val = wppi_plus_val = None
         if not ppi_df.empty:

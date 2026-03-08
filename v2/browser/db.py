@@ -36,6 +36,7 @@ def available_teams(season: str) -> list[str]:
 
 _LEAGUE_DB_PATHS = {
     "2025": _PROJECT_ROOT / "data" / "2025" / "generated" / "browser" / "league.db",
+    "2024": _PROJECT_ROOT / "data" / "2024" / "generated" / "browser" / "league.db",
 }
 
 
