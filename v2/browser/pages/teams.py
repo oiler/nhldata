@@ -156,11 +156,12 @@ def update_teams(date_start, date_end, home_away, season):
     if not team_ppi.empty:
         df = df.join(team_ppi[["ppi_plus"]], how="left")
     if not goal_agg.empty:
-        df = df.join(goal_agg[["gd_5v5"]], how="left")
-    for col in ["ppi_plus", "gd_5v5"]:
+        df = df.join(goal_agg[["gf", "ga", "gd_5v5"]], how="left")
+    for col in ["ppi_plus", "gf", "ga", "gd_5v5"]:
         if col not in df.columns:
             df[col] = None
-    df["gd_5v5"] = df["gd_5v5"].fillna(0).astype(int)
+    for col in ["gf", "ga", "gd_5v5"]:
+        df[col] = df[col].fillna(0).astype(int)
 
     df = df.reset_index()
     df["division"] = df["team"].map(_DIVISIONS)
@@ -179,9 +180,11 @@ def update_teams(date_start, date_end, home_away, season):
         {"name": "RW",     "id": "rw",        "type": "numeric"},
         {"name": "PPI+",   "id": "ppi_plus",  "type": "numeric",
          "format": Format(precision=1, scheme=Scheme.fixed)},
+        {"name": "5v5 GF", "id": "gf",       "type": "numeric"},
+        {"name": "5v5 GA", "id": "ga",       "type": "numeric"},
         {"name": "5v5 GD", "id": "gd_5v5",   "type": "numeric"},
     ]
-    display_cols = ["team_link", "division", "conference", "gp", "pct", "rw", "ppi_plus", "gd_5v5"]
+    display_cols = ["team_link", "division", "conference", "gp", "pct", "rw", "ppi_plus", "gf", "ga", "gd_5v5"]
 
     return dash_table.DataTable(
         columns=columns,
