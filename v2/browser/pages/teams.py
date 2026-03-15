@@ -169,6 +169,41 @@ def update_teams(date_start, date_end, home_away, season):
     df = df.sort_values("pct", ascending=False)
     df["team_link"] = df["team"].apply(lambda t: f"[{t}](/team/{t})")
 
+    # --- Tercile coloring ---
+    _TOP = "#d4edda"      # green tint
+    _MID = "#fff3cd"      # yellow tint
+    _BOT = "#f8d7da"      # red tint
+    _TOP_ODD = "#c5e4cd"
+    _MID_ODD = "#f5e9be"
+    _BOT_ODD = "#eecacd"
+
+    def _tercile_styles(col_id, higher_is_better=True):
+        """Generate conditional styles for top/mid/bottom thirds of a column."""
+        series = df[col_id].dropna()
+        if series.empty:
+            return []
+        t1 = series.quantile(1 / 3)
+        t2 = series.quantile(2 / 3)
+        if higher_is_better:
+            top_q, bot_q = f"{{{col_id}}} >= {t2}", f"{{{col_id}}} < {t1}"
+            mid_q = f"{{{col_id}}} >= {t1} && {{{col_id}}} < {t2}"
+        else:
+            top_q, bot_q = f"{{{col_id}}} <= {t1}", f"{{{col_id}}} > {t2}"
+            mid_q = f"{{{col_id}}} > {t1} && {{{col_id}}} <= {t2}"
+        return [
+            {"if": {"filter_query": top_q, "column_id": col_id}, "backgroundColor": _TOP},
+            {"if": {"filter_query": mid_q, "column_id": col_id}, "backgroundColor": _MID},
+            {"if": {"filter_query": bot_q, "column_id": col_id}, "backgroundColor": _BOT},
+            {"if": {"filter_query": top_q, "column_id": col_id, "row_index": "odd"}, "backgroundColor": _TOP_ODD},
+            {"if": {"filter_query": mid_q, "column_id": col_id, "row_index": "odd"}, "backgroundColor": _MID_ODD},
+            {"if": {"filter_query": bot_q, "column_id": col_id, "row_index": "odd"}, "backgroundColor": _BOT_ODD},
+        ]
+
+    tercile_cond = []
+    for col_id, higher in [("pct", True), ("rw", True), ("ppi_plus", True),
+                            ("gf", True), ("ga", False), ("gd_5v5", True)]:
+        tercile_cond.extend(_tercile_styles(col_id, higher))
+
     _ci = {"case": "insensitive"}
     columns = [
         {"name": "Team",   "id": "team_link", "presentation": "markdown", "filter_options": _ci},
@@ -205,9 +240,5 @@ def update_teams(date_start, date_end, home_away, season):
         },
         style_data_conditional=[
             {"if": {"row_index": "odd"}, "backgroundColor": "#f8f9fa"},
-            {"if": {"filter_query": "{gd_5v5} > 0", "column_id": "gd_5v5"},
-             "color": "green"},
-            {"if": {"filter_query": "{gd_5v5} < 0", "column_id": "gd_5v5"},
-             "color": "crimson"},
-        ],
+        ] + tercile_cond,
     )
