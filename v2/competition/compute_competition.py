@@ -75,6 +75,20 @@ def compute_game_toi(rows: List[dict]) -> Dict[int, int]:
     return toi
 
 
+def compute_total_toi(rows: List[dict]) -> Dict[int, int]:
+    """Count total seconds on ice per skater across all situations."""
+    toi: Dict[int, int] = {}
+    for row in rows:
+        for col in ("awaySkaters", "homeSkaters"):
+            raw = row.get(col, "")
+            if not raw:
+                continue
+            for pid_str in raw.split("|"):
+                pid = int(pid_str)
+                toi[pid] = toi.get(pid, 0) + 1
+    return toi
+
+
 def build_top_competition(
     toi: Dict[int, int],
     positions: Dict[int, str],
@@ -329,7 +343,8 @@ def compute_team_heaviness(
 
 
 def write_output(game_id: str, season: str, scores: Dict[int, dict],
-                 toi: Dict[int, int], positions: Dict[int, str],
+                 toi: Dict[int, int], total_toi: Dict[int, int],
+                 positions: Dict[int, str],
                  teams: Dict[int, str]) -> Path:
     """Write per-player competition scores to CSV."""
     out_dir = DATA_DIR / season / "generated" / "competition"
@@ -344,6 +359,7 @@ def write_output(game_id: str, season: str, scores: Dict[int, dict],
             "team":             teams.get(pid, ""),
             "position":         positions.get(pid, "F"),
             "toi_seconds":      toi.get(pid, 0),
+            "total_toi_seconds": total_toi.get(pid, 0),
             "comp_fwd":         round(data["comp_fwd"], 2),
             "comp_def":         round(data["comp_def"], 2),
             "pct_vs_top_fwd":   round(data.get("pct_vs_top_fwd", 0.0), 4),
@@ -359,7 +375,7 @@ def write_output(game_id: str, season: str, scores: Dict[int, dict],
     rows.sort(key=lambda r: r["toi_seconds"], reverse=True)
 
     fieldnames = [
-        "gameId", "playerId", "team", "position", "toi_seconds",
+        "gameId", "playerId", "team", "position", "toi_seconds", "total_toi_seconds",
         "comp_fwd", "comp_def", "pct_vs_top_fwd", "pct_vs_top_def",
         "height_in", "weight_lbs", "heaviness",
         "weighted_forward_heaviness", "weighted_defense_heaviness", "weighted_team_heaviness",
@@ -381,6 +397,7 @@ def run_game(game_number: int, season: str) -> Path:
 
     timeline_rows = load_timeline(season, game_id)
     toi = compute_game_toi(timeline_rows)
+    total_toi = compute_total_toi(timeline_rows)
 
     scores = score_game(timeline_rows, toi, positions)
     top_comp = build_top_competition(toi, positions, teams)
@@ -406,7 +423,7 @@ def run_game(game_number: int, season: str) -> Path:
         scores[pid]["weighted_defense_heaviness"] = th["def"]
         scores[pid]["weighted_team_heaviness"]    = th["all"]
 
-    return write_output(game_id, season, scores, toi, positions, teams)
+    return write_output(game_id, season, scores, toi, total_toi, positions, teams)
 
 
 def main():

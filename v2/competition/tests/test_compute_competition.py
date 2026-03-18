@@ -57,7 +57,35 @@ def test_build_lookups_unknown_position_defaults_to_forward():
     assert positions[998] == "F", "Missing positionCode should default to F"
 
 
-from compute_competition import compute_game_toi
+from compute_competition import compute_game_toi, compute_total_toi
+
+
+def test_compute_total_toi_counts_all_situations():
+    """compute_total_toi counts seconds in non-5v5 rows (unlike compute_game_toi)."""
+    rows = [
+        {"situationCode": "1441", "awaySkaters": "1|2|3|4",   "homeSkaters": "6|7|8|9"},
+        {"situationCode": "1551", "awaySkaters": "1|2|3|4|5", "homeSkaters": "6|7|8|9|10"},
+    ]
+    total = compute_total_toi(rows)
+    # Player 1 appears in both rows → 2 seconds total
+    assert total[1] == 2
+    # Player 5 only in 1551 → 1 second
+    assert total[5] == 1
+    # Player 6 in both rows → 2 seconds
+    assert total[6] == 2
+
+
+def test_compute_total_toi_includes_5v5():
+    """total_toi >= game_toi for the same data."""
+    rows = [
+        {"situationCode": "1441", "awaySkaters": "1|2|3|4",   "homeSkaters": "6|7|8|9"},
+        {"situationCode": "1551", "awaySkaters": "1|2|3|4|5", "homeSkaters": "6|7|8|9|10"},
+        {"situationCode": "1551", "awaySkaters": "1|2|3|4|5", "homeSkaters": "6|7|8|9|10"},
+    ]
+    game_toi = compute_game_toi(rows)
+    total = compute_total_toi(rows)
+    for pid in game_toi:
+        assert total[pid] >= game_toi[pid], f"Player {pid}: total {total[pid]} < game {game_toi[pid]}"
 
 
 def test_compute_game_toi_counts_seconds():
@@ -159,7 +187,7 @@ def test_run_game_produces_output():
     assert len(rows) > 0, "Output CSV is empty"
 
     # Check required columns
-    required = {"gameId", "playerId", "team", "position", "toi_seconds",
+    required = {"gameId", "playerId", "team", "position", "toi_seconds", "total_toi_seconds",
                 "comp_fwd", "comp_def", "pct_vs_top_fwd", "pct_vs_top_def",
                 "height_in", "weight_lbs", "heaviness",
                 "weighted_forward_heaviness", "weighted_defense_heaviness", "weighted_team_heaviness"}

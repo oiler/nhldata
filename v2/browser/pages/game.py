@@ -41,6 +41,8 @@ SELECT
     c.position,
     c.toi_seconds,
     5.0 * c.toi_seconds / NULLIF(tt.team_total, 0)                      AS toi_share,
+    c.total_toi_seconds,
+    c.toi_seconds * 1.0 / NULLIF(c.total_toi_seconds, 0) AS itoi_pct,
     c.comp_fwd,
     c.comp_def,
     c.pct_vs_top_fwd,
@@ -68,14 +70,15 @@ def _make_position_table(df):
     columns = [
         {"name": "Player",       "id": "playerName"},
         {"name": "5v5 TOI",      "id": "toi_display"},
-        {"name": "TOI%",         "id": "toi_share", "type": "numeric", "format": FormatTemplate.percentage(1)},
+        {"name": "tTOI%",        "id": "toi_share", "type": "numeric", "format": FormatTemplate.percentage(1)},
+        {"name": "iTOI%",        "id": "itoi_pct", "type": "numeric", "format": FormatTemplate.percentage(1)},
         {"name": "OPP F TOI",    "id": "comp_fwd_display"},
         {"name": "OPP D TOI",    "id": "comp_def_display"},
         {"name": "vs Top Fwd %", "id": "pct_vs_top_fwd", "type": "numeric", "format": FormatTemplate.percentage(2)},
         {"name": "vs Top Def %", "id": "pct_vs_top_def", "type": "numeric", "format": FormatTemplate.percentage(2)},
     ]
     display_cols = [
-        "playerName", "toi_display", "toi_share", "comp_fwd_display",
+        "playerName", "toi_display", "toi_share", "itoi_pct", "comp_fwd_display",
         "comp_def_display", "pct_vs_top_fwd", "pct_vs_top_def",
     ]
 

@@ -60,11 +60,16 @@ app.layout = html.Div([
             html.Dd("Weighted PPI — PPI scaled by a player's average 5v5 TOI share relative to their team. Measures deployment-adjusted physical presence per game."),
             html.Dt("wPPI+"),
             html.Dd("wPPI indexed to the league average (100 = average). Accounts for both build and 5v5 deployment rate."),
-            html.Dt("TOI%"),
+            html.Dt("tTOI%"),
             html.Dd(
                 "Share of the team's 5v5 ice time played by this skater per game. "
                 "Computed as 5 × player_toi / team_total_5v5_toi per game, then averaged "
                 "across the season. 20% means the skater played 1/5 of all available 5v5 ice time."
+            ),
+            html.Dt("iTOI%"),
+            html.Dd(
+                "Fraction of a player's total ice time (all situations) spent at 5v5. "
+                "Lower values indicate power play or penalty kill specialists."
             ),
             html.Dt("5v5 TOI/GP"),
             html.Dd("Average 5-on-5 time on ice per game played."),

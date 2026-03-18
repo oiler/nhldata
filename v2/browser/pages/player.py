@@ -23,7 +23,9 @@ SELECT c.gameId, g.gameDate, c.team,
        g.awayTeam_score, g.homeTeam_score,
        g.periodDescriptor_number,
        c.toi_seconds,
+       c.total_toi_seconds,
        5.0 * c.toi_seconds / NULLIF(tt.team_total, 0) AS toi_share,
+       c.toi_seconds * 1.0 / NULLIF(c.total_toi_seconds, 0) AS itoi_pct,
        c.comp_fwd, c.comp_def,
        c.pct_vs_top_fwd, c.pct_vs_top_def
 FROM competition c
@@ -44,7 +46,7 @@ _HA_AWAY = " AND c.team = g.awayTeam_abbrev"
 _ORDER = " ORDER BY g.gameDate ASC"
 
 _COMP_SQL = """
-SELECT c.playerId, c.team, c.gameId, c.toi_seconds, c.position,
+SELECT c.playerId, c.team, c.gameId, c.toi_seconds, c.total_toi_seconds, c.position,
        c.pct_vs_top_fwd, c.pct_vs_top_def, c.comp_fwd, c.comp_def
 FROM competition c
 JOIN games g ON c.gameId = g.gameId
@@ -60,7 +62,7 @@ _PPI_SQL = "SELECT playerId, ppi, ppi_plus FROM player_metrics"
 _POINTS_SQL = "SELECT playerId, gameId, goals, assists, points FROM points_5v5"
 
 _ALL_COMP_SQL = """
-SELECT c.playerId, c.position, c.team, c.gameId, c.toi_seconds,
+SELECT c.playerId, c.position, c.team, c.gameId, c.toi_seconds, c.total_toi_seconds,
        c.pct_vs_top_fwd, c.pct_vs_top_def, c.comp_fwd, c.comp_def,
        g.homeTeam_abbrev, g.awayTeam_abbrev
 FROM competition c
@@ -151,6 +153,10 @@ def update_player(date_start, date_end, home_away, pid, position, season):
         game_toi_share = games_df["toi_share"].dropna()
         avg_toi_share = game_toi_share.mean() if not game_toi_share.empty else 0
 
+        # iTOI% (avg of per-game 5v5/total ratio)
+        game_itoi_pct = games_df["itoi_pct"].dropna()
+        avg_itoi_pct = game_itoi_pct.mean() if not game_itoi_pct.empty else 0
+
         # Points
         pts_df = league_query(_POINTS_SQL, season=season)
         total_goals = total_assists = total_points = 0
@@ -206,6 +212,7 @@ def update_player(date_start, date_end, home_away, pid, position, season):
             lg = league_comp_df.groupby("playerId").agg(
                 games_played=("gameId", "nunique"),
                 total_toi=("toi_seconds", "sum"),
+                total_all_toi=("total_toi_seconds", "sum"),
                 weighted_pct_fwd=("pct_vs_top_fwd", lambda x: (x * league_comp_df.loc[x.index, "toi_seconds"]).sum()),
                 weighted_pct_def=("pct_vs_top_def", lambda x: (x * league_comp_df.loc[x.index, "toi_seconds"]).sum()),
                 weighted_comp_fwd=("comp_fwd", lambda x: (x * league_comp_df.loc[x.index, "toi_seconds"]).sum()),
@@ -225,6 +232,9 @@ def update_player(date_start, date_end, home_away, pid, position, season):
             merged = league_comp_df.merge(game_teams, on=["gameId", "team"])
             merged["game_share"] = 5.0 * merged["toi_seconds"] / merged["team_total"]
             lg["avg_toi_share"] = merged.groupby("playerId")["game_share"].mean()
+
+            # iTOI% (5v5 fraction of total ice time)
+            lg["avg_itoi_pct"] = lg["total_toi"] / lg["total_all_toi"].where(lg["total_all_toi"] > 0)
 
             # Points
             if not pts_df.empty:
@@ -264,7 +274,8 @@ def update_player(date_start, date_end, home_away, pid, position, season):
                 "P":           _rank("total_points"),
                 "P/60":        _rank("p_per_60"),
                 "5v5 TOI/GP":  _rank("toi_per_game"),
-                "TOI%":        _rank("avg_toi_share"),
+                "tTOI%":       _rank("avg_toi_share"),
+                "iTOI%":       _rank("avg_itoi_pct"),
                 "vs Top Fwd":  _rank("avg_pct_fwd"),
                 "vs Top Def":  _rank("avg_pct_def"),
                 "OPP F TOI":   _rank("avg_comp_fwd"),
@@ -302,7 +313,8 @@ def update_player(date_start, date_end, home_away, pid, position, season):
                 stat_cell("P", total_points, ranks.get("P")),
                 stat_cell("P/60", _fmt(p_per_60), ranks.get("P/60")),
                 stat_cell("5v5 TOI/GP", seconds_to_mmss(toi_per_game), ranks.get("5v5 TOI/GP")),
-                stat_cell("TOI%", _fmt(avg_toi_share * 100, 1) + "%", ranks.get("TOI%")),
+                stat_cell("tTOI%", _fmt(avg_toi_share * 100, 1) + "%", ranks.get("tTOI%")),
+                stat_cell("iTOI%", _fmt(avg_itoi_pct * 100, 1) + "%", ranks.get("iTOI%")),
                 stat_cell("vs Top Fwd", _fmt(avg_pct_fwd * 100, 1) + "%", ranks.get("vs Top Fwd")),
                 stat_cell("vs Top Def", _fmt(avg_pct_def * 100, 1) + "%", ranks.get("vs Top Def")),
                 stat_cell("OPP F TOI", seconds_to_mmss(avg_comp_fwd), ranks.get("OPP F TOI")),
@@ -343,6 +355,7 @@ def update_player(date_start, date_end, home_away, pid, position, season):
             "result":         result,
             "toi_display":    seconds_to_mmss(r["toi_seconds"]),
             "toi_share":      round(float(r["toi_share"]), 4) if r["toi_share"] is not None else None,
+            "itoi_pct":       round(float(r["itoi_pct"]), 4) if r["itoi_pct"] is not None else None,
             "comp_fwd":       seconds_to_mmss(r["comp_fwd"]),
             "comp_def":       seconds_to_mmss(r["comp_def"]),
             "pct_vs_top_fwd": round(float(r["pct_vs_top_fwd"]), 4) if r["pct_vs_top_fwd"] is not None else None,
@@ -359,7 +372,8 @@ def update_player(date_start, date_end, home_away, pid, position, season):
         {"name": "Score",        "id": "score",           "type": "text",    "filter_options": _ci},
         {"name": "Result",       "id": "result",          "type": "text",    "filter_options": _ci},
         {"name": "5v5 TOI",      "id": "toi_display",     "type": "text",    "filter_options": _ci},
-        {"name": "TOI%",         "id": "toi_share",        "type": "numeric", "format": FormatTemplate.percentage(1)},
+        {"name": "tTOI%",        "id": "toi_share",        "type": "numeric", "format": FormatTemplate.percentage(1)},
+        {"name": "iTOI%",        "id": "itoi_pct",        "type": "numeric", "format": FormatTemplate.percentage(1)},
         {"name": "OPP F TOI",    "id": "comp_fwd",        "type": "text",    "filter_options": _ci},
         {"name": "OPP D TOI",    "id": "comp_def",        "type": "text",    "filter_options": _ci},
         {"name": "vs Top Fwd %", "id": "pct_vs_top_fwd",  "type": "numeric", "format": FormatTemplate.percentage(2)},

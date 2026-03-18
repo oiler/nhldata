@@ -15,7 +15,7 @@ register_season_callback("skaters")
 _COMP_SQL = """
 SELECT c.playerId,
        COALESCE(p.firstName || ' ' || p.lastName, 'Player ' || c.playerId) AS playerName,
-       c.position, p.shootsCatches, c.team, c.gameId, c.toi_seconds,
+       c.position, p.shootsCatches, c.team, c.gameId, c.toi_seconds, c.total_toi_seconds,
        c.pct_vs_top_fwd, c.pct_vs_top_def,
        c.comp_fwd, c.comp_def,
        g.gameDate, g.homeTeam_abbrev, g.awayTeam_abbrev
@@ -76,6 +76,7 @@ def update_skaters(date_start, date_end, home_away, season):
         shoots=("shootsCatches", "first"),
         games_played=("gameId", "nunique"),
         total_toi=("toi_seconds", "sum"),
+        total_all_toi=("total_toi_seconds", "sum"),
         weighted_pct_fwd=("pct_vs_top_fwd", lambda x: (x * comp_df.loc[x.index, "toi_seconds"]).sum()),
         weighted_pct_def=("pct_vs_top_def", lambda x: (x * comp_df.loc[x.index, "toi_seconds"]).sum()),
         weighted_comp_fwd=("comp_fwd", lambda x: (x * comp_df.loc[x.index, "toi_seconds"]).sum()),
@@ -86,6 +87,7 @@ def update_skaters(date_start, date_end, home_away, season):
     grouped["avg_pct_vs_top_def"] = grouped["weighted_pct_def"] / grouped["total_toi"].where(grouped["total_toi"] > 0)
     grouped["avg_comp_fwd"] = grouped["weighted_comp_fwd"] / grouped["total_toi"].where(grouped["total_toi"] > 0)
     grouped["avg_comp_def"] = grouped["weighted_comp_def"] / grouped["total_toi"].where(grouped["total_toi"] > 0)
+    grouped["avg_itoi_pct"] = grouped["total_toi"] / grouped["total_all_toi"].where(grouped["total_all_toi"] > 0)
 
     # Deployment metrics (wPPI, wPPI+, avg_toi_share) from filtered data
     metrics = compute_deployment_metrics(comp_df, ppi_df)
@@ -135,7 +137,8 @@ def update_skaters(date_start, date_end, home_away, season):
         {"name": "P",     "id": "total_points",   "type": "numeric"},
         {"name": "P/60",  "id": "p_per_60",       "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed)},
         {"name": "5v5 TOI/GP",   "id": "toi_display",        "filter_options": _ci},
-        {"name": "TOI%",         "id": "avg_toi_share", "type": "numeric", "format": FormatTemplate.percentage(1)},
+        {"name": "tTOI%",        "id": "avg_toi_share", "type": "numeric", "format": FormatTemplate.percentage(1)},
+        {"name": "iTOI%",        "id": "avg_itoi_pct", "type": "numeric", "format": FormatTemplate.percentage(1)},
         {"name": "vs Top Fwd %", "id": "avg_pct_vs_top_fwd", "type": "numeric", "format": FormatTemplate.percentage(2)},
         {"name": "vs Top Def %", "id": "avg_pct_vs_top_def", "type": "numeric", "format": FormatTemplate.percentage(2)},
         {"name": "OPP F TOI",    "id": "comp_fwd_display",   "filter_options": _ci},
@@ -149,7 +152,7 @@ def update_skaters(date_start, date_end, home_away, season):
         "player_link", "team", "shoots", "position", "games_played",
         "total_goals", "total_assists", "total_points", "p_per_60",
         "toi_display",
-        "avg_toi_share", "avg_pct_vs_top_fwd", "avg_pct_vs_top_def",
+        "avg_toi_share", "avg_itoi_pct", "avg_pct_vs_top_fwd", "avg_pct_vs_top_def",
         "comp_fwd_display", "comp_def_display",
         "ppi", "ppi_plus", "wppi", "wppi_plus",
     ]
