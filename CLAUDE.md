@@ -99,6 +99,12 @@ All outputs must be validated against official sources:
 5. **Handle Failures**: Implement robust error handling and fallback mechanisms
 6. **Git**: Do no commit files to the git repo. Those actions will be done manually
 
+## Testing Practices
+- **Test computations, not callbacks**: For each new feature, add a targeted test for the pandas/math logic it touches. Full Dash callback tests are not needed — focus on the pure functions that can break silently.
+- **Use synthetic data**: Build small DataFrames in tests rather than depending on real data files. See `test_player_metrics.py` and `test_deployment_metrics.py` for the pattern.
+- **Shared logic lives in `v2/browser/metrics.py`**: The wPPI/wPPI+/avg_toi_share calculation is shared between `build_league_db.py` (DB build) and `filters.py` (runtime queries). Always modify `metrics.py` — never duplicate metric logic.
+- **Run `python -m pytest v2/ -v` before finishing any change** to catch regressions across browser, competition, and orchestrator tests.
+
 ## Known Edge Cases to Handle
 - Coincidental penalties creating 4v4 situations (Rule 19.1)
 - Empty shifts API responses requiring HTML fallback

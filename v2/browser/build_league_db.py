@@ -16,8 +16,13 @@ import glob
 import os
 import sqlite3
 import sys as _sys
+from pathlib import Path
 
 import pandas as pd
+
+_sys.path.insert(0, str(Path(__file__).parent))
+
+from metrics import compute_wppi_and_toi_share
 
 _season = _sys.argv[1] if len(_sys.argv) > 1 else "2025"
 SEASON_DIR = f"data/{_season}"
@@ -26,7 +31,7 @@ COMPETITION_DIR = os.path.join(SEASON_DIR, "generated", "competition")
 PLAYERS_CSV = os.path.join(SEASON_DIR, "generated", "players", "csv", "players.csv")
 FLATBOXSCORES_CSV = os.path.join(SEASON_DIR, "generated", "flatboxscores", "boxscores.csv")
 FLATPLAYS_DIR = os.path.join(SEASON_DIR, "generated", "flatplays")
-FIVE_V_FIVE = {"1551", "0651", "1560"}
+FIVE_V_FIVE = {"1551"}  # true 5v5 only (both goalies in, 5 skaters per side)
 
 
 def build_competition_table(conn):
@@ -105,56 +110,11 @@ def build_player_metrics_table(conn):
     mean_ppi = eligible["ppi"].mean()
     eligible["ppi_plus"] = 100.0 * eligible["ppi"] / mean_ppi
 
-    # wPPI: PPI × games-weighted average TOI share across team stints.
-    # Weighted average (not sum) ensures traded players aren't double-counted
-    # relative to single-team players with identical per-game deployment.
-    eligible_comp = comp[comp["playerId"].isin(eligible.index)]
-    player_team_toi   = eligible_comp.groupby(["playerId", "team"])["toi_seconds"].sum()
-    player_team_games = eligible_comp.groupby(["playerId", "team"])["gameId"].nunique()
-    player_avg_toi    = player_team_toi / player_team_games  # avg seconds/game per stint
+    eligible = compute_wppi_and_toi_share(eligible, comp)
 
-    team_total_toi    = eligible_comp.groupby("team")["toi_seconds"].sum()
-    team_unique_games = eligible_comp.groupby("team")["gameId"].nunique()
-    team_avg_toi      = team_total_toi / team_unique_games   # team avg eligible-seconds/game
-
-    share_numerator: dict[int, float] = {}
-    share_denominator: dict[int, int] = {}
-    for (pid, team), avg_toi in player_avg_toi.items():
-        team_avg = team_avg_toi.get(team, 0)
-        if team_avg == 0:
-            continue
-        share = avg_toi / team_avg
-        games = int(player_team_games[(pid, team)])
-        share_numerator[pid] = share_numerator.get(pid, 0.0) + share * games
-        share_denominator[pid] = share_denominator.get(pid, 0) + games
-
-    wppi_map: dict[int, float] = {}
-    for pid, numerator in share_numerator.items():
-        denom = share_denominator.get(pid, 0)
-        if denom == 0:
-            continue
-        weighted_avg_share = numerator / denom
-        wppi_map[pid] = eligible.loc[pid, "ppi"] * weighted_avg_share
-
-    eligible["wppi"] = pd.Series(wppi_map)
-    eligible = eligible[eligible["wppi"].notna()]
-
-    # wPPI+
-    mean_wppi = eligible["wppi"].mean()
-    eligible["wppi_plus"] = 100.0 * eligible["wppi"] / mean_wppi
-
-    # avg_toi_share: mean of per-game (5 × player_toi / team_toi) across player's games.
-    # team_toi uses full comp (all skaters, not just eligible), matching real game deployment totals.
-    game_team_toi = comp.groupby(["team", "gameId"])["toi_seconds"].transform("sum")
-    comp_share = comp.copy()
-    comp_share["toi_share"] = 5.0 * comp_share["toi_seconds"] / game_team_toi.where(game_team_toi > 0)
-    avg_toi_share = (
-        comp_share[comp_share["playerId"].isin(eligible.index)]
-        .groupby("playerId")["toi_share"]
-        .mean()
-        .rename("avg_toi_share")
-    )
-    eligible = eligible.join(avg_toi_share)
+    if eligible.empty:
+        print("  player_metrics: 0 rows (no valid wPPI)")
+        return
 
     out = eligible[["ppi", "ppi_plus", "wppi", "wppi_plus", "avg_toi_share"]].reset_index()
     out.to_sql("player_metrics", conn, if_exists="replace", index=False)

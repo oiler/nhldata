@@ -116,14 +116,17 @@ def update_teams(date_start, date_end, home_away, season):
         game_total = pts_team.groupby("gameId")["goals"].sum().reset_index()
         game_total.columns = ["gameId", "game_total"]
 
-        tgg = team_game_goals.merge(game_total, on="gameId")
+        # Left join so games with 0 team goals still count GA
+        tgg = relevant.merge(team_game_goals, on=["team", "gameId"], how="left")
+        tgg["goals"] = tgg["goals"].fillna(0).astype(int)
+        tgg = tgg.merge(game_total, on="gameId", how="left")
+        tgg["game_total"] = tgg["game_total"].fillna(0).astype(int)
         tgg["ga"] = tgg["game_total"] - tgg["goals"]
-        tgg = tgg.merge(relevant, on=["team", "gameId"], how="inner")
 
         goal_agg = tgg.groupby("team").agg(gf=("goals", "sum"), ga=("ga", "sum"))
         goal_agg["gd_5v5"] = goal_agg["gf"] - goal_agg["ga"]
     else:
-        goal_agg = pd.DataFrame(columns=["gd_5v5"])
+        goal_agg = pd.DataFrame(columns=["gf", "ga", "gd_5v5"])
 
     # --- PPI+ — TOI-weighted team average ---
     if home_away == "home":
