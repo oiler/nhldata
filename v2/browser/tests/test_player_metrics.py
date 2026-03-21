@@ -1,4 +1,6 @@
 # v2/browser/tests/test_player_metrics.py
+import json
+import os
 import sqlite3
 import sys
 from pathlib import Path
@@ -8,7 +10,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from build_league_db import build_player_metrics_table
+from build_league_db import build_player_metrics_table, _recover_missing_players
 
 
 def _setup_db():
@@ -170,3 +172,61 @@ def test_avg_toi_share():
     ).fetchone()[0]
     assert abs(high - 2/3) < 0.001, f"Expected 0.667, got {high}"
     assert abs(low  - 1/3) < 0.001, f"Expected 0.333, got {low}"
+
+
+def _setup_recovery_db():
+    """In-memory DB with one player in players table, two in competition (one missing)."""
+    conn = sqlite3.connect(":memory:")
+    pd.DataFrame([
+        {"playerId": 1, "firstName": "Existing", "lastName": "Player",
+         "currentTeamAbbrev": "FLA", "position": "F", "shootsCatches": "L",
+         "heightInInches": 72, "weightInPounds": 198},
+    ]).to_sql("players", conn, index=False, if_exists="replace")
+    pd.DataFrame([
+        {"playerId": 1, "team": "FLA", "gameId": 1, "position": "F", "toi_seconds": 900,
+         "height_in": 72, "weight_lbs": 198},
+        {"playerId": 99999, "team": "FLA", "gameId": 1, "position": "F", "toi_seconds": 800,
+         "height_in": 70, "weight_lbs": 180},
+    ]).to_sql("competition", conn, index=False, if_exists="replace")
+    return conn
+
+
+def test_recover_missing_players_from_raw_json(tmp_path, monkeypatch):
+    import build_league_db
+    conn = _setup_recovery_db()
+    players_dir = tmp_path / "players"
+    players_dir.mkdir()
+    raw = {
+        "firstName": {"default": "Test"},
+        "lastName": {"default": "Recovered"},
+        "currentTeamAbbrev": "FLA",
+        "position": "C",
+        "shootsCatches": "L",
+        "heightInInches": 70,
+        "weightInPounds": 180,
+    }
+    (players_dir / "99999.json").write_text(json.dumps(raw))
+    monkeypatch.setattr(build_league_db, "SEASON_DIR", str(tmp_path))
+
+    _recover_missing_players(conn)
+
+    row = conn.execute("SELECT firstName, lastName FROM players WHERE playerId = 99999").fetchone()
+    assert row is not None
+    assert row[0] == "Test"
+    assert row[1] == "Recovered"
+    # Original player still intact
+    assert conn.execute("SELECT COUNT(*) FROM players").fetchone()[0] == 2
+
+
+def test_recover_missing_players_no_json_skips(tmp_path, monkeypatch):
+    import build_league_db
+    conn = _setup_recovery_db()
+    # Create players dir but no JSON file for the missing player
+    (tmp_path / "players").mkdir()
+    monkeypatch.setattr(build_league_db, "SEASON_DIR", str(tmp_path))
+
+    _recover_missing_players(conn)
+
+    # Only the original player remains — no crash, no phantom row
+    assert conn.execute("SELECT COUNT(*) FROM players").fetchone()[0] == 1
+    assert conn.execute("SELECT * FROM players WHERE playerId = 99999").fetchone() is None

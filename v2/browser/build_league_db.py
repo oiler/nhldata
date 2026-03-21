@@ -13,6 +13,7 @@ Usage:
 """
 
 import glob
+import json
 import os
 import sqlite3
 import sys as _sys
@@ -61,6 +62,45 @@ def build_players_table(conn):
     df = pd.read_csv(PLAYERS_CSV, usecols=keep)
     df.to_sql("players", conn, if_exists="replace", index=False)
     print(f"  players: {len(df)} rows")
+
+
+def _recover_missing_players(conn):
+    """Fill gaps in the players table from raw JSON files."""
+    missing = pd.read_sql_query(
+        "SELECT DISTINCT c.playerId FROM competition c"
+        " LEFT JOIN players p ON c.playerId = p.playerId"
+        " WHERE p.playerId IS NULL AND c.position IN ('F','D')",
+        conn,
+    )
+    if missing.empty:
+        return
+
+    players_dir = os.path.join(SEASON_DIR, "players")
+    recovered = []
+    for pid in missing["playerId"]:
+        path = os.path.join(players_dir, f"{pid}.json")
+        if not os.path.exists(path):
+            continue
+        with open(path) as f:
+            d = json.load(f)
+
+        def _name(val):
+            return val.get("default", "") if isinstance(val, dict) else (val or "")
+
+        recovered.append({
+            "playerId": pid,
+            "firstName": _name(d.get("firstName", "")),
+            "lastName": _name(d.get("lastName", "")),
+            "currentTeamAbbrev": d.get("currentTeamAbbrev", ""),
+            "position": d.get("position", ""),
+            "shootsCatches": d.get("shootsCatches", ""),
+            "heightInInches": d.get("heightInInches"),
+            "weightInPounds": d.get("weightInPounds"),
+        })
+
+    if recovered:
+        pd.DataFrame(recovered).to_sql("players", conn, if_exists="append", index=False)
+        print(f"  players: recovered {len(recovered)} from raw JSON")
 
 
 def build_games_table(conn):
@@ -171,6 +211,7 @@ def main():
         print(f"Building {OUTPUT_DB} ...\n")
         build_competition_table(conn)
         build_players_table(conn)
+        _recover_missing_players(conn)
         build_games_table(conn)
         build_points_5v5_table(conn)
         build_player_metrics_table(conn)

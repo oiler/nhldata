@@ -56,7 +56,7 @@ python v2/browser/build_league_db.py
 
 ## Automating It
 
-The backfill is not yet part of the orchestrator pipeline. Currently it must be run manually. To fully automate, `build_league_db.py` (or the orchestrator) should run the backfill check before building the database — detect any player IDs in competition data missing from players.csv and fetch them.
+As of 2026-03-21, `build_league_db.py` includes `_recover_missing_players()` which runs automatically after loading `players.csv`. It detects player IDs in competition data that are missing from the players table and recovers them from raw JSON files in `data/<season>/players/`. The manual backfill command above is still available for fetching players who have no raw JSON at all.
 
 ## Incident Log
 
@@ -64,3 +64,4 @@ The backfill is not yet part of the orchestrator pipeline. Currently it must be 
 |------|---------|------|------------|
 | 2026-03-02 | 8 players (incl. Avery Hayes) | PIT, VGK, NSH, others | Manual backfill + rebuild |
 | 2026-03-03 | Angus Booth, Kenny Connors, Jared Wright | LAK | Needs backfill + rebuild |
+| 2026-03-21 | Tomas Nosek, Garrett Wilson, Justin Holl | FLA, PHI, STL | Fixed: self-healing recovery in build_league_db.py |
