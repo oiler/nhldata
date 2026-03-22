@@ -1,17 +1,23 @@
 """
 Build a league-wide SQLite database for the NHL Data Browser.
 
-Creates 4 tables:
-  - competition:     all rows from data/<season>/generated/competition/*.csv
-  - players:         from data/<season>/generated/players/csv/players.csv
-  - games:           from data/<season>/generated/flatboxscores/boxscores.csv
-  - player_metrics:  PPI, PPI+, wPPI, wPPI+, avg_toi_share per eligible skater (GP >= 5)
+Creates 6 tables:
+  - competition:      all rows from data/<season>/generated/competition/*.csv
+  - players:          from data/<season>/generated/players/csv/players.csv
+  - games:            from data/<season>/generated/flatboxscores/boxscores.csv
+  - points_5v5:       5v5 goals/assists from flatplays CSVs
+  - elite_forwards:   per-team elite forward classification (tTOI%, iTOI%, P/60 model)
+  - player_metrics:   PPI, PPI+, wPPI, wPPI+, avg_toi_share per eligible skater (GP >= 5)
+
+After building elite_forwards, pct_vs_top_fwd in the competition table is
+overwritten with the fraction of opposing forwards who are in the elite set.
 
 Usage:
     python v2/browser/build_league_db.py          # defaults to 2025
     python v2/browser/build_league_db.py 2024      # builds 2024 database
 """
 
+import csv
 import glob
 import json
 import os
@@ -33,6 +39,7 @@ PLAYERS_CSV = os.path.join(SEASON_DIR, "generated", "players", "csv", "players.c
 FLATBOXSCORES_CSV = os.path.join(SEASON_DIR, "generated", "flatboxscores", "boxscores.csv")
 FLATPLAYS_DIR = os.path.join(SEASON_DIR, "generated", "flatplays")
 FIVE_V_FIVE = {"1551"}  # true 5v5 only (both goalies in, 5 skaters per side)
+SCORED_SITUATIONS = {"1551", "0651", "1560"}  # 5v5 + empty-net situations
 
 
 def build_competition_table(conn):
@@ -201,6 +208,166 @@ def build_points_5v5_table(conn):
     print(f"  points_5v5: {len(out)} rows from {len(frames)} games")
 
 
+def build_elite_forwards_table(conn):
+    """Identify elite forwards per team based on TOI share, ice-time profile, and 5v5 scoring rate.
+
+    Criteria:
+      - GP >= 20
+      - tTOI% >= 28  (team time-on-ice share — top-six usage)
+      - iTOI% < 83   (individual 5v5 share — excludes 5v5-only specialists)
+      - P/60 >= 1.0   (minimum 5v5 scoring rate)
+
+    Within each team, forwards are ranked by P/60.  The top 3 qualify automatically.
+    A 4th slot is added if that player's P/60 >= 1.7.
+
+    Traded players who are elite on one team also appear as carry-over rows
+    (is_carryover=1) on every other team they played for.
+    """
+    stats_sql = """
+    WITH team_totals AS (
+        SELECT gameId, team, SUM(toi_seconds) as team_total
+        FROM competition WHERE position IN ('F','D')
+        GROUP BY gameId, team
+    ),
+    player_points AS (
+        SELECT playerId, SUM(points) as total_pts
+        FROM points_5v5 GROUP BY playerId
+    )
+    SELECT
+        c.playerId, c.team,
+        COUNT(DISTINCT c.gameId) as gp,
+        ROUND(SUM(c.toi_seconds) * 1.0 / COUNT(DISTINCT c.gameId) / 60, 2) as toi_min_gp,
+        AVG(5.0 * c.toi_seconds / tt.team_total) * 100 as ttoi_pct,
+        SUM(c.toi_seconds) * 100.0 / SUM(c.total_toi_seconds) as itoi_pct,
+        COALESCE(pp.total_pts, 0) * 3600.0 / SUM(c.toi_seconds) as p60
+    FROM competition c
+    JOIN team_totals tt ON tt.gameId = c.gameId AND tt.team = c.team
+    LEFT JOIN player_points pp ON pp.playerId = c.playerId
+    WHERE c.position = 'F'
+    GROUP BY c.playerId, c.team
+    HAVING gp >= 20
+    """
+    df = pd.read_sql_query(stats_sql, conn)
+    if df.empty:
+        print("  elite_forwards: 0 rows (no qualifying forwards)")
+        return
+
+    # Apply threshold filters
+    df = df[
+        (df["ttoi_pct"] >= 28)
+        & (df["itoi_pct"] < 83)
+        & (df["p60"] >= 1.0)
+    ].copy()
+
+    if df.empty:
+        print("  elite_forwards: 0 rows (no forwards pass filters)")
+        return
+
+    # Rank by P/60 within each team (1 = highest)
+    df["rank"] = df.groupby("team")["p60"].rank(ascending=False, method="first").astype(int)
+
+    # Keep top 3 + optional 4th slot (P/60 >= 1.7)
+    df = df[(df["rank"] <= 3) | ((df["rank"] == 4) & (df["p60"] >= 1.7))].copy()
+
+    if df.empty:
+        print("  elite_forwards: 0 rows (no forwards in top slots)")
+        return
+
+    df["is_carryover"] = 0
+
+    # Detect traded elites: players elite on one team who also appear on another
+    elite_pids = set(df["playerId"].unique())
+    all_teams_for_pid = pd.read_sql_query(
+        "SELECT DISTINCT playerId, team FROM competition WHERE position = 'F'",
+        conn,
+    )
+
+    carryover_rows = []
+    for pid in elite_pids:
+        elite_teams = set(df[df["playerId"] == pid]["team"])
+        all_teams = set(all_teams_for_pid[all_teams_for_pid["playerId"] == pid]["team"])
+        other_teams = all_teams - elite_teams
+        if other_teams:
+            # Use the elite row with the highest GP as the source
+            source = df[df["playerId"] == pid].sort_values("gp", ascending=False).iloc[0]
+            for team in other_teams:
+                carry = source.to_dict()
+                carry["team"] = team
+                carry["rank"] = 0
+                carry["is_carryover"] = 1
+                carryover_rows.append(carry)
+
+    if carryover_rows:
+        df = pd.concat([df, pd.DataFrame(carryover_rows)], ignore_index=True)
+
+    out_cols = ["playerId", "team", "gp", "toi_min_gp", "ttoi_pct", "itoi_pct", "p60", "rank", "is_carryover"]
+    df[out_cols].to_sql("elite_forwards", conn, if_exists="replace", index=False)
+    print(f"  elite_forwards: {len(df)} rows ({len(df[df['is_carryover'] == 0])} primary, {len(df[df['is_carryover'] == 1])} carry-over)")
+
+
+def recompute_pct_vs_elite_fwd(conn):
+    """Replace pct_vs_top_fwd with fraction of opposing forwards who are elite."""
+    elite_rows = conn.execute("SELECT playerId FROM elite_forwards").fetchall()
+    if not elite_rows:
+        print("  pct_vs_elite_fwd: skipped (no elite forwards)")
+        return
+    elite_set = {r[0] for r in elite_rows}
+
+    # Build per-game lookups from competition table
+    pos_rows = conn.execute(
+        "SELECT gameId, playerId, position FROM competition"
+    ).fetchall()
+    game_positions = {}
+    game_ids = set()
+    for gid, pid, pos in pos_rows:
+        game_ids.add(gid)
+        game_positions.setdefault(gid, {})[pid] = pos
+
+    timelines_dir = os.path.join(SEASON_DIR, "generated", "timelines", "csv")
+    updates = []
+
+    for game_id in sorted(game_ids):
+        timeline_path = os.path.join(timelines_dir, f"{game_id}.csv")
+        if not os.path.exists(timeline_path):
+            continue
+
+        positions = game_positions.get(game_id, {})
+        accum = {}  # playerId → [fraction, fraction, ...]
+
+        with open(timeline_path, newline="") as f:
+            for row in csv.DictReader(f):
+                if row["situationCode"] not in SCORED_SITUATIONS:
+                    continue
+
+                away = [int(p) for p in row["awaySkaters"].split("|")] if row.get("awaySkaters") else []
+                home = [int(p) for p in row["homeSkaters"].split("|")] if row.get("homeSkaters") else []
+
+                for player_id, opponents in (
+                    [(p, home) for p in away] + [(p, away) for p in home]
+                ):
+                    if positions.get(player_id) == "G":
+                        continue
+
+                    opp_fwds = [p for p in opponents if positions.get(p) == "F"]
+                    if not opp_fwds:
+                        continue
+
+                    elite_count = sum(1 for p in opp_fwds if p in elite_set)
+                    accum.setdefault(player_id, []).append(elite_count / len(opp_fwds))
+
+        for pid, fracs in accum.items():
+            updates.append((round(sum(fracs) / len(fracs), 4), game_id, pid))
+
+    if updates:
+        conn.executemany(
+            "UPDATE competition SET pct_vs_top_fwd = ? WHERE gameId = ? AND playerId = ?",
+            updates,
+        )
+        conn.commit()
+
+    print(f"  pct_vs_elite_fwd: updated {len(updates)} rows across {len(game_ids)} games")
+
+
 def main():
     os.makedirs(os.path.dirname(OUTPUT_DB), exist_ok=True)
     if os.path.exists(OUTPUT_DB):
@@ -214,6 +381,8 @@ def main():
         _recover_missing_players(conn)
         build_games_table(conn)
         build_points_5v5_table(conn)
+        build_elite_forwards_table(conn)
+        recompute_pct_vs_elite_fwd(conn)
         build_player_metrics_table(conn)
     finally:
         conn.close()
