@@ -60,3 +60,24 @@ Ideas and improvements to investigate when time allows.
 - [NHL EDGE endpoints discovery (Issue #69)](https://github.com/Zmalski/NHL-API-Reference/issues/69)
 - [nhl-api-py EDGE module](https://github.com/coreyjs/nhl-api-py)
 - [Zmalski/NHL-API-Reference](https://github.com/Zmalski/NHL-API-Reference)
+
+---
+
+## 3. Historical Season Replay for Elite Changelog
+
+**Opportunity:** Once the 2025-26 season is complete, replay the full season day-by-day to retroactively populate the elite changelog and stress-test the pipeline.
+
+**Concept:** Download the complete season's data from the NHL API, then simulate the nightly build process incrementally — day 1 processes only games from opening night, day 2 adds the next day's games, and so on through the final game. Each simulated day rebuilds the league DB and diffs the elite sets, appending any additions, removals, or type changes to `elite_changelog.csv`.
+
+**Value:**
+
+1. **Full elite changelog** — Produces a complete history of when players entered and exited elite status throughout the season, useful for understanding how the model responds to real data over time
+2. **Pipeline regression testing** — Running 180+ sequential builds against real data is likely to surface edge cases and bugs that synthetic tests miss (traded players mid-season, injury absences dropping below GP thresholds, late-season threshold crossings)
+3. **Model tuning** — The changelog would reveal how volatile the elite thresholds are — if players are churning in and out daily, the thresholds may need adjustment
+
+**Implementation sketch:**
+
+- Collect full-season play-by-play, shifts, boxscores, and timelines
+- Write a replay script that filters data by game date, copies the subset into the working directories, and runs `build_league_db.py` for each day
+- The existing `_read_old_elites` / `_log_elite_changes` machinery handles the diffing automatically
+- Output: a single `elite_changelog.csv` spanning the entire season

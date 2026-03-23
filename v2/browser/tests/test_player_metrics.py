@@ -13,6 +13,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from build_league_db import (
     build_player_metrics_table, _recover_missing_players,
     build_elite_forwards_table, recompute_pct_vs_elite_fwd,
+    build_elite_defensemen_table, recompute_pct_vs_elite_def,
+    backfill_vs_elite_def_to_forwards,
+    _read_old_elites, _log_elite_changes,
 )
 
 
@@ -258,7 +261,7 @@ def _setup_elite_db():
     EDM forwards (pid 1-12):
       F1 (1): toi=900, total=1200, iTOI=75.0%, 15 pts  → P/60=2.40  ELITE rank 1
       F2 (2): toi=850, total=1100, iTOI=77.3%, 12 pts  → P/60=2.03  ELITE rank 2
-      F3 (3): toi=800, total=1000, iTOI=80.0%,  8 pts  → P/60=1.44  ELITE rank 3
+      F3 (3): toi=800, total=1000, iTOI=80.0%,  8 pts  → P/60=1.44  FAILS P/60 (< 2.0)
       F4 (4): toi=820, total=820,  iTOI=100%,  10 pts  → FAILS iTOI (specialist)
       F5-F12 (5-12): toi=500, total=600 — bottom-six (tTOI < 28%)
     EDM defence (pid 13-18): toi=1000, total=1300
@@ -266,9 +269,9 @@ def _setup_elite_db():
     COL forwards (pid 21-32):
       F21 (21): toi=900, total=1200, 15 pts → P/60=2.40  rank 1
       F22 (22): toi=850, total=1100, 12 pts → P/60=2.03  rank 2
-      F23 (23): toi=800, total=1000,  8 pts → P/60=1.44  rank 3
-      F24 (24): toi=830, total=1050, 11 pts → P/60~1.91  ELITE rank 4 (P/60 >= 1.7)
-      F25 (25): toi=810, total=1020,  6 pts → P/60~1.07  rank 5 (P/60 < 1.7, NOT 4th)
+      F23 (23): toi=800, total=1000,  8 pts → P/60=1.44  FAILS P/60 (< 2.0)
+      F24 (24): toi=830, total=1050, 11 pts → P/60~1.91  FAILS P/60 (< 2.0)
+      F25 (25): toi=810, total=1020,  6 pts → P/60~1.07  FAILS P/60 (< 2.0)
       F26-F32 (26-32): toi=500, total=600 — bottom-six
     COL defence (pid 33-38): toi=1000, total=1300
     """
@@ -327,39 +330,37 @@ def test_elite_forwards_table_created():
 
 
 def test_elite_forwards_correct_players_selected():
-    """EDM should have 3 elite forwards (pid 1,2,3). pid 4 fails iTOI. pid 5-12 fail tTOI."""
+    """EDM should have 2 elite forwards (pid 1,2). pid 3 fails P/60. pid 4 fails iTOI. pid 5-12 fail tTOI."""
     conn = _setup_elite_db()
     build_elite_forwards_table(conn)
     edm = conn.execute("SELECT playerId FROM elite_forwards WHERE team = 'EDM' ORDER BY playerId").fetchall()
-    assert [r[0] for r in edm] == [1, 2, 3]
+    assert [r[0] for r in edm] == [1, 2]
 
 
 def test_elite_forwards_specialist_excluded():
-    """pid 4 has tTOI > 28% and P/60 > 1.0 but iTOI = 100% — excluded."""
+    """pid 4 has tTOI > 28% but iTOI = 100% — excluded."""
     conn = _setup_elite_db()
     build_elite_forwards_table(conn)
     row = conn.execute("SELECT * FROM elite_forwards WHERE playerId = 4").fetchone()
     assert row is None
 
 
-def test_elite_forwards_fourth_slot():
-    """COL pid 24 gets 4th slot (P/60 = 1.91 >= 1.7). pid 25 does not (P/60 = 1.07 < 1.7)."""
+def test_elite_forwards_p60_threshold():
+    """COL pid 23 (P/60=1.44), pid 24 (P/60=1.91), pid 25 (P/60=1.07) all fail P/60 >= 2.0."""
     conn = _setup_elite_db()
     build_elite_forwards_table(conn)
     col = conn.execute("SELECT playerId FROM elite_forwards WHERE team = 'COL' ORDER BY playerId").fetchall()
     pids = [r[0] for r in col]
-    assert 24 in pids, "pid 24 (P/60 1.91) should get 4th slot"
-    assert 25 not in pids, "pid 25 (P/60 1.07) should NOT get 4th slot"
+    assert pids == [21, 22], f"Only pid 21,22 should pass P/60 >= 2.0, got {pids}"
 
 
 def test_elite_forwards_rank_by_p60():
-    """Within EDM, rank 1 = highest P/60 (pid 1), rank 3 = lowest (pid 3)."""
+    """Within EDM, rank 1 = highest P/60 (pid 1), rank 2 = next (pid 2)."""
     conn = _setup_elite_db()
     build_elite_forwards_table(conn)
     rows = conn.execute("SELECT playerId, rank FROM elite_forwards WHERE team = 'EDM' ORDER BY rank").fetchall()
     assert rows[0] == (1, 1)
     assert rows[1] == (2, 2)
-    assert rows[2] == (3, 3)
 
 
 def test_elite_trade_carryover():
@@ -456,3 +457,600 @@ def test_recompute_pct_vs_elite_fwd(tmp_path, monkeypatch):
         "SELECT pct_vs_top_fwd FROM competition WHERE playerId = 13"
     ).fetchone()
     assert abs(row13[0] - 2/3) < 0.001, f"Expected 0.667, got {row13[0]}"
+
+
+# ---------------------------------------------------------------------------
+# Elite Defensemen
+# ---------------------------------------------------------------------------
+
+def _setup_elite_def_db():
+    """In-memory DB with 3 teams (TMA, TMB, TMC), 25 games each, defensemen
+    designed to test production/deployment/full-elite designation paths.
+
+    TMA — separate production + deployment (gap > 1.5pp):
+      D1 (213): toi=1100, total=1500 (iTOI=73.3%), pct_vs_top_fwd=0.30, 12 pts → P/60=1.57. Production elite.
+      D2 (214): toi=1050, total=1200 (iTOI=87.5%), pct_vs_top_fwd=0.32. Deployment elite (fails prod: iTOI>=83).
+      Gap = 2.0pp → too large for full elite.
+      D3 (215): toi=1000, total=1200 (iTOI=83.3%), pct_vs_top_fwd=0.15, 10 pts. Fails iTOI for production.
+      12 forwards (201-212): toi=700, total=850
+      3 more D (216-218): toi=800, total=950 — below 33% tTOI
+
+    TMB — full elite via gap rule (gap < 1.5pp):
+      D1 (313): toi=1100, total=1500 (iTOI=73.3%), pct_vs_top_fwd=0.34, 12 pts → P/60=1.57. Production elite.
+      D2 (314): toi=1000, total=1200 (iTOI=83.3%), pct_vs_top_fwd=0.35. Deployment elite (highest vs_ef).
+      Gap = 1.0pp → pair plays together → 313 promoted to full elite.
+      12 forwards (301-312): toi=700, total=850
+      4 more D (315-318): toi=900, total=1100 — below 33% tTOI
+
+    TMC — no production elite (deployment only):
+      D1 (413): toi=1050, total=1200 (iTOI=87.5%), pct_vs_top_fwd=0.28. Deployment only (fails prod: iTOI>=83).
+      D2 (414): toi=1000, total=1200 (iTOI=83.3%), pct_vs_top_fwd=0.20. Fails everything.
+      12 forwards (401-412): toi=700, total=850
+      4 more D (415-418): toi=800, total=950
+    """
+    conn = sqlite3.connect(":memory:")
+    comp_rows = []
+
+    # --- TMA: 25 games (gameId 1-25) ---
+    for game in range(1, 26):
+        # 12 forwards
+        for pid in range(201, 213):
+            comp_rows.append(_make_comp_row(pid, "TMA", game, "F", 700, 850))
+        # D1 (213): production elite candidate
+        comp_rows.append(_make_comp_row(213, "TMA", game, "D", 1100, 1500))
+        # D2 (214): deployment elite candidate (iTOI=87.5%)
+        comp_rows.append(_make_comp_row(214, "TMA", game, "D", 1050, 1200))
+        # D3 (215): iTOI=83.3% — fails production
+        comp_rows.append(_make_comp_row(215, "TMA", game, "D", 1000, 1200))
+        # D4-D6 (216-218): low tTOI
+        for pid in range(216, 219):
+            comp_rows.append(_make_comp_row(pid, "TMA", game, "D", 800, 950))
+
+    # --- TMB: 25 games (gameId 101-125) ---
+    for game in range(101, 126):
+        for pid in range(301, 313):
+            comp_rows.append(_make_comp_row(pid, "TMB", game, "F", 700, 850))
+        # D1 (313): full elite candidate
+        comp_rows.append(_make_comp_row(313, "TMB", game, "D", 1100, 1500))
+        # D2 (314): iTOI=83.3% — fails production
+        comp_rows.append(_make_comp_row(314, "TMB", game, "D", 1000, 1200))
+        # D3-D6 (315-318): low tTOI
+        for pid in range(315, 319):
+            comp_rows.append(_make_comp_row(pid, "TMB", game, "D", 900, 1100))
+
+    # --- TMC: 25 games (gameId 201-225) ---
+    for game in range(201, 226):
+        for pid in range(401, 413):
+            comp_rows.append(_make_comp_row(pid, "TMC", game, "F", 700, 850))
+        # D1 (413): deployment only (iTOI=87.5%)
+        comp_rows.append(_make_comp_row(413, "TMC", game, "D", 1050, 1200))
+        # D2 (414): fails everything (iTOI=83.3%)
+        comp_rows.append(_make_comp_row(414, "TMC", game, "D", 1000, 1200))
+        # D3-D6 (415-418): low tTOI
+        for pid in range(415, 419):
+            comp_rows.append(_make_comp_row(pid, "TMC", game, "D", 800, 950))
+
+    df = pd.DataFrame(comp_rows)
+    # Set pct_any_elite_fwd values for deployment selection (binary metric)
+    df["pct_any_elite_fwd"] = 0.0
+    df.loc[df["playerId"] == 213, "pct_any_elite_fwd"] = 0.30
+    df.loc[df["playerId"] == 214, "pct_any_elite_fwd"] = 0.32
+    df.loc[df["playerId"] == 215, "pct_any_elite_fwd"] = 0.15
+    df.loc[df["playerId"] == 313, "pct_any_elite_fwd"] = 0.34
+    df.loc[df["playerId"] == 314, "pct_any_elite_fwd"] = 0.35
+    df.loc[df["playerId"] == 413, "pct_any_elite_fwd"] = 0.28
+    df.loc[df["playerId"] == 414, "pct_any_elite_fwd"] = 0.20
+    df.to_sql("competition", conn, index=False, if_exists="replace")
+
+    # --- Points (5v5) ---
+    point_rows = []
+    # TMA D1 (213): 12 pts
+    for i in range(12):
+        point_rows.append({"gameId": (i % 25) + 1, "playerId": 213,
+                           "goals": 1, "assists": 0, "points": 1})
+    # TMB D1 (313): 12 pts
+    for i in range(12):
+        point_rows.append({"gameId": (i % 25) + 101, "playerId": 313,
+                           "goals": 1, "assists": 0, "points": 1})
+    # TMA D3 (215): 10 pts
+    for i in range(10):
+        point_rows.append({"gameId": (i % 25) + 1, "playerId": 215,
+                           "goals": 1, "assists": 0, "points": 1})
+    pd.DataFrame(point_rows).to_sql("points_5v5", conn, index=False, if_exists="replace")
+
+    return conn
+
+
+def test_elite_defensemen_table_created():
+    conn = _setup_elite_def_db()
+    build_elite_defensemen_table(conn)
+    tables = {r[0] for r in conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='table'"
+    ).fetchall()}
+    assert "elite_defensemen" in tables
+
+
+def test_elite_def_production_selected():
+    """TMA pid 213 is production elite (iTOI=73.3%, P/60=1.57). pid 214 is not (iTOI=100%)."""
+    conn = _setup_elite_def_db()
+    build_elite_defensemen_table(conn)
+    row213 = conn.execute(
+        "SELECT is_production FROM elite_defensemen WHERE playerId = 213"
+    ).fetchone()
+    assert row213 is not None
+    assert row213[0] == 1
+    row214 = conn.execute(
+        "SELECT is_production FROM elite_defensemen WHERE playerId = 214"
+    ).fetchone()
+    # 214 may or may not be in the table, but if present, is_production must be 0
+    if row214 is not None:
+        assert row214[0] == 0
+
+
+def test_elite_def_deployment_selected():
+    """TMA pid 214 has highest vs_ef (0.32) among D with tTOI>=33. pid 213 does not get deployment."""
+    conn = _setup_elite_def_db()
+    build_elite_defensemen_table(conn)
+    row214 = conn.execute(
+        "SELECT is_deployment FROM elite_defensemen WHERE playerId = 214"
+    ).fetchone()
+    assert row214 is not None
+    assert row214[0] == 1
+    row213 = conn.execute(
+        "SELECT is_deployment FROM elite_defensemen WHERE playerId = 213"
+    ).fetchone()
+    assert row213 is not None
+    assert row213[0] == 0
+
+
+def test_elite_def_full_elite():
+    """TMB pid 313 is production elite with vs_ef gap < 1.5pp to deployment elite (314) → is_full_elite=1."""
+    conn = _setup_elite_def_db()
+    build_elite_defensemen_table(conn)
+    row = conn.execute(
+        "SELECT is_production, is_deployment, is_full_elite FROM elite_defensemen WHERE playerId = 313"
+    ).fetchone()
+    assert row is not None
+    assert row[0] == 1  # is_production
+    assert row[1] == 0  # is_deployment (314 has highest vs_ef)
+    assert row[2] == 1  # is_full_elite (gap = 1.0pp < 1.5pp)
+
+
+def test_elite_def_gap_too_large():
+    """TMA pid 213 is production elite but gap to deployment elite (214) is 2.0pp > 1.5pp → NOT full elite."""
+    conn = _setup_elite_def_db()
+    build_elite_defensemen_table(conn)
+    row = conn.execute(
+        "SELECT is_production, is_deployment, is_full_elite FROM elite_defensemen WHERE playerId = 213"
+    ).fetchone()
+    assert row is not None
+    assert row[0] == 1  # is_production
+    assert row[1] == 0  # is_deployment
+    assert row[2] == 0  # NOT full elite (gap too large)
+
+
+def test_elite_def_no_production():
+    """TMC has 0 production elite, 1 deployment elite (pid 413)."""
+    conn = _setup_elite_def_db()
+    build_elite_defensemen_table(conn)
+    prod = conn.execute(
+        "SELECT COUNT(*) FROM elite_defensemen WHERE team = 'TMC' AND is_production = 1"
+    ).fetchone()[0]
+    assert prod == 0
+    dep = conn.execute(
+        "SELECT COUNT(*) FROM elite_defensemen WHERE team = 'TMC' AND is_deployment = 1"
+    ).fetchone()[0]
+    assert dep == 1
+    dep_pid = conn.execute(
+        "SELECT playerId FROM elite_defensemen WHERE team = 'TMC' AND is_deployment = 1"
+    ).fetchone()[0]
+    assert dep_pid == 413
+
+
+def test_elite_def_itoi_filter():
+    """pid 214 (iTOI=87.5%) excluded from production despite having tTOI and vs_ef."""
+    conn = _setup_elite_def_db()
+    build_elite_defensemen_table(conn)
+    row = conn.execute(
+        "SELECT is_production FROM elite_defensemen WHERE playerId = 214"
+    ).fetchone()
+    assert row is not None
+    assert row[0] == 0, "iTOI=100% should disqualify from production"
+
+
+def test_recompute_pct_vs_elite_def(tmp_path, monkeypatch):
+    """
+    Game 2001: TMA (away) vs TMB (home).
+    Away skaters: 3F (201,202,203) + D213 (deployment elite) + D214 (not elite)
+    Home skaters: 3F (301,302,303) + D313 (deployment elite) + D314 (not elite)
+
+    For any away skater: opposing D are 313 (elite) and 314 (not) → fraction = 1/2
+    For any home skater: opposing D are 213 (elite) and 214 (not) → fraction = 1/2
+    """
+    import build_league_db
+
+    conn = sqlite3.connect(":memory:")
+
+    # competition table — one game, 10 skaters
+    comp_rows = []
+    for pid, team, pos in [
+        (201, "TMA", "F"), (202, "TMA", "F"), (203, "TMA", "F"),
+        (213, "TMA", "D"), (214, "TMA", "D"),
+        (301, "TMB", "F"), (302, "TMB", "F"), (303, "TMB", "F"),
+        (313, "TMB", "D"), (314, "TMB", "D"),
+    ]:
+        comp_rows.append({"playerId": pid, "team": team, "gameId": 2001,
+                          "position": pos, "toi_seconds": 100,
+                          "total_toi_seconds": 120, "pct_vs_top_fwd": 0.0,
+                          "pct_vs_top_def": 0.0, "comp_fwd": 0, "comp_def": 0,
+                          "height_in": 72, "weight_lbs": 198,
+                          "heaviness": 0, "weighted_forward_heaviness": 0,
+                          "weighted_defense_heaviness": 0, "weighted_team_heaviness": 0})
+    pd.DataFrame(comp_rows).to_sql("competition", conn, index=False, if_exists="replace")
+
+    # elite_defensemen table — 213 and 313 are deployment elite
+    pd.DataFrame([
+        {"playerId": 213, "team": "TMA", "gp": 25, "toi_min_gp": 18.0,
+         "ttoi_pct": 40.0, "itoi_pct": 73.0, "p60": 1.5, "vs_ef_pct": 0.30,
+         "is_production": 1, "is_deployment": 1, "is_full_elite": 1, "rank": 1, "is_carryover": 0},
+        {"playerId": 313, "team": "TMB", "gp": 25, "toi_min_gp": 18.0,
+         "ttoi_pct": 40.0, "itoi_pct": 73.0, "p60": 1.5, "vs_ef_pct": 0.35,
+         "is_production": 1, "is_deployment": 1, "is_full_elite": 1, "rank": 1, "is_carryover": 0},
+    ]).to_sql("elite_defensemen", conn, index=False, if_exists="replace")
+
+    # Write a minimal timeline CSV — 3 seconds of 5v5 with identical lineups
+    timelines_dir = tmp_path / "generated" / "timelines" / "csv"
+    timelines_dir.mkdir(parents=True)
+    timeline = timelines_dir / "2001.csv"
+    timeline.write_text(
+        "period,secondsIntoPeriod,secondsElapsedGame,situationCode,strength,"
+        "awayGoalie,awaySkaterCount,awaySkaters,homeSkaterCount,homeGoalie,homeSkaters\n"
+        "1,0,0,1551,5v5,99,5,201|202|203|213|214,5,98,301|302|303|313|314\n"
+        "1,1,1,1551,5v5,99,5,201|202|203|213|214,5,98,301|302|303|313|314\n"
+        "1,2,2,1551,5v5,99,5,201|202|203|213|214,5,98,301|302|303|313|314\n"
+    )
+
+    monkeypatch.setattr(build_league_db, "SEASON_DIR", str(tmp_path))
+    recompute_pct_vs_elite_def(conn)
+
+    # Away forward pid=201: opposing D are 313 (elite), 314 (not) → 1/2
+    row201 = conn.execute(
+        "SELECT pct_vs_top_def FROM competition WHERE playerId = 201"
+    ).fetchone()
+    assert abs(row201[0] - 0.5) < 0.001, f"Expected 0.5, got {row201[0]}"
+
+    # Home forward pid=301: opposing D are 213 (elite), 214 (not) → 1/2
+    row301 = conn.execute(
+        "SELECT pct_vs_top_def FROM competition WHERE playerId = 301"
+    ).fetchone()
+    assert abs(row301[0] - 0.5) < 0.001, f"Expected 0.5, got {row301[0]}"
+
+    # Away D pid=213: opposing D are 313 (elite), 314 (not) → 1/2
+    row213 = conn.execute(
+        "SELECT pct_vs_top_def FROM competition WHERE playerId = 213"
+    ).fetchone()
+    assert abs(row213[0] - 0.5) < 0.001, f"Expected 0.5, got {row213[0]}"
+
+    # Binary metric: every second has at least one elite D → pct_any_elite_def = 1.0
+    bin201 = conn.execute(
+        "SELECT pct_any_elite_def FROM competition WHERE playerId = 201"
+    ).fetchone()
+    assert abs(bin201[0] - 1.0) < 0.001, f"Expected 1.0, got {bin201[0]}"
+
+
+def test_pct_any_elite_def_binary_metric(tmp_path, monkeypatch):
+    """Binary metric: 2 seconds with elite D present, 2 without → 0.5."""
+    import build_league_db
+
+    conn = sqlite3.connect(":memory:")
+
+    comp_rows = []
+    for pid, team, pos in [
+        (501, "AAA", "F"), (502, "AAA", "F"), (503, "AAA", "D"), (504, "AAA", "D"),
+        (601, "BBB", "F"), (602, "BBB", "F"), (603, "BBB", "D"), (604, "BBB", "D"),
+    ]:
+        comp_rows.append({"playerId": pid, "team": team, "gameId": 3001,
+                          "position": pos, "toi_seconds": 100,
+                          "total_toi_seconds": 120, "pct_vs_top_fwd": 0.0,
+                          "pct_vs_top_def": 0.0, "comp_fwd": 0, "comp_def": 0,
+                          "height_in": 72, "weight_lbs": 198,
+                          "heaviness": 0, "weighted_forward_heaviness": 0,
+                          "weighted_defense_heaviness": 0, "weighted_team_heaviness": 0})
+    pd.DataFrame(comp_rows).to_sql("competition", conn, index=False, if_exists="replace")
+
+    # Only pid 603 is deployment elite (not 604)
+    pd.DataFrame([
+        {"playerId": 603, "team": "BBB", "gp": 25, "toi_min_gp": 18.0,
+         "ttoi_pct": 40.0, "itoi_pct": 73.0, "p60": 1.5, "vs_ef_pct": 0.30,
+         "is_production": 0, "is_deployment": 1, "is_full_elite": 0, "rank": 0, "is_carryover": 0},
+    ]).to_sql("elite_defensemen", conn, index=False, if_exists="replace")
+
+    # Timeline: 2 seconds with elite D (603) on ice, 2 seconds without
+    timelines_dir = tmp_path / "generated" / "timelines" / "csv"
+    timelines_dir.mkdir(parents=True)
+    (timelines_dir / "3001.csv").write_text(
+        "period,secondsIntoPeriod,secondsElapsedGame,situationCode,strength,"
+        "awayGoalie,awaySkaterCount,awaySkaters,homeSkaterCount,homeGoalie,homeSkaters\n"
+        "1,0,0,1551,5v5,99,4,501|502|503|504,4,98,601|602|603|604\n"
+        "1,1,1,1551,5v5,99,4,501|502|503|504,4,98,601|602|603|604\n"
+        "1,2,2,1551,5v5,99,4,501|502|503|504,4,98,601|602|604|605\n"
+        "1,3,3,1551,5v5,99,4,501|502|503|504,4,98,601|602|604|605\n"
+    )
+
+    monkeypatch.setattr(build_league_db, "SEASON_DIR", str(tmp_path))
+    recompute_pct_vs_elite_def(conn)
+
+    # Away F pid=501: 2 seconds facing D 603(elite)+604, 2 seconds facing D 604+605(neither elite)
+    row = conn.execute(
+        "SELECT pct_any_elite_def FROM competition WHERE playerId = 501"
+    ).fetchone()
+    assert abs(row[0] - 0.5) < 0.001, f"Expected 0.5, got {row[0]}"
+
+
+def test_backfill_vs_elite_def_to_forwards():
+    """backfill_vs_elite_def_to_forwards adds vs_ed_pct column to elite_forwards."""
+    conn = sqlite3.connect(":memory:")
+
+    # competition with pct_any_elite_def already set
+    comp_rows = []
+    for game in range(1, 4):
+        comp_rows.append({"playerId": 1, "team": "EDM", "gameId": game,
+                          "position": "F", "toi_seconds": 900,
+                          "total_toi_seconds": 1200, "pct_vs_top_fwd": 0.0,
+                          "pct_vs_top_def": 0.0, "pct_any_elite_def": 0.6,
+                          "comp_fwd": 0, "comp_def": 0, "height_in": 72, "weight_lbs": 198,
+                          "heaviness": 0, "weighted_forward_heaviness": 0,
+                          "weighted_defense_heaviness": 0, "weighted_team_heaviness": 0})
+    pd.DataFrame(comp_rows).to_sql("competition", conn, index=False, if_exists="replace")
+
+    # elite_forwards table
+    pd.DataFrame([
+        {"playerId": 1, "team": "EDM", "gp": 25, "toi_min_gp": 15.0,
+         "ttoi_pct": 33.0, "itoi_pct": 75.0, "p60": 2.4, "rank": 1, "is_carryover": 0},
+    ]).to_sql("elite_forwards", conn, index=False, if_exists="replace")
+
+    backfill_vs_elite_def_to_forwards(conn)
+
+    row = conn.execute("SELECT vs_ed_pct FROM elite_forwards WHERE playerId = 1").fetchone()
+    assert row is not None
+    assert abs(row[0] - 0.6) < 0.001, f"Expected 0.6, got {row[0]}"
+
+
+# ---------------------------------------------------------------------------
+# Elite Changelog
+# ---------------------------------------------------------------------------
+
+def test_read_old_elites_from_existing_db(tmp_path):
+    """_read_old_elites returns DataFrames of primary elite players from an existing DB."""
+    db_path = tmp_path / "league.db"
+    conn = sqlite3.connect(str(db_path))
+    pd.DataFrame([
+        {"playerId": 1, "team": "EDM", "gp": 25, "toi_min_gp": 15.0,
+         "ttoi_pct": 33.0, "itoi_pct": 75.0, "p60": 2.4, "rank": 1,
+         "is_carryover": 0, "vs_ed_pct": 0.5},
+        {"playerId": 2, "team": "EDM", "gp": 25, "toi_min_gp": 14.0,
+         "ttoi_pct": 31.0, "itoi_pct": 77.0, "p60": 2.0, "rank": 2,
+         "is_carryover": 0, "vs_ed_pct": 0.4},
+        {"playerId": 1, "team": "COL", "gp": 25, "toi_min_gp": 15.0,
+         "ttoi_pct": 33.0, "itoi_pct": 75.0, "p60": 2.4, "rank": 0,
+         "is_carryover": 1, "vs_ed_pct": 0.5},
+    ]).to_sql("elite_forwards", conn, index=False, if_exists="replace")
+    pd.DataFrame([
+        {"playerId": 10, "team": "EDM", "gp": 25, "toi_min_gp": 22.0,
+         "ttoi_pct": 40.0, "itoi_pct": 73.0, "p60": 1.5, "vs_ef_pct": 0.30,
+         "is_production": 1, "is_deployment": 1, "is_full_elite": 1,
+         "rank": 1, "is_carryover": 0},
+    ]).to_sql("elite_defensemen", conn, index=False, if_exists="replace")
+    pd.DataFrame([
+        {"playerId": 1, "firstName": "Connor", "lastName": "McDavid",
+         "currentTeamAbbrev": "EDM", "position": "F", "shootsCatches": "L",
+         "heightInInches": 73, "weightInPounds": 194},
+        {"playerId": 2, "firstName": "Leon", "lastName": "Draisaitl",
+         "currentTeamAbbrev": "EDM", "position": "F", "shootsCatches": "L",
+         "heightInInches": 74, "weightInPounds": 208},
+        {"playerId": 10, "firstName": "Evan", "lastName": "Bouchard",
+         "currentTeamAbbrev": "EDM", "position": "D", "shootsCatches": "R",
+         "heightInInches": 74, "weightInPounds": 197},
+    ]).to_sql("players", conn, index=False, if_exists="replace")
+    conn.close()
+
+    old_fwd, old_def = _read_old_elites(str(db_path))
+    # Should exclude carry-over rows
+    assert len(old_fwd) == 2
+    assert set(old_fwd["playerId"]) == {1, 2}
+    assert len(old_def) == 1
+    assert old_def.iloc[0]["playerId"] == 10
+    assert old_def.iloc[0]["type"] == "Full Elite"
+
+
+def test_read_old_elites_no_db():
+    """_read_old_elites returns empty DataFrames when DB doesn't exist."""
+    old_fwd, old_def = _read_old_elites("/nonexistent/path/league.db")
+    assert old_fwd.empty
+    assert old_def.empty
+
+
+def test_elite_changelog_addition(tmp_path):
+    """New elite player appears as 'added' in changelog CSV."""
+    csv_path = tmp_path / "elite_changelog.csv"
+    # Old: pid 1 only
+    old_fwd = pd.DataFrame([
+        {"playerId": 1, "playerName": "Connor McDavid", "team": "EDM"},
+    ])
+    old_def = pd.DataFrame(columns=["playerId", "playerName", "team", "type"])
+
+    # New DB: pid 1 + pid 2
+    conn = sqlite3.connect(":memory:")
+    pd.DataFrame([
+        {"playerId": 1, "team": "EDM", "gp": 25, "toi_min_gp": 15.0,
+         "ttoi_pct": 33.0, "itoi_pct": 75.0, "p60": 2.4, "rank": 1,
+         "is_carryover": 0, "vs_ed_pct": 0.5},
+        {"playerId": 2, "team": "EDM", "gp": 25, "toi_min_gp": 14.0,
+         "ttoi_pct": 31.0, "itoi_pct": 77.0, "p60": 2.0, "rank": 2,
+         "is_carryover": 0, "vs_ed_pct": 0.4},
+    ]).to_sql("elite_forwards", conn, index=False, if_exists="replace")
+    pd.DataFrame(columns=[
+        "playerId", "team", "gp", "toi_min_gp", "ttoi_pct", "itoi_pct",
+        "p60", "vs_ef_pct", "is_production", "is_deployment", "is_full_elite",
+        "rank", "is_carryover",
+    ]).to_sql("elite_defensemen", conn, index=False, if_exists="replace")
+    pd.DataFrame([
+        {"playerId": 1, "firstName": "Connor", "lastName": "McDavid",
+         "currentTeamAbbrev": "EDM", "position": "F", "shootsCatches": "L",
+         "heightInInches": 73, "weightInPounds": 194},
+        {"playerId": 2, "firstName": "Leon", "lastName": "Draisaitl",
+         "currentTeamAbbrev": "EDM", "position": "F", "shootsCatches": "L",
+         "heightInInches": 74, "weightInPounds": 208},
+    ]).to_sql("players", conn, index=False, if_exists="replace")
+
+    _log_elite_changes(old_fwd, old_def, conn, str(csv_path))
+    conn.close()
+
+    result = pd.read_csv(str(csv_path))
+    assert len(result) == 1
+    assert result.iloc[0]["playerId"] == 2
+    assert result.iloc[0]["playerName"] == "Leon Draisaitl"
+    assert result.iloc[0]["action"] == "added"
+    assert result.iloc[0]["position"] == "F"
+
+
+def test_elite_changelog_removal(tmp_path):
+    """Removed elite player appears as 'removed' in changelog CSV."""
+    csv_path = tmp_path / "elite_changelog.csv"
+    # Old: pid 1 + pid 2
+    old_fwd = pd.DataFrame([
+        {"playerId": 1, "playerName": "Connor McDavid", "team": "EDM"},
+        {"playerId": 2, "playerName": "Leon Draisaitl", "team": "EDM"},
+    ])
+    old_def = pd.DataFrame(columns=["playerId", "playerName", "team", "type"])
+
+    # New DB: pid 1 only
+    conn = sqlite3.connect(":memory:")
+    pd.DataFrame([
+        {"playerId": 1, "team": "EDM", "gp": 25, "toi_min_gp": 15.0,
+         "ttoi_pct": 33.0, "itoi_pct": 75.0, "p60": 2.4, "rank": 1,
+         "is_carryover": 0, "vs_ed_pct": 0.5},
+    ]).to_sql("elite_forwards", conn, index=False, if_exists="replace")
+    pd.DataFrame(columns=[
+        "playerId", "team", "gp", "toi_min_gp", "ttoi_pct", "itoi_pct",
+        "p60", "vs_ef_pct", "is_production", "is_deployment", "is_full_elite",
+        "rank", "is_carryover",
+    ]).to_sql("elite_defensemen", conn, index=False, if_exists="replace")
+    pd.DataFrame([
+        {"playerId": 1, "firstName": "Connor", "lastName": "McDavid",
+         "currentTeamAbbrev": "EDM", "position": "F", "shootsCatches": "L",
+         "heightInInches": 73, "weightInPounds": 194},
+    ]).to_sql("players", conn, index=False, if_exists="replace")
+
+    _log_elite_changes(old_fwd, old_def, conn, str(csv_path))
+    conn.close()
+
+    result = pd.read_csv(str(csv_path))
+    assert len(result) == 1
+    assert result.iloc[0]["playerId"] == 2
+    assert result.iloc[0]["action"] == "removed"
+
+
+def test_elite_changelog_no_changes(tmp_path):
+    """No CSV created when elite sets are identical."""
+    csv_path = tmp_path / "elite_changelog.csv"
+    old_fwd = pd.DataFrame([
+        {"playerId": 1, "playerName": "Connor McDavid", "team": "EDM"},
+    ])
+    old_def = pd.DataFrame(columns=["playerId", "playerName", "team", "type"])
+
+    conn = sqlite3.connect(":memory:")
+    pd.DataFrame([
+        {"playerId": 1, "team": "EDM", "gp": 25, "toi_min_gp": 15.0,
+         "ttoi_pct": 33.0, "itoi_pct": 75.0, "p60": 2.4, "rank": 1,
+         "is_carryover": 0, "vs_ed_pct": 0.5},
+    ]).to_sql("elite_forwards", conn, index=False, if_exists="replace")
+    pd.DataFrame(columns=[
+        "playerId", "team", "gp", "toi_min_gp", "ttoi_pct", "itoi_pct",
+        "p60", "vs_ef_pct", "is_production", "is_deployment", "is_full_elite",
+        "rank", "is_carryover",
+    ]).to_sql("elite_defensemen", conn, index=False, if_exists="replace")
+    pd.DataFrame([
+        {"playerId": 1, "firstName": "Connor", "lastName": "McDavid",
+         "currentTeamAbbrev": "EDM", "position": "F", "shootsCatches": "L",
+         "heightInInches": 73, "weightInPounds": 194},
+    ]).to_sql("players", conn, index=False, if_exists="replace")
+
+    _log_elite_changes(old_fwd, old_def, conn, str(csv_path))
+    conn.close()
+
+    assert not csv_path.exists()
+
+
+def test_elite_changelog_def_type_change(tmp_path):
+    """Defenseman changing designation (Production → Full Elite) logged as type change."""
+    csv_path = tmp_path / "elite_changelog.csv"
+    old_fwd = pd.DataFrame(columns=["playerId", "playerName", "team"])
+    old_def = pd.DataFrame([
+        {"playerId": 10, "playerName": "Evan Bouchard", "team": "EDM", "type": "Production"},
+    ])
+
+    conn = sqlite3.connect(":memory:")
+    pd.DataFrame(columns=[
+        "playerId", "team", "gp", "toi_min_gp", "ttoi_pct", "itoi_pct",
+        "p60", "rank", "is_carryover", "vs_ed_pct",
+    ]).to_sql("elite_forwards", conn, index=False, if_exists="replace")
+    pd.DataFrame([
+        {"playerId": 10, "team": "EDM", "gp": 25, "toi_min_gp": 22.0,
+         "ttoi_pct": 40.0, "itoi_pct": 73.0, "p60": 1.5, "vs_ef_pct": 0.30,
+         "is_production": 1, "is_deployment": 1, "is_full_elite": 1,
+         "rank": 1, "is_carryover": 0},
+    ]).to_sql("elite_defensemen", conn, index=False, if_exists="replace")
+    pd.DataFrame([
+        {"playerId": 10, "firstName": "Evan", "lastName": "Bouchard",
+         "currentTeamAbbrev": "EDM", "position": "D", "shootsCatches": "R",
+         "heightInInches": 74, "weightInPounds": 197},
+    ]).to_sql("players", conn, index=False, if_exists="replace")
+
+    _log_elite_changes(old_fwd, old_def, conn, str(csv_path))
+    conn.close()
+
+    result = pd.read_csv(str(csv_path))
+    assert len(result) == 1
+    assert result.iloc[0]["playerId"] == 10
+    assert result.iloc[0]["action"] == "Production → Full Elite"
+    assert result.iloc[0]["position"] == "D"
+
+
+def test_elite_changelog_appends(tmp_path):
+    """Subsequent runs append to existing CSV, not overwrite."""
+    csv_path = tmp_path / "elite_changelog.csv"
+    # Pre-populate CSV with one row
+    pd.DataFrame([{
+        "date": "2026-03-22", "playerId": 99, "playerName": "Old Entry",
+        "team": "TOR", "position": "F", "type": "Elite", "action": "added",
+    }]).to_csv(str(csv_path), index=False)
+
+    # Run with a new addition
+    old_fwd = pd.DataFrame(columns=["playerId", "playerName", "team"])
+    old_def = pd.DataFrame(columns=["playerId", "playerName", "team", "type"])
+
+    conn = sqlite3.connect(":memory:")
+    pd.DataFrame([
+        {"playerId": 1, "team": "EDM", "gp": 25, "toi_min_gp": 15.0,
+         "ttoi_pct": 33.0, "itoi_pct": 75.0, "p60": 2.4, "rank": 1,
+         "is_carryover": 0, "vs_ed_pct": 0.5},
+    ]).to_sql("elite_forwards", conn, index=False, if_exists="replace")
+    pd.DataFrame(columns=[
+        "playerId", "team", "gp", "toi_min_gp", "ttoi_pct", "itoi_pct",
+        "p60", "vs_ef_pct", "is_production", "is_deployment", "is_full_elite",
+        "rank", "is_carryover",
+    ]).to_sql("elite_defensemen", conn, index=False, if_exists="replace")
+    pd.DataFrame([
+        {"playerId": 1, "firstName": "Connor", "lastName": "McDavid",
+         "currentTeamAbbrev": "EDM", "position": "F", "shootsCatches": "L",
+         "heightInInches": 73, "weightInPounds": 194},
+    ]).to_sql("players", conn, index=False, if_exists="replace")
+
+    _log_elite_changes(old_fwd, old_def, conn, str(csv_path))
+    conn.close()
+
+    result = pd.read_csv(str(csv_path))
+    assert len(result) == 2  # old row + new addition
+    assert result.iloc[0]["playerName"] == "Old Entry"
+    assert result.iloc[1]["playerName"] == "Connor McDavid"
