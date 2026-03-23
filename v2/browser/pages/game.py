@@ -74,8 +74,8 @@ def _make_position_table(df):
         {"name": "iTOI%",        "id": "itoi_pct", "type": "numeric", "format": FormatTemplate.percentage(1)},
         {"name": "OPP F TOI",    "id": "comp_fwd_display"},
         {"name": "OPP D TOI",    "id": "comp_def_display"},
-        {"name": "vs Top Fwd %", "id": "pct_vs_top_fwd", "type": "numeric", "format": FormatTemplate.percentage(2)},
-        {"name": "vs Top Def %", "id": "pct_vs_top_def", "type": "numeric", "format": FormatTemplate.percentage(2)},
+        {"name": "vs Elite Fwd %", "id": "pct_vs_top_fwd", "type": "numeric", "format": FormatTemplate.percentage(2)},
+        {"name": "vs Elite Def %", "id": "pct_vs_top_def", "type": "numeric", "format": FormatTemplate.percentage(2)},
     ]
     display_cols = [
         "playerName", "toi_display", "toi_share", "itoi_pct", "comp_fwd_display",
