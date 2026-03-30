@@ -75,8 +75,10 @@ app.layout = html.Div([
             html.Dd("Average 5-on-5 time on ice per game played."),
             html.Dt("vs Top Fwd % / vs Top Def %"),
             html.Dd("Fraction of a player's 5v5 TOI spent against the opposing team's top forwards or defensemen (by TOI)."),
-            html.Dt("OPP F TOI / OPP D TOI"),
-            html.Dd("TOI-weighted average ice time of opposing forwards and defensemen faced. Higher values mean facing heavier-used opponents."),
+            html.Dt("DPS+"),
+            html.Dd("Deployment Score Plus — a defenseman's raw deployment score indexed to the league average (100 = average). The raw score accumulates points each 5v5 second based on the opposing forward line faced (line 1 opponents score highest). DPS+ normalizes across the league so 110 means a defenseman faces 10% tougher forward deployment than average."),
+            html.Dt("DPL"),
+            html.Dd("Deployment Line — a forward's average line assignment (1–4) across games played, where line 1 is the top line. Lower values indicate higher deployment; 1.0 means exclusively used as a first-line forward, 4.0 exclusively as a fourth-liner."),
         ], style={
             "display": "grid",
             "gridTemplateColumns": "max-content 1fr",

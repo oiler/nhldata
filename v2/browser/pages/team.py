@@ -18,7 +18,7 @@ SELECT c.playerId,
        COALESCE(p.firstName || ' ' || p.lastName, 'Player ' || c.playerId) AS playerName,
        c.position, c.team, c.gameId, c.toi_seconds, c.total_toi_seconds,
        c.pct_any_elite_fwd, c.pct_any_elite_def,
-       c.comp_fwd, c.comp_def,
+       c.comp_fwd, c.comp_def, c.deployment_score, c.line_number,
        g.gameDate, g.homeTeam_abbrev, g.awayTeam_abbrev
 FROM competition c
 LEFT JOIN players p ON c.playerId = p.playerId
@@ -72,7 +72,7 @@ _PPI_SQL = "SELECT playerId, ppi, ppi_plus FROM player_metrics"
 _POINTS_SQL = "SELECT playerId, gameId, goals, assists, points FROM points_5v5"
 
 
-def _make_position_table(df):
+def _make_position_table(df, pos="F"):
     """Build a single sortable DataTable for one position group."""
     df = df.copy()
     df["player_link"]      = df.apply(lambda r: f"[{r['playerName']}](/player/{r['playerId']})", axis=1)
@@ -91,11 +91,8 @@ def _make_position_table(df):
         {"name": "iTOI%",        "id": "avg_itoi_pct", "type": "numeric", "format": FormatTemplate.percentage(1)},
         {"name": "vs Elite Fwd %", "id": "avg_pct_any_elite_fwd", "type": "numeric", "format": FormatTemplate.percentage(2)},
         {"name": "vs Elite Def %", "id": "avg_pct_any_elite_def", "type": "numeric", "format": FormatTemplate.percentage(2)},
-        {"name": "OPP F TOI",    "id": "comp_fwd_display"},
-        {"name": "OPP D TOI",    "id": "comp_def_display"},
         {"name": "PPI",   "id": "ppi",       "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed)},
         {"name": "PPI+",  "id": "ppi_plus",  "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
-        {"name": "wPPI",  "id": "wppi",      "type": "numeric", "format": Format(precision=4, scheme=Scheme.fixed)},
         {"name": "wPPI+", "id": "wppi_plus", "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
     ]
     display_cols = [
@@ -103,9 +100,14 @@ def _make_position_table(df):
         "total_goals", "total_assists", "total_points", "p_per_60",
         "toi_display", "avg_toi_share", "avg_itoi_pct",
         "avg_pct_any_elite_fwd", "avg_pct_any_elite_def",
-        "comp_fwd_display", "comp_def_display",
-        "ppi", "ppi_plus", "wppi", "wppi_plus",
+        "ppi", "ppi_plus", "wppi_plus",
     ]
+    if pos == "F":
+        columns.append({"name": "DPL", "id": "avg_line", "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)})
+        display_cols.append("avg_line")
+    if pos == "D":
+        columns.append({"name": "DPS+", "id": "deployment_rate", "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)})
+        display_cols.append("deployment_rate")
 
     return dash_table.DataTable(
         columns=columns,
@@ -134,7 +136,7 @@ def _make_player_tables(df):
         if pos_df.empty:
             continue
         sections.append(html.H4(label, style={"marginTop": "1.5rem", "marginBottom": "0.25rem"}))
-        sections.append(_make_position_table(pos_df))
+        sections.append(_make_position_table(pos_df, pos=pos))
     return html.Div(sections) if sections else html.Div("No player data.")
 
 
@@ -185,6 +187,7 @@ def update_team(date_start, date_end, home_away, abbrev, season):
             weighted_pct_def=("pct_any_elite_def", lambda x: (x * comp_df.loc[x.index, "toi_seconds"]).sum()),
             weighted_comp_fwd=("comp_fwd", lambda x: (x * comp_df.loc[x.index, "toi_seconds"]).sum()),
             weighted_comp_def=("comp_def", lambda x: (x * comp_df.loc[x.index, "toi_seconds"]).sum()),
+            avg_line=("line_number", "mean"),
         )
         grouped["toi_per_game"] = grouped["total_toi"] / grouped["games_played"]
         grouped["avg_pct_any_elite_fwd"] = grouped["weighted_pct_fwd"] / grouped["total_toi"].where(grouped["total_toi"] > 0)
@@ -195,9 +198,11 @@ def update_team(date_start, date_end, home_away, abbrev, season):
 
         metrics = compute_deployment_metrics(comp_df, ppi_df)
         if not metrics.empty:
-            grouped = grouped.join(metrics[["ppi", "ppi_plus", "wppi", "wppi_plus", "avg_toi_share"]])
+            grouped = grouped.join(
+                metrics[["ppi", "ppi_plus", "wppi", "wppi_plus", "avg_toi_share", "deployment_rate"]]
+            )
         else:
-            for col in ["ppi", "ppi_plus", "wppi", "wppi_plus", "avg_toi_share"]:
+            for col in ["ppi", "ppi_plus", "wppi", "wppi_plus", "avg_toi_share", "deployment_rate"]:
                 grouped[col] = None
 
         # 5v5 points
@@ -216,7 +221,7 @@ def update_team(date_start, date_end, home_away, abbrev, season):
         grouped["p_per_60"] = grouped["total_points"] * 3600 / grouped["total_toi"].where(grouped["total_toi"] > 0)
 
         player_df = grouped.reset_index().sort_values("toi_per_game", ascending=False)
-        for col, dec in [("ppi", 2), ("ppi_plus", 1), ("wppi", 4), ("wppi_plus", 1)]:
+        for col, dec in [("ppi", 2), ("ppi_plus", 1), ("wppi_plus", 1), ("avg_line", 1), ("deployment_rate", 1)]:
             player_df[col] = pd.to_numeric(player_df[col], errors="coerce").round(dec)
     else:
         player_df = pd.DataFrame()

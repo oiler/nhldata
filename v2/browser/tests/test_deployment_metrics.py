@@ -95,7 +95,7 @@ def test_eligible_players_included():
 def test_output_columns():
     comp, ppi = _standard_data()
     result = compute_deployment_metrics(comp, ppi)
-    assert list(result.columns) == ["ppi", "ppi_plus", "wppi", "wppi_plus", "avg_toi_share"]
+    assert list(result.columns) == ["ppi", "ppi_plus", "wppi", "wppi_plus", "avg_toi_share", "deployment_rate"]
 
 
 # --- PPI pass-through ---
@@ -218,3 +218,47 @@ def test_avg_toi_share_uses_full_comp():
     result = compute_deployment_metrics(_make_comp(comp_rows), _make_ppi(ppi_rows))
     # team_total = 900 + 600 = 1500. share = 5 * 900 / 1500 = 3.0
     assert abs(result.loc[1, "avg_toi_share"] - 5 * 900 / 1500) < 0.001
+
+
+# ---------------------------------------------------------------------------
+# Deployment Rate
+# ---------------------------------------------------------------------------
+
+def test_deployment_rate_normalization():
+    """D with higher avg deployment_score gets rate > 100; mean = 100."""
+    comp_rows = (
+        [{"playerId": 1, "team": "EDM", "gameId": g, "position": "D",
+          "toi_seconds": 1000, "deployment_score": 5000} for g in range(1, 11)]
+      + [{"playerId": 2, "team": "EDM", "gameId": g, "position": "D",
+          "toi_seconds": 900,  "deployment_score": 3000} for g in range(1, 11)]
+    )
+    # League avg = (5000+3000)/2 = 4000
+    # Player 1 rate = 5000/4000 * 100 = 125
+    # Player 2 rate = 3000/4000 * 100 = 75
+    ppi_rows = [
+        {"playerId": 1, "ppi": 3.0, "ppi_plus": 100.0},
+        {"playerId": 2, "ppi": 2.9, "ppi_plus": 98.0},
+    ]
+    result = compute_deployment_metrics(pd.DataFrame(comp_rows), pd.DataFrame(ppi_rows))
+
+    assert result.loc[1, "deployment_rate"] > 100
+    assert result.loc[2, "deployment_rate"] < 100
+    assert abs(result["deployment_rate"].mean() - 100.0) < 0.001
+
+
+def test_deployment_rate_forwards_null():
+    """Forward players receive NaN for deployment_rate; D receives a value."""
+    comp_rows = (
+        [{"playerId": 1, "team": "EDM", "gameId": g, "position": "F",
+          "toi_seconds": 900, "deployment_score": None} for g in range(1, 11)]
+      + [{"playerId": 2, "team": "EDM", "gameId": g, "position": "D",
+          "toi_seconds": 1000, "deployment_score": 5000} for g in range(1, 11)]
+    )
+    ppi_rows = [
+        {"playerId": 1, "ppi": 3.0, "ppi_plus": 100.0},
+        {"playerId": 2, "ppi": 3.0, "ppi_plus": 100.0},
+    ]
+    result = compute_deployment_metrics(pd.DataFrame(comp_rows), pd.DataFrame(ppi_rows))
+
+    assert pd.isna(result.loc[1, "deployment_rate"])       # forward → NaN
+    assert not pd.isna(result.loc[2, "deployment_rate"])   # D → has value

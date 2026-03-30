@@ -16,6 +16,7 @@ Example:
 import csv
 import json
 import sys
+from itertools import combinations as _combinations
 from pathlib import Path
 from typing import Dict, List, Set, Tuple
 
@@ -345,19 +346,27 @@ def compute_team_heaviness(
 def write_output(game_id: str, season: str, scores: Dict[int, dict],
                  toi: Dict[int, int], total_toi: Dict[int, int],
                  positions: Dict[int, str],
-                 teams: Dict[int, str]) -> Path:
+                 teams: Dict[int, str],
+                 line_numbers: Dict[int, int] = None,
+                 deployment_scores: Dict[int, int] = None) -> Path:
     """Write per-player competition scores to CSV."""
+    if line_numbers is None:
+        line_numbers = {}
+    if deployment_scores is None:
+        deployment_scores = {}
+
     out_dir = DATA_DIR / season / "generated" / "competition"
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / f"{game_id}.csv"
 
     rows = []
     for pid, data in scores.items():
+        pos = positions.get(pid, "F")
         rows.append({
             "gameId":           game_id,
             "playerId":         pid,
             "team":             teams.get(pid, ""),
-            "position":         positions.get(pid, "F"),
+            "position":         pos,
             "toi_seconds":      toi.get(pid, 0),
             "total_toi_seconds": total_toi.get(pid, 0),
             "comp_fwd":         round(data["comp_fwd"], 2),
@@ -370,6 +379,8 @@ def write_output(game_id: str, season: str, scores: Dict[int, dict],
             "weighted_forward_heaviness": round(data.get("weighted_forward_heaviness", 0.0), 4),
             "weighted_defense_heaviness": round(data.get("weighted_defense_heaviness", 0.0), 4),
             "weighted_team_heaviness":    round(data.get("weighted_team_heaviness", 0.0), 4),
+            "line_number":      line_numbers.get(pid) if pos == "F" else None,
+            "deployment_score": deployment_scores.get(pid) if pos == "D" else None,
         })
 
     rows.sort(key=lambda r: r["toi_seconds"], reverse=True)
@@ -379,6 +390,7 @@ def write_output(game_id: str, season: str, scores: Dict[int, dict],
         "comp_fwd", "comp_def", "pct_vs_top_fwd", "pct_vs_top_def",
         "height_in", "weight_lbs", "heaviness",
         "weighted_forward_heaviness", "weighted_defense_heaviness", "weighted_team_heaviness",
+        "line_number", "deployment_score",
     ]
     with open(out_path, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -386,6 +398,111 @@ def write_output(game_id: str, season: str, scores: Dict[int, dict],
         writer.writerows(rows)
 
     return out_path
+
+
+def assign_forward_lines(
+    rows: List[dict],
+    team_fwd_ids: set,
+) -> Dict[int, int]:
+    """Greedy forward line detection for one team.
+
+    Args:
+        rows: all timeline row dicts for the game
+        team_fwd_ids: set of INTEGER player IDs who are forwards for this team
+
+    Returns:
+        {player_id: line_number}  line_number is 1–4; every ID in team_fwd_ids is present.
+    """
+    combo_seconds: Dict[tuple, int] = {}
+    for row in rows:
+        if row.get("situationCode") != "1551":
+            continue
+        on_ice: set = set()
+        for col in ("awaySkaters", "homeSkaters"):
+            raw = row.get(col, "")
+            if raw:
+                for pid_str in raw.split("|"):
+                    pid = int(pid_str)
+                    if pid in team_fwd_ids:
+                        on_ice.add(pid)
+        if len(on_ice) < 3:
+            continue
+        for combo in _combinations(sorted(on_ice), 3):
+            combo_seconds[combo] = combo_seconds.get(combo, 0) + 1
+
+    # Greedy: assign lines 1–4 to the top non-overlapping combos
+    sorted_combos = sorted(combo_seconds.items(), key=lambda x: x[1], reverse=True)
+    assigned: Dict[int, int] = {}
+    used: set = set()
+    line = 1
+    for combo, _ in sorted_combos:
+        if line > 4:
+            break
+        if any(p in used for p in combo):
+            continue
+        for p in combo:
+            assigned[p] = line
+            used.add(p)
+        line += 1
+
+    # Any forward not assigned by greedy → line 4
+    for pid in team_fwd_ids:
+        if pid not in assigned:
+            assigned[pid] = 4
+
+    return assigned
+
+
+def compute_deployment_scores(
+    rows: List[dict],
+    positions: Dict[int, str],
+    teams: Dict[int, str],
+    line_assignments: Dict[str, Dict[int, int]],
+) -> Dict[int, int]:
+    """Compute raw deployment score per defenseman for one game.
+
+    For each 5v5 second a D is on ice:
+        points = 12 − (lineA + lineB + lineC)  [opposing 3 forwards]
+    TOI is embedded — more seconds on ice accumulates more points.
+
+    Args:
+        rows: all timeline row dicts for the game
+        positions: {player_id: "F"/"D"/"G"}
+        teams: {player_id: team_abbrev}
+        line_assignments: {team_abbrev: {player_id: line_number}}
+
+    Returns:
+        {player_id: deployment_score}  only for D players with > 0 points
+    """
+    scores: Dict[int, int] = {}
+
+    for row in rows:
+        if row.get("situationCode") != "1551":
+            continue
+
+        away = [int(p) for p in row["awaySkaters"].split("|")] if row.get("awaySkaters") else []
+        home = [int(p) for p in row["homeSkaters"].split("|")] if row.get("homeSkaters") else []
+
+        for player_id, opponents in (
+            [(p, home) for p in away] +
+            [(p, away) for p in home]
+        ):
+            if positions.get(player_id) != "D":
+                continue
+
+            opp_team = teams.get(opponents[0], "") if opponents else ""
+            if not opp_team:
+                continue
+
+            opp_fwds = [p for p in opponents if positions.get(p, "F") == "F"]
+            if len(opp_fwds) != 3:
+                continue  # strict 5v5 only — skip malformed rows
+
+            opp_lines = line_assignments.get(opp_team, {})
+            line_sum = sum(opp_lines.get(f, 4) for f in opp_fwds)
+            scores[player_id] = scores.get(player_id, 0) + (12 - line_sum)
+
+    return scores
 
 
 def run_game(game_number: int, season: str) -> Path:
@@ -404,7 +521,7 @@ def run_game(game_number: int, season: str) -> Path:
     pct_scores = score_game_pct(timeline_rows, positions, teams, top_comp)
 
     for pid in scores:
-        if pid in pct_scores:  # goalies and edge-case players may be absent from pct_scores
+        if pid in pct_scores:
             scores[pid].update(pct_scores[pid])
 
     physicals      = load_player_physicals(list(toi.keys()), season)
@@ -423,7 +540,31 @@ def run_game(game_number: int, season: str) -> Path:
         scores[pid]["weighted_defense_heaviness"] = th["def"]
         scores[pid]["weighted_team_heaviness"]    = th["all"]
 
-    return write_output(game_id, season, scores, toi, total_toi, positions, teams)
+    # Loop 1 — forward line detection (per team)
+    team_to_fwds: Dict[str, set] = {}
+    for pid, team in teams.items():
+        if positions.get(pid) == "F":
+            team_to_fwds.setdefault(team, set()).add(pid)
+
+    line_assignments: Dict[str, Dict[int, int]] = {}
+    for team, fwd_ids in team_to_fwds.items():
+        line_assignments[team] = assign_forward_lines(timeline_rows, fwd_ids)
+
+    # Flatten line_numbers: {pid: line_number} for all forwards
+    line_numbers: Dict[int, int] = {}
+    for team_lines in line_assignments.values():
+        line_numbers.update(team_lines)
+
+    # Loop 2 — deployment scoring for D
+    deployment_scores = compute_deployment_scores(
+        timeline_rows, positions, teams, line_assignments
+    )
+
+    return write_output(
+        game_id, season, scores, toi, total_toi, positions, teams,
+        line_numbers=line_numbers,
+        deployment_scores=deployment_scores,
+    )
 
 
 def main():

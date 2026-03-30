@@ -136,17 +136,18 @@ def register_home_away_callback(page_id: str):
 
 
 def compute_deployment_metrics(comp_df: pd.DataFrame, ppi_df: pd.DataFrame) -> pd.DataFrame:
-    """Compute wPPI, wPPI+, avg_toi_share from filtered competition data.
+    """Compute wPPI, wPPI+, avg_toi_share, and deployment_rate from filtered competition data.
 
     Args:
         comp_df: Filtered competition rows with columns:
                  playerId, team, gameId, toi_seconds, position
+                 (deployment_score column optional — if absent, deployment_rate = NaN)
         ppi_df:  Player metrics with columns: playerId, ppi, ppi_plus
                  (full-season, not filtered)
 
     Returns:
         DataFrame indexed by playerId with columns:
-        ppi, ppi_plus, wppi, wppi_plus, avg_toi_share
+        ppi, ppi_plus, wppi, wppi_plus, avg_toi_share, deployment_rate
     """
     if comp_df.empty or ppi_df.empty:
         return pd.DataFrame()
@@ -164,4 +165,25 @@ def compute_deployment_metrics(comp_df: pd.DataFrame, ppi_df: pd.DataFrame) -> p
     if eligible.empty:
         return pd.DataFrame()
 
-    return eligible[["ppi", "ppi_plus", "wppi", "wppi_plus", "avg_toi_share"]]
+    # Deployment rate — D only, requires deployment_score column in comp_df
+    if "deployment_score" in comp_df.columns:
+        d_comp = comp_df[comp_df["position"] == "D"].copy()
+        if not d_comp.empty:
+            d_comp["deployment_score"] = pd.to_numeric(d_comp["deployment_score"], errors="coerce")
+            d_agg = d_comp.groupby("playerId").agg(
+                total_score=("deployment_score", "sum"),
+                d_gp=("gameId", "nunique"),
+            )
+            d_agg["avg_score"] = d_agg["total_score"] / d_agg["d_gp"]
+            league_avg = d_agg["avg_score"].mean()
+            if league_avg and league_avg > 0:
+                d_agg["deployment_rate"] = d_agg["avg_score"] / league_avg * 100
+            else:
+                d_agg["deployment_rate"] = None
+            eligible = eligible.join(d_agg[["deployment_rate"]])
+        else:
+            eligible["deployment_rate"] = None
+    else:
+        eligible["deployment_rate"] = None
+
+    return eligible[["ppi", "ppi_plus", "wppi", "wppi_plus", "avg_toi_share", "deployment_rate"]]

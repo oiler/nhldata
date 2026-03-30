@@ -190,7 +190,8 @@ def test_run_game_produces_output():
     required = {"gameId", "playerId", "team", "position", "toi_seconds", "total_toi_seconds",
                 "comp_fwd", "comp_def", "pct_vs_top_fwd", "pct_vs_top_def",
                 "height_in", "weight_lbs", "heaviness",
-                "weighted_forward_heaviness", "weighted_defense_heaviness", "weighted_team_heaviness"}
+                "weighted_forward_heaviness", "weighted_defense_heaviness", "weighted_team_heaviness",
+                "line_number", "deployment_score"}
     assert required.issubset(set(rows[0].keys())), f"Missing columns: {required - set(rows[0].keys())}"
 
     # comp_fwd and comp_def must be non-negative (0.0 is valid for edge cases)
@@ -201,6 +202,21 @@ def test_run_game_produces_output():
     # position values must be F or D (no goalies in output)
     for row in rows:
         assert row["position"] in {"F", "D"}, f"Unexpected position value: {row['position']}"
+
+    # Forwards have line_number 1–4; D have empty line_number
+    fwds = [r for r in rows if r["position"] == "F"]
+    defs = [r for r in rows if r["position"] == "D"]
+
+    assert all(r["line_number"] in {"1", "2", "3", "4"} for r in fwds), \
+        "All forwards should have line_number 1-4"
+    assert all(r["line_number"] == "" for r in defs), \
+        "All D should have empty line_number"
+
+    # D have deployment_score >= 0; forwards have empty deployment_score
+    assert all(int(r["deployment_score"]) >= 0 for r in defs if r["deployment_score"]), \
+        "D deployment_score must be non-negative"
+    assert all(r["deployment_score"] == "" for r in fwds), \
+        "Forwards should have empty deployment_score"
 
     # pct columns must be in [0.0, 1.0]
     for row in rows:
@@ -426,3 +442,106 @@ def test_compute_team_heaviness_two_teams():
     result = compute_team_heaviness(toi, positions, teams, physicals)
     assert abs(result["EDM"]["fwd"] - 200 / 72) < 0.0001
     assert abs(result["CGY"]["fwd"] - 240 / 76) < 0.0001
+
+
+from compute_competition import assign_forward_lines
+
+
+def test_greedy_line_detection_standard():
+    """12 forwards, 4 clean lines — greedy assigns lines 1–4 in TOI order."""
+    fwd_ids = set(range(1, 13))
+    # Only the 3 fwds on ice each row are in fwd_ids; pids 20–34 are D or opposing team
+    rows = (
+        [{"situationCode": "1551", "awaySkaters": "1|2|3|20|21",    "homeSkaters": "30|31|32|33|34"}] * 300
+      + [{"situationCode": "1551", "awaySkaters": "4|5|6|20|21",    "homeSkaters": "30|31|32|33|34"}] * 200
+      + [{"situationCode": "1551", "awaySkaters": "7|8|9|20|21",    "homeSkaters": "30|31|32|33|34"}] * 100
+      + [{"situationCode": "1551", "awaySkaters": "10|11|12|20|21", "homeSkaters": "30|31|32|33|34"}] * 50
+    )
+    result = assign_forward_lines(rows, fwd_ids)
+    assert result[1] == 1 and result[2] == 1 and result[3] == 1
+    assert result[4] == 2 and result[5] == 2 and result[6] == 2
+    assert result[7] == 3 and result[8] == 3 and result[9] == 3
+    assert result[10] == 4 and result[11] == 4 and result[12] == 4
+
+
+def test_greedy_line_detection_11_forwards():
+    """11 forwards — lines 1–3 assigned to 9 players, remaining 2 get line 4."""
+    fwd_ids = set(range(1, 12))  # 11 forwards
+    rows = (
+        [{"situationCode": "1551", "awaySkaters": "1|2|3|20|21",  "homeSkaters": "30|31|32|33|34"}] * 300
+      + [{"situationCode": "1551", "awaySkaters": "4|5|6|20|21",  "homeSkaters": "30|31|32|33|34"}] * 200
+      + [{"situationCode": "1551", "awaySkaters": "7|8|9|20|21",  "homeSkaters": "30|31|32|33|34"}] * 100
+      + [{"situationCode": "1551", "awaySkaters": "10|11|20|21|22", "homeSkaters": "30|31|32|33|34"}] * 50
+        # players 10 and 11 appear together but never form a 3-man combo → both fall to line 4
+    )
+    result = assign_forward_lines(rows, fwd_ids)
+    assert result[1] == 1 and result[2] == 1 and result[3] == 1
+    assert result[4] == 2 and result[5] == 2 and result[6] == 2
+    assert result[7] == 3 and result[8] == 3 and result[9] == 3
+    assert result[10] == 4 and result[11] == 4
+
+
+from compute_competition import compute_deployment_scores
+
+
+def test_deployment_score_pure_line1():
+    """D facing pure line 1 for 100 seconds → score = 100 × 9 = 900."""
+    positions = {
+        1: "F", 2: "F", 3: "F",    # HOME line 1
+        10: "D", 11: "D",           # HOME D (being measured)
+        20: "F", 21: "F", 22: "F",  # AWAY line 1
+        23: "D", 24: "D",           # AWAY D
+    }
+    teams = {
+        1: "HOME", 2: "HOME", 3: "HOME", 10: "HOME", 11: "HOME",
+        20: "AWAY", 21: "AWAY", 22: "AWAY", 23: "AWAY", 24: "AWAY",
+    }
+    line_assignments = {
+        "HOME": {1: 1, 2: 1, 3: 1},
+        "AWAY": {20: 1, 21: 1, 22: 1},
+    }
+    rows = [
+        {"situationCode": "1551", "homeSkaters": "1|2|3|10|11", "awaySkaters": "20|21|22|23|24"}
+    ] * 100
+
+    scores = compute_deployment_scores(rows, positions, teams, line_assignments)
+
+    # HOME D face AWAY L1: sum=3, pts=9; 100s → 900
+    assert scores.get(10) == 900
+    assert scores.get(11) == 900
+    # Forwards not in result (or 0)
+    assert scores.get(1, 0) == 0
+
+
+def test_deployment_score_mixed():
+    """D faces L1 for 100s (9 pts/s) then L2 for 100s (6 pts/s) → score = 1500."""
+    positions = {
+        1: "F", 2: "F", 3: "F",    # HOME line 1
+        10: "D", 11: "D",           # HOME D
+        20: "F", 21: "F", 22: "F",  # AWAY line 1
+        23: "F", 24: "F", 25: "F",  # AWAY line 2
+        30: "D", 31: "D",           # AWAY D
+    }
+    teams = {
+        1: "HOME", 2: "HOME", 3: "HOME", 10: "HOME", 11: "HOME",
+        20: "AWAY", 21: "AWAY", 22: "AWAY",
+        23: "AWAY", 24: "AWAY", 25: "AWAY",
+        30: "AWAY", 31: "AWAY",
+    }
+    line_assignments = {
+        "HOME": {1: 1, 2: 1, 3: 1},
+        "AWAY": {20: 1, 21: 1, 22: 1, 23: 2, 24: 2, 25: 2},
+    }
+    # 100s vs AWAY L1 (sum=3, pts=9)
+    rows_l1 = [
+        {"situationCode": "1551", "homeSkaters": "1|2|3|10|11", "awaySkaters": "20|21|22|30|31"}
+    ] * 100
+    # 100s vs AWAY L2 (sum=6, pts=6)
+    rows_l2 = [
+        {"situationCode": "1551", "homeSkaters": "1|2|3|10|11", "awaySkaters": "23|24|25|30|31"}
+    ] * 100
+
+    scores = compute_deployment_scores(rows_l1 + rows_l2, positions, teams, line_assignments)
+
+    assert scores.get(10) == 1500  # 900 + 600
+    assert scores.get(11) == 1500

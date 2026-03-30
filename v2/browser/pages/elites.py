@@ -30,6 +30,20 @@ ORDER BY e.team,
               ELSE 2 END
 """
 
+_DPL_SQL = """
+SELECT playerId, AVG(line_number) AS avg_line
+FROM competition
+WHERE position = 'F' AND line_number IS NOT NULL
+GROUP BY playerId
+"""
+
+_DPS_SQL = """
+SELECT playerId, SUM(deployment_score) AS total_score, COUNT(DISTINCT gameId) AS gp
+FROM competition
+WHERE position = 'D' AND deployment_score IS NOT NULL
+GROUP BY playerId
+"""
+
 _TABLE_STYLE_HEADER = {
     "backgroundColor": "#f8f9fa", "fontWeight": "bold",
     "border": "1px solid #dee2e6", "fontSize": "13px",
@@ -57,7 +71,7 @@ def _collapse_traded(df):
     return df
 
 
-def _build_fwd_table(df):
+def _build_fwd_table(df, dpl_df):
     """Build the forwards DataTable."""
     df = _collapse_traded(df)
     df["player_link"] = df.apply(
@@ -67,6 +81,9 @@ def _build_fwd_table(df):
         lambda t: "/".join(f"[{x}](/team/{x})" for x in t.split("/"))
     )
     df["vs_ed_pct"] = df["vs_ed_pct"] * 100
+    df = df.merge(dpl_df[["playerId", "avg_line"]].rename(columns={"avg_line": "dpl"}),
+                  on="playerId", how="left")
+    df["dpl"] = df["dpl"].round(1)
 
     columns = [
         {"name": "Player", "id": "player_link", "presentation": "markdown", "filter_options": _CI},
@@ -82,10 +99,12 @@ def _build_fwd_table(df):
          "format": Format(precision=2, scheme=Scheme.fixed)},
         {"name": "vs Elite Def %", "id": "vs_ed_pct", "type": "numeric",
          "format": Format(precision=2, scheme=Scheme.fixed)},
+        {"name": "DPL",    "id": "dpl",          "type": "numeric",
+         "format": Format(precision=1, scheme=Scheme.fixed)},
     ]
     display_cols = [
         "player_link", "team_link", "gp", "toi_min_gp",
-        "ttoi_pct", "itoi_pct", "p60", "vs_ed_pct",
+        "ttoi_pct", "itoi_pct", "p60", "vs_ed_pct", "dpl",
     ]
 
     return dash_table.DataTable(
@@ -105,7 +124,7 @@ def _build_fwd_table(df):
     )
 
 
-def _build_def_table(df):
+def _build_def_table(df, dps_df):
     """Build the defensemen DataTable."""
     df = _collapse_traded(df)
     df["player_link"] = df.apply(
@@ -120,6 +139,8 @@ def _build_def_table(df):
         else ("Production" if r["is_production"] else "Deployment"),
         axis=1,
     )
+    df = df.merge(dps_df[["playerId", "dps_plus"]], on="playerId", how="left")
+    df["dps_plus"] = df["dps_plus"].round(1)
 
     columns = [
         {"name": "Player", "id": "player_link", "presentation": "markdown", "filter_options": _CI},
@@ -136,10 +157,12 @@ def _build_def_table(df):
         {"name": "vs Elite Fwd %", "id": "vs_ef_pct", "type": "numeric",
          "format": Format(precision=2, scheme=Scheme.fixed)},
         {"name": "Type",   "id": "type",         "filter_options": _CI},
+        {"name": "DPS+",   "id": "dps_plus",     "type": "numeric",
+         "format": Format(precision=1, scheme=Scheme.fixed)},
     ]
     display_cols = [
         "player_link", "team_link", "gp", "toi_min_gp",
-        "ttoi_pct", "itoi_pct", "p60", "vs_ef_pct", "type",
+        "ttoi_pct", "itoi_pct", "p60", "vs_ef_pct", "type", "dps_plus",
     ]
 
     return dash_table.DataTable(
@@ -163,13 +186,25 @@ def layout(season=None):
     season = season or "2025"
     children = []
 
+    # --- DPL: avg line per forward ---
+    dpl_df = league_query(_DPL_SQL, season=season)
+
+    # --- DPS+: normalized deployment score per defenseman ---
+    dps_raw = league_query(_DPS_SQL, season=season)
+    if not dps_raw.empty:
+        dps_raw["avg_score"] = dps_raw["total_score"] / dps_raw["gp"]
+        league_avg = dps_raw["avg_score"].mean()
+        dps_raw["dps_plus"] = dps_raw["avg_score"] / league_avg * 100 if league_avg else None
+    else:
+        dps_raw["dps_plus"] = None
+
     # --- Forwards ---
     fwd_df = league_query(_FWD_SQL, season=season)
     children.append(html.H2("Elite Forwards"))
     if fwd_df.empty:
         children.append(html.P("No elite forwards data available."))
     else:
-        children.append(_build_fwd_table(fwd_df))
+        children.append(_build_fwd_table(fwd_df, dpl_df))
 
     # --- Defensemen ---
     children.append(html.H2("Elite Defensemen", style={"marginTop": "2rem"}))
@@ -180,6 +215,6 @@ def layout(season=None):
     if def_df.empty:
         children.append(html.P("No elite defensemen data available."))
     else:
-        children.append(_build_def_table(def_df))
+        children.append(_build_def_table(def_df, dps_raw))
 
     return html.Div(children)
