@@ -45,8 +45,8 @@ SELECT
     c.toi_seconds * 1.0 / NULLIF(c.total_toi_seconds, 0) AS itoi_pct,
     c.comp_fwd,
     c.comp_def,
-    c.pct_vs_top_fwd,
-    c.pct_vs_top_def
+    c.pct_any_elite_fwd,
+    c.pct_any_elite_def
 FROM competition c
 LEFT JOIN players p ON c.playerId = p.playerId
 JOIN (
@@ -72,14 +72,12 @@ def _make_position_table(df):
         {"name": "5v5 TOI",      "id": "toi_display"},
         {"name": "tTOI%",        "id": "toi_share", "type": "numeric", "format": FormatTemplate.percentage(1)},
         {"name": "iTOI%",        "id": "itoi_pct", "type": "numeric", "format": FormatTemplate.percentage(1)},
-        {"name": "OPP F TOI",    "id": "comp_fwd_display"},
-        {"name": "OPP D TOI",    "id": "comp_def_display"},
-        {"name": "vs Elite Fwd %", "id": "pct_vs_top_fwd", "type": "numeric", "format": FormatTemplate.percentage(2)},
-        {"name": "vs Elite Def %", "id": "pct_vs_top_def", "type": "numeric", "format": FormatTemplate.percentage(2)},
+        {"name": "vs Elite Fwd %", "id": "pct_any_elite_fwd", "type": "numeric", "format": FormatTemplate.percentage(2)},
+        {"name": "vs Elite Def %", "id": "pct_any_elite_def", "type": "numeric", "format": FormatTemplate.percentage(2)},
     ]
     display_cols = [
-        "playerName", "toi_display", "toi_share", "itoi_pct", "comp_fwd_display",
-        "comp_def_display", "pct_vs_top_fwd", "pct_vs_top_def",
+        "playerName", "toi_display", "toi_share", "itoi_pct",
+        "pct_any_elite_fwd", "pct_any_elite_def",
     ]
 
     return dash_table.DataTable(

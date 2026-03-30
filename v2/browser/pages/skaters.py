@@ -16,7 +16,7 @@ _COMP_SQL = """
 SELECT c.playerId,
        COALESCE(p.firstName || ' ' || p.lastName, 'Player ' || c.playerId) AS playerName,
        c.position, p.shootsCatches, c.team, c.gameId, c.toi_seconds, c.total_toi_seconds,
-       c.pct_vs_top_fwd, c.pct_vs_top_def,
+       c.pct_any_elite_fwd, c.pct_any_elite_def,
        c.comp_fwd, c.comp_def,
        g.gameDate, g.homeTeam_abbrev, g.awayTeam_abbrev
 FROM competition c
@@ -77,14 +77,14 @@ def update_skaters(date_start, date_end, home_away, season):
         games_played=("gameId", "nunique"),
         total_toi=("toi_seconds", "sum"),
         total_all_toi=("total_toi_seconds", "sum"),
-        weighted_pct_fwd=("pct_vs_top_fwd", lambda x: (x * comp_df.loc[x.index, "toi_seconds"]).sum()),
-        weighted_pct_def=("pct_vs_top_def", lambda x: (x * comp_df.loc[x.index, "toi_seconds"]).sum()),
+        weighted_pct_fwd=("pct_any_elite_fwd", lambda x: (x * comp_df.loc[x.index, "toi_seconds"]).sum()),
+        weighted_pct_def=("pct_any_elite_def", lambda x: (x * comp_df.loc[x.index, "toi_seconds"]).sum()),
         weighted_comp_fwd=("comp_fwd", lambda x: (x * comp_df.loc[x.index, "toi_seconds"]).sum()),
         weighted_comp_def=("comp_def", lambda x: (x * comp_df.loc[x.index, "toi_seconds"]).sum()),
     )
     grouped["toi_per_game"] = grouped["total_toi"] / grouped["games_played"]
-    grouped["avg_pct_vs_top_fwd"] = grouped["weighted_pct_fwd"] / grouped["total_toi"].where(grouped["total_toi"] > 0)
-    grouped["avg_pct_vs_top_def"] = grouped["weighted_pct_def"] / grouped["total_toi"].where(grouped["total_toi"] > 0)
+    grouped["avg_pct_any_elite_fwd"] = grouped["weighted_pct_fwd"] / grouped["total_toi"].where(grouped["total_toi"] > 0)
+    grouped["avg_pct_any_elite_def"] = grouped["weighted_pct_def"] / grouped["total_toi"].where(grouped["total_toi"] > 0)
     grouped["avg_comp_fwd"] = grouped["weighted_comp_fwd"] / grouped["total_toi"].where(grouped["total_toi"] > 0)
     grouped["avg_comp_def"] = grouped["weighted_comp_def"] / grouped["total_toi"].where(grouped["total_toi"] > 0)
     grouped["avg_itoi_pct"] = grouped["total_toi"] / grouped["total_all_toi"].where(grouped["total_all_toi"] > 0)
@@ -139,8 +139,8 @@ def update_skaters(date_start, date_end, home_away, season):
         {"name": "5v5 TOI/GP",   "id": "toi_display",        "filter_options": _ci},
         {"name": "tTOI%",        "id": "avg_toi_share", "type": "numeric", "format": FormatTemplate.percentage(1)},
         {"name": "iTOI%",        "id": "avg_itoi_pct", "type": "numeric", "format": FormatTemplate.percentage(1)},
-        {"name": "vs Elite Fwd %", "id": "avg_pct_vs_top_fwd", "type": "numeric", "format": FormatTemplate.percentage(2)},
-        {"name": "vs Elite Def %", "id": "avg_pct_vs_top_def", "type": "numeric", "format": FormatTemplate.percentage(2)},
+        {"name": "vs Elite Fwd %", "id": "avg_pct_any_elite_fwd", "type": "numeric", "format": FormatTemplate.percentage(2)},
+        {"name": "vs Elite Def %", "id": "avg_pct_any_elite_def", "type": "numeric", "format": FormatTemplate.percentage(2)},
         {"name": "OPP F TOI",    "id": "comp_fwd_display",   "filter_options": _ci},
         {"name": "OPP D TOI",    "id": "comp_def_display",   "filter_options": _ci},
         {"name": "PPI",   "id": "ppi",       "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed)},
@@ -152,7 +152,7 @@ def update_skaters(date_start, date_end, home_away, season):
         "player_link", "team", "shoots", "position", "games_played",
         "total_goals", "total_assists", "total_points", "p_per_60",
         "toi_display",
-        "avg_toi_share", "avg_itoi_pct", "avg_pct_vs_top_fwd", "avg_pct_vs_top_def",
+        "avg_toi_share", "avg_itoi_pct", "avg_pct_any_elite_fwd", "avg_pct_any_elite_def",
         "comp_fwd_display", "comp_def_display",
         "ppi", "ppi_plus", "wppi", "wppi_plus",
     ]
