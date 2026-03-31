@@ -35,9 +35,11 @@ A multi-page Dash app serves all of the data. Everything is filterable by date r
 
   The NHL API frequently returns empty shift data for recent seasons, so we scrape the official HTML time-on-ice reports as a fallback. That second-by-second record is what makes it possible to calculate anything that follows.
 
-- **PPI+ (Player Physical Index Plus)**
+- **PPI and wPPI+ (Player Physical Index and Weighted PPI Plus)**
 
-  Combines a player's height and weight into a single value by dividing weight by height — a physical density ratio. Tall, skinny players who look imposing don't score as high as shorter, heavier players who bring real mass. That ratio is then scaled by 5v5 ice time share: a big player with heavy minutes sees his PPI amplified, while a big player who doesn't play much sees it reduced. The result is a single number that measures how much physical presence a player actually brings to the game. 100 is league average.
+  Tall, skinny players can be "smaller" than shorter, stockier players. PPI is an attempt to create a single value that measures a player's physical heaviness by using a physical density ratio.
+
+  With wPPI+, that PPI ratio is then scaled by 5v5 ice time share: a big player with heavy minutes sees his wPPI+ amplified, while a big player who doesn't play much sees it reduced. The result is a single number that measures how much physical presence a player actually brings to the game. 100 is league average.
 
 - **DPL (Deployment Line)**
 
