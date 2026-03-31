@@ -103,7 +103,7 @@ def _make_position_table(df, pos="F"):
         "ppi", "ppi_plus", "wppi_plus",
     ]
     if pos == "F":
-        columns.append({"name": "DPL", "id": "avg_line", "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)})
+        columns.append({"name": "DPL", "id": "avg_line", "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed)})
         display_cols.append("avg_line")
     if pos == "D":
         columns.append({"name": "DPS+", "id": "deployment_rate", "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)})
@@ -221,7 +221,7 @@ def update_team(date_start, date_end, home_away, abbrev, season):
         grouped["p_per_60"] = grouped["total_points"] * 3600 / grouped["total_toi"].where(grouped["total_toi"] > 0)
 
         player_df = grouped.reset_index().sort_values("toi_per_game", ascending=False)
-        for col, dec in [("ppi", 2), ("ppi_plus", 1), ("wppi_plus", 1), ("avg_line", 1), ("deployment_rate", 1)]:
+        for col, dec in [("ppi", 2), ("ppi_plus", 1), ("wppi_plus", 1), ("avg_line", 2), ("deployment_rate", 1)]:
             player_df[col] = pd.to_numeric(player_df[col], errors="coerce").round(dec)
     else:
         player_df = pd.DataFrame()

@@ -96,7 +96,7 @@ def _build_def_table(df):
     )
     df["team_link"] = df["team"].apply(lambda t: f"[{t}](/team/{t})")
     df["dps_plus"] = pd.to_numeric(df["dps_plus"], errors="coerce").round(1)
-    df["dpl"] = pd.to_numeric(df["dpl"], errors="coerce").round(1)
+    df["dpl"] = pd.to_numeric(df["dpl"], errors="coerce").round(2)
 
     columns = [
         {"name": "Player",  "id": "player_link",  "presentation": "markdown", "filter_options": _CI},
@@ -111,7 +111,7 @@ def _build_def_table(df):
         {"name": "DPS+",    "id": "dps_plus",      "type": "numeric",
          "format": Format(precision=1, scheme=Scheme.fixed)},
         {"name": "DPL",     "id": "dpl",           "type": "numeric",
-         "format": Format(precision=1, scheme=Scheme.fixed)},
+         "format": Format(precision=2, scheme=Scheme.fixed)},
     ]
     display_cols = ["player_link", "team_link", "gp", "toi_min_gp", "p60", "ttoi_pct", "dps_plus", "dpl"]
 

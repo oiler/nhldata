@@ -118,7 +118,7 @@ def update_skaters(date_start, date_end, home_away, season):
 
     # Display formatting
     import pandas as pd
-    for col, decimals in [("ppi", 2), ("ppi_plus", 1), ("wppi", 4), ("wppi_plus", 1), ("deployment_rate", 1), ("fwd_deployment_rate", 1), ("avg_line", 1)]:
+    for col, decimals in [("ppi", 2), ("ppi_plus", 1), ("wppi", 4), ("wppi_plus", 1), ("deployment_rate", 1), ("fwd_deployment_rate", 1), ("avg_line", 2)]:
         df[col] = pd.to_numeric(df[col], errors="coerce").round(decimals)
     df["team"] = df["teams_raw"].apply(lambda s: "/".join(sorted(s.split(","))) if s else "")
     df["player_link"] = df.apply(lambda r: f"[{r['playerName']}](/player/{r['playerId']})", axis=1)
@@ -147,7 +147,7 @@ def update_skaters(date_start, date_end, home_away, season):
         {"name": "PPI+",  "id": "ppi_plus",  "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
         {"name": "wPPI",  "id": "wppi",      "type": "numeric", "format": Format(precision=4, scheme=Scheme.fixed)},
         {"name": "wPPI+", "id": "wppi_plus", "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
-        {"name": "DPL",  "id": "avg_line",  "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
+        {"name": "DPL",  "id": "avg_line",  "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed)},
         {"name": "DPS+", "id": "dps_plus",  "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
     ]
     display_cols = [
