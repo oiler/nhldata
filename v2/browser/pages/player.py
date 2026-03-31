@@ -144,11 +144,6 @@ def update_player(date_start, date_end, home_away, pid, position, season):
         gp = comp_df["gameId"].nunique()
         total_toi = comp_df["toi_seconds"].sum()
         toi_per_game = total_toi / gp if gp > 0 else 0
-        avg_pct_fwd = (comp_df["pct_vs_top_fwd"] * comp_df["toi_seconds"]).sum() / total_toi if total_toi > 0 else 0
-        avg_pct_def = (comp_df["pct_vs_top_def"] * comp_df["toi_seconds"]).sum() / total_toi if total_toi > 0 else 0
-        avg_comp_fwd = (comp_df["comp_fwd"] * comp_df["toi_seconds"]).sum() / total_toi if total_toi > 0 else 0
-        avg_comp_def = (comp_df["comp_def"] * comp_df["toi_seconds"]).sum() / total_toi if total_toi > 0 else 0
-
         # TOI share (avg of per-game share)
         game_toi_share = games_df["toi_share"].dropna()
         avg_toi_share = game_toi_share.mean() if not game_toi_share.empty else 0
@@ -213,17 +208,9 @@ def update_player(date_start, date_end, home_away, pid, position, season):
                 games_played=("gameId", "nunique"),
                 total_toi=("toi_seconds", "sum"),
                 total_all_toi=("total_toi_seconds", "sum"),
-                weighted_pct_fwd=("pct_vs_top_fwd", lambda x: (x * league_comp_df.loc[x.index, "toi_seconds"]).sum()),
-                weighted_pct_def=("pct_vs_top_def", lambda x: (x * league_comp_df.loc[x.index, "toi_seconds"]).sum()),
-                weighted_comp_fwd=("comp_fwd", lambda x: (x * league_comp_df.loc[x.index, "toi_seconds"]).sum()),
-                weighted_comp_def=("comp_def", lambda x: (x * league_comp_df.loc[x.index, "toi_seconds"]).sum()),
             )
             lg = lg[lg["games_played"] >= 5]
             lg["toi_per_game"] = lg["total_toi"] / lg["games_played"]
-            lg["avg_pct_fwd"] = lg["weighted_pct_fwd"] / lg["total_toi"]
-            lg["avg_pct_def"] = lg["weighted_pct_def"] / lg["total_toi"]
-            lg["avg_comp_fwd"] = lg["weighted_comp_fwd"] / lg["total_toi"]
-            lg["avg_comp_def"] = lg["weighted_comp_def"] / lg["total_toi"]
 
             # TOI share per player
             game_teams = league_comp_df.groupby(["gameId", "team"]).agg(
@@ -276,10 +263,6 @@ def update_player(date_start, date_end, home_away, pid, position, season):
                 "5v5 TOI/GP":  _rank("toi_per_game"),
                 "tTOI%":       _rank("avg_toi_share"),
                 "iTOI%":       _rank("avg_itoi_pct"),
-                "vs Top Fwd":  _rank("avg_pct_fwd"),
-                "vs Top Def":  _rank("avg_pct_def"),
-                "OPP F TOI":   _rank("avg_comp_fwd"),
-                "OPP D TOI":   _rank("avg_comp_def"),
                 "PPI":         _rank("ppi"),
                 "PPI+":        _rank("ppi_plus"),
                 "wPPI":        _rank("wppi"),
@@ -315,10 +298,6 @@ def update_player(date_start, date_end, home_away, pid, position, season):
                 stat_cell("5v5 TOI/GP", seconds_to_mmss(toi_per_game), ranks.get("5v5 TOI/GP")),
                 stat_cell("tTOI%", _fmt(avg_toi_share * 100, 1) + "%", ranks.get("tTOI%")),
                 stat_cell("iTOI%", _fmt(avg_itoi_pct * 100, 1) + "%", ranks.get("iTOI%")),
-                stat_cell("vs Top Fwd", _fmt(avg_pct_fwd * 100, 1) + "%", ranks.get("vs Top Fwd")),
-                stat_cell("vs Top Def", _fmt(avg_pct_def * 100, 1) + "%", ranks.get("vs Top Def")),
-                stat_cell("OPP F TOI", seconds_to_mmss(avg_comp_fwd), ranks.get("OPP F TOI")),
-                stat_cell("OPP D TOI", seconds_to_mmss(avg_comp_def), ranks.get("OPP D TOI")),
                 stat_cell("PPI", _fmt(ppi_val), ranks.get("PPI")),
                 stat_cell("PPI+", _fmt(ppi_plus_val, 1), ranks.get("PPI+")),
                 stat_cell("wPPI", _fmt(wppi_val, 4), ranks.get("wPPI")),
