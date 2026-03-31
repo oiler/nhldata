@@ -143,10 +143,6 @@ def update_skaters(date_start, date_end, home_away, season):
         {"name": "5v5 TOI/GP",   "id": "toi_display",        "filter_options": _ci},
         {"name": "tTOI%",        "id": "avg_toi_share", "type": "numeric", "format": FormatTemplate.percentage(1)},
         {"name": "iTOI%",        "id": "avg_itoi_pct", "type": "numeric", "format": FormatTemplate.percentage(1)},
-        {"name": "vs Elite Fwd %", "id": "avg_pct_any_elite_fwd", "type": "numeric", "format": FormatTemplate.percentage(2)},
-        {"name": "vs Elite Def %", "id": "avg_pct_any_elite_def", "type": "numeric", "format": FormatTemplate.percentage(2)},
-        {"name": "OPP F TOI",    "id": "comp_fwd_display",   "filter_options": _ci},
-        {"name": "OPP D TOI",    "id": "comp_def_display",   "filter_options": _ci},
         {"name": "PPI",   "id": "ppi",       "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed)},
         {"name": "PPI+",  "id": "ppi_plus",  "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
         {"name": "wPPI",  "id": "wppi",      "type": "numeric", "format": Format(precision=4, scheme=Scheme.fixed)},
@@ -158,8 +154,7 @@ def update_skaters(date_start, date_end, home_away, season):
         "player_link", "team", "shoots", "position", "games_played",
         "total_goals", "total_assists", "total_points", "p_per_60",
         "toi_display",
-        "avg_toi_share", "avg_itoi_pct", "avg_pct_any_elite_fwd", "avg_pct_any_elite_def",
-        "comp_fwd_display", "comp_def_display",
+        "avg_toi_share", "avg_itoi_pct",
         "ppi", "ppi_plus", "wppi", "wppi_plus", "avg_line", "dps_plus",
     ]
 
