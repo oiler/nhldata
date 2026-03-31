@@ -1,27 +1,54 @@
 # NHL Data
 
-## Summary
+## What This Project Does
 
-The NHL publishes event logs for each game, but those logs obscure the continuous state of play that exists in hockey. For example, when a penalty occurs, there's a logged event. But when a penalty expires, there is not. If you're tracking changes in the situationCode value (that measures play strength like 5v5, 5v4, etc), there's no complete log of changes. And since the shift API endpoint is not fully supported or reliable, this project attempts to merge both problems into a single solution.
+This project processes NHL API data into a set of analytics tools focused entirely on 5v5 play. The core idea is that 5v5 data is the most meaningful. It tells us how different teams and coaches use their players — who produces in the hardest environments, and who is producing against easier competition.
 
-## Solution 
-Timelines merges shift data with play-by-play logs and creates a second-by-second canonical timeline, encoding rulebook logic and validating strength situations against external datasets. Additionally, all skaters and goalies on the ice are included in each second of the generated timeline.
+## What We Track — and What We Don't
 
-## Examples
-Timelines will create a csv and a json file for each NHL gameid. The project also identifies a sample of gameids that represent as much coverage as we can find in situationCode changes. See [resources/TEST_GAMES.md](resources/TEST_GAMES.md) for that information. 
+The focus is 5v5 only. Power plays, penalty kills, and 4v4 situations are excluded from all metrics. Special teams inflate individual production numbers and make cross-player comparisons unreliable. Every stat in this project is 5v5.
 
-The [sample-data/](sample-data/) folder contains data for gameid 0734 of the 2025-26 regular season. In that folder, examples of the timelines output is available in both formats:
+## How the Data Gets Built
 
-- [sample-data/generated-timeline-2025020734.csv](sample-data/generated-timeline-2025020734.csv)
-- [sample-data/generated-timeline-2025020734.json](sample-data/generated-timeline-2025020734.json)
+The pipeline starts with the NHL API. Each night:
+- Raw game data is fetched for any new games — play-by-play, shifts, boxscores
+- Second-by-second timelines are generated from the shift data, tracking exactly who was on the ice for each second of 5v5 play
+- Competition scores are computed from those timelines — who each player shared the ice with, and who they faced
+- The browser database is rebuilt from everything above
 
-## Usage
+A Claude-powered orchestrator runs this nightly on a schedule, validates each step, and reports what was processed.
 
-- The [docs/commands.md](docs/commands.md) file has a short guide to how to execute the different scripts in this repo. This will evolve and simplify as the project matures
-- Some season values are hardcoded, so if you need <2025 data, check on those hardcoded values at the top of the script
-- Run nhlgame.py to get the basic data from the NHL API
-- Run nhlgame.py with the shifts parameter to get shift data from the NHL HTML reports
-- Run v2/timelines/generate_timeline.py to create the new, generated timelines files for each game
+## In The Browser
 
+A multi-page Dash app serves all of the data. Everything is filterable by date range, which means you can look at the last 20 games, a specific road trip, or the full season. Pages include:
+- Games — every game with final score and team competition quality
+- Teams — points percentage, goal differential, deployment metrics by team
+- Skaters — 5v5 stats for every player in the league: P/60, TOI, competition quality, deployment
+- Player — per-player season view with game-by-game breakdown
+- Elites — the top forwards and defensemen by production and deployment
 
+## New Stat Models
 
+- **Second-by-Second Timelines**
+
+  The foundation everything else is built on. For each game, we process the shift data into a snapshot for every second of play — which players were on the ice, and what the game situation was. Every second is tagged with a situation code that describes the ice exactly: both goalies in, skater counts for each team, whether it's 5v5, 5v4, or anything else.
+
+  The NHL API frequently returns empty shift data for recent seasons, so we scrape the official HTML time-on-ice reports as a fallback. That second-by-second record is what makes it possible to calculate anything that follows.
+
+- **PPI+ (Player Physical Index Plus)**
+
+  Combines a player's height and weight into a single value by dividing weight by height — a physical density ratio. Tall, skinny players who look imposing don't score as high as shorter, heavier players who bring real mass. That ratio is then scaled by 5v5 ice time share: a big player with heavy minutes sees his PPI amplified, while a big player who doesn't play much sees it reduced. The result is a single number that measures how much physical presence a player actually brings to the game. 100 is league average.
+
+- **DPL (Deployment Line)**
+
+  The average line or pair number a player draws from his coach. A forward with a DPL of 1.2 is consistently deployed on the first line. A defenseman with a DPL of 1.8 plays second-pair minutes. This measures deployment, not production.
+
+- **DPS+ (Deployment Score Plus)**
+
+  Measures the quality and quantity of deployment against top opponents. For forwards, it captures how often a coach sends them out against top defensive pairs. For defensemen, it captures how often they face top opposing forwards. 100 is league average. Higher means tougher assignments.
+
+- **Elite Classification**
+
+  Elite status identifies the top forwards and defensemen by 5v5 production and deployment. Forwards clear thresholds on P/60, team ice time share, and multi-situational usage. Defensemen qualify through production, deployment against top forwards, or both.
+
+  Once classified, elite players feed into the competition metrics — every second of 5v5 play is scored against whether the opponents on the ice were elite. That gives every skater in the league a competition quality measure that the box score never could.
