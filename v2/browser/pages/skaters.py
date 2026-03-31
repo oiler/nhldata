@@ -93,9 +93,9 @@ def update_skaters(date_start, date_end, home_away, season):
     # Deployment metrics (wPPI, wPPI+, avg_toi_share) from filtered data
     metrics = compute_deployment_metrics(comp_df, ppi_df)
     if not metrics.empty:
-        grouped = grouped.join(metrics[["ppi", "ppi_plus", "wppi", "wppi_plus", "avg_toi_share", "deployment_rate"]])
+        grouped = grouped.join(metrics[["ppi", "ppi_plus", "wppi", "wppi_plus", "avg_toi_share", "deployment_rate", "fwd_deployment_rate"]])
     else:
-        for col in ["ppi", "ppi_plus", "wppi", "wppi_plus", "avg_toi_share", "deployment_rate"]:
+        for col in ["ppi", "ppi_plus", "wppi", "wppi_plus", "avg_toi_share", "deployment_rate", "fwd_deployment_rate"]:
             grouped[col] = None
 
     # 5v5 points
@@ -118,15 +118,15 @@ def update_skaters(date_start, date_end, home_away, season):
 
     # Display formatting
     import pandas as pd
-    for col, decimals in [("ppi", 2), ("ppi_plus", 1), ("wppi", 4), ("wppi_plus", 1), ("deployment_rate", 1), ("avg_line", 1)]:
+    for col, decimals in [("ppi", 2), ("ppi_plus", 1), ("wppi", 4), ("wppi_plus", 1), ("deployment_rate", 1), ("fwd_deployment_rate", 1), ("avg_line", 1)]:
         df[col] = pd.to_numeric(df[col], errors="coerce").round(decimals)
     df["team"] = df["teams_raw"].apply(lambda s: "/".join(sorted(s.split(","))) if s else "")
     df["player_link"] = df.apply(lambda r: f"[{r['playerName']}](/player/{r['playerId']})", axis=1)
     df["toi_display"]      = df["toi_per_game"].apply(seconds_to_mmss)
     df["comp_fwd_display"] = df["avg_comp_fwd"].apply(seconds_to_mmss)
     df["comp_def_display"] = df["avg_comp_def"].apply(seconds_to_mmss)
-    df["deploy_metric"] = df.apply(
-        lambda r: r["deployment_rate"] if r["position"] == "D" else r["avg_line"], axis=1
+    df["dps_plus"] = df.apply(
+        lambda r: r["deployment_rate"] if r["position"] == "D" else r["fwd_deployment_rate"], axis=1
     )
 
     _ci = {"case": "insensitive"}
@@ -151,7 +151,8 @@ def update_skaters(date_start, date_end, home_away, season):
         {"name": "PPI+",  "id": "ppi_plus",  "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
         {"name": "wPPI",  "id": "wppi",      "type": "numeric", "format": Format(precision=4, scheme=Scheme.fixed)},
         {"name": "wPPI+", "id": "wppi_plus", "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
-        {"name": "DPL/DPS+", "id": "deploy_metric", "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
+        {"name": "DPL",  "id": "avg_line",  "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
+        {"name": "DPS+", "id": "dps_plus",  "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
     ]
     display_cols = [
         "player_link", "team", "shoots", "position", "games_played",
@@ -159,7 +160,7 @@ def update_skaters(date_start, date_end, home_away, season):
         "toi_display",
         "avg_toi_share", "avg_itoi_pct", "avg_pct_any_elite_fwd", "avg_pct_any_elite_def",
         "comp_fwd_display", "comp_def_display",
-        "ppi", "ppi_plus", "wppi", "wppi_plus", "deploy_metric",
+        "ppi", "ppi_plus", "wppi", "wppi_plus", "avg_line", "dps_plus",
     ]
 
     return dash_table.DataTable(

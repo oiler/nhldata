@@ -212,96 +212,184 @@ def build_points_5v5_table(conn):
 
 
 def build_elite_forwards_table(conn):
-    """Identify elite forwards per team based on TOI share, ice-time profile, and 5v5 scoring rate.
+    """League-wide elite forwards: production gate + 2-of-3 deployment, 80/20 blend.
 
-    Criteria:
-      - GP >= 20
-      - tTOI% >= 28  (team time-on-ice share — top-six usage)
-      - iTOI% < 83   (individual 5v5 share — excludes 5v5-only specialists)
-      - P/60 >= 2.0   (minimum 5v5 scoring rate)
+    Production gate (required):
+      - weighted P/60 ≥ 2.3
 
-    All forwards passing the thresholds qualify. Ranked by P/60 within each team.
+    Deployment qualification (2-of-3 required):
+      - DPL    ≤ 2.5  (avg line assignment — lower is better)
+      - tTOI%  ≥ 28%  (share of team 5v5 ice time)
+      - iTOI%  < 83%  (fraction of total TOI at 5v5 — plays special teams)
 
-    Traded players who are elite on one team also appear as carry-over rows
-    (is_carryover=1) on every other team they played for.
+    Three-phase logic based on total GP (across all teams):
+      Phase 1 (GP < 10):   no designation
+      Phase 2 (10–19 GP):  full-season values only, l20_* stored as NULL
+      Phase 3 (≥ 20 GP):   80/20 blend: metric = fs_metric * 0.8 + l20_metric * 0.2
+
+    "Last 20 games" is player-specific (their last 20 games played, across all teams).
     """
-    stats_sql = """
-    WITH team_totals AS (
-        SELECT gameId, team, SUM(toi_seconds) as team_total
-        FROM competition WHERE position IN ('F','D')
-        GROUP BY gameId, team
-    ),
-    player_points AS (
-        SELECT playerId, SUM(points) as total_pts
-        FROM points_5v5 GROUP BY playerId
+    # ---- Load per-game forward data with per-game team totals ----
+    comp = pd.read_sql_query(
+        """
+        WITH tt AS (
+            SELECT gameId, team, SUM(toi_seconds) AS team_total
+            FROM competition WHERE position IN ('F', 'D')
+            GROUP BY gameId, team
+        )
+        SELECT c.playerId, c.team, c.gameId,
+               c.toi_seconds, c.total_toi_seconds, c.line_number,
+               COALESCE(c.deployment_score, 0) AS deployment_score,
+               5.0 * c.toi_seconds / tt.team_total AS ttoi_frac
+        FROM competition c
+        JOIN tt ON tt.gameId = c.gameId AND tt.team = c.team
+        WHERE c.position = 'F'
+        """,
+        conn,
     )
-    SELECT
-        c.playerId, c.team,
-        COUNT(DISTINCT c.gameId) as gp,
-        ROUND(SUM(c.toi_seconds) * 1.0 / COUNT(DISTINCT c.gameId) / 60, 2) as toi_min_gp,
-        AVG(5.0 * c.toi_seconds / tt.team_total) * 100 as ttoi_pct,
-        SUM(c.toi_seconds) * 100.0 / SUM(c.total_toi_seconds) as itoi_pct,
-        COALESCE(pp.total_pts, 0) * 3600.0 / SUM(c.toi_seconds) as p60
-    FROM competition c
-    JOIN team_totals tt ON tt.gameId = c.gameId AND tt.team = c.team
-    LEFT JOIN player_points pp ON pp.playerId = c.playerId
-    WHERE c.position = 'F'
-    GROUP BY c.playerId, c.team
-    HAVING gp >= 20
-    """
-    df = pd.read_sql_query(stats_sql, conn)
-    if df.empty:
-        print("  elite_forwards: 0 rows (no qualifying forwards)")
+    _COLS = [
+        "playerId", "team", "gp", "toi_min_gp",
+        "fs_p60", "l20_p60", "weighted_p60",
+        "fs_dpl", "l20_dpl", "weighted_dpl",
+        "fs_ttoi_pct", "l20_ttoi_pct", "weighted_ttoi_pct",
+        "fs_itoi_pct", "l20_itoi_pct", "weighted_itoi_pct",
+        "weighted_dps_plus",
+    ]
+    if comp.empty:
+        print("  elite_forwards: 0 rows (no forward competition data)")
+        pd.DataFrame(columns=_COLS).to_sql(
+            "elite_forwards", conn, if_exists="replace", index=False
+        )
         return
 
-    # Apply threshold filters
-    df = df[
-        (df["ttoi_pct"] >= 28)
-        & (df["itoi_pct"] < 83)
-        & (df["p60"] >= 2.0)
-    ].copy()
-
-    if df.empty:
-        print("  elite_forwards: 0 rows (no forwards pass filters)")
-        return
-
-    # Rank by P/60 within each team (1 = highest)
-    df["rank"] = df.groupby("team")["p60"].rank(ascending=False, method="first").astype(int)
-
-    if df.empty:
-        print("  elite_forwards: 0 rows (no forwards in top slots)")
-        return
-
-    df["is_carryover"] = 0
-
-    # Detect traded elites: players elite on one team who also appear on another
-    elite_pids = set(df["playerId"].unique())
-    all_teams_for_pid = pd.read_sql_query(
-        "SELECT DISTINCT playerId, team FROM competition WHERE position = 'F'",
+    pts = pd.read_sql_query(
+        "SELECT playerId, gameId, SUM(points) AS points FROM points_5v5 GROUP BY playerId, gameId",
         conn,
     )
 
-    carryover_rows = []
-    for pid in elite_pids:
-        elite_teams = set(df[df["playerId"] == pid]["team"])
-        all_teams = set(all_teams_for_pid[all_teams_for_pid["playerId"] == pid]["team"])
-        other_teams = all_teams - elite_teams
-        if other_teams:
-            # Use the elite row with the highest GP as the source
-            source = df[df["playerId"] == pid].sort_values("gp", ascending=False).iloc[0]
-            for team in other_teams:
-                carry = source.to_dict()
-                carry["team"] = team
-                carry["rank"] = 0
-                carry["is_carryover"] = 1
-                carryover_rows.append(carry)
+    # Merge points into per-game data (one row per player per game per team)
+    gd = comp.merge(pts, on=["playerId", "gameId"], how="left")
+    gd["points"] = gd["points"].fillna(0)
+    gd = gd.sort_values(["playerId", "gameId"]).reset_index(drop=True)
 
-    if carryover_rows:
-        df = pd.concat([df, pd.DataFrame(carryover_rows)], ignore_index=True)
+    # Pre-index player's full game sequence for last-20 slicing
+    player_games = (
+        gd.groupby("playerId")["gameId"]
+        .apply(lambda s: sorted(s.unique()))
+        .to_dict()
+    )
 
-    out_cols = ["playerId", "team", "gp", "toi_min_gp", "ttoi_pct", "itoi_pct", "p60", "rank", "is_carryover"]
-    df[out_cols].to_sql("elite_forwards", conn, if_exists="replace", index=False)
-    print(f"  elite_forwards: {len(df)} rows ({len(df[df['is_carryover'] == 0])} primary, {len(df[df['is_carryover'] == 1])} carry-over)")
+    records = []
+    for (pid, team), grp in gd.groupby(["playerId", "team"]):
+        gp = grp["gameId"].nunique()
+        if gp < 10:  # Phase 1
+            continue
+
+        # Full-season metrics for this (player, team)
+        fs_toi     = grp["toi_seconds"].sum()
+        fs_all_toi = grp["total_toi_seconds"].sum()
+        fs_pts     = grp["points"].sum()
+        fs_p60        = fs_pts * 3600.0 / fs_toi if fs_toi > 0 else 0.0
+        fs_ttoi_pct   = float(grp["ttoi_frac"].mean()) * 100.0
+        fs_itoi_pct   = fs_toi * 100.0 / fs_all_toi if fs_all_toi > 0 else 0.0
+        fs_dpl_raw    = grp["line_number"].dropna()
+        fs_dpl        = float(fs_dpl_raw.mean()) if not fs_dpl_raw.empty else None
+        fs_depl_raw   = grp["deployment_score"].dropna()
+        fs_depl       = float(fs_depl_raw.mean()) if not fs_depl_raw.empty else None
+
+        toi_min_gp = fs_toi / gp / 60.0
+
+        # Last-20-games metrics (player-specific across all teams)
+        all_player_game_ids = player_games.get(pid, [])
+        total_player_gp = len(all_player_game_ids)  # player-wide, across all teams
+
+        l20_p60 = l20_ttoi_pct = l20_itoi_pct = l20_dpl = l20_depl = None
+
+        if total_player_gp >= 20:
+            last20 = set(all_player_game_ids[-20:])
+            l20_rows = gd[(gd["playerId"] == pid) & (gd["gameId"].isin(last20))]
+            l20_toi     = l20_rows["toi_seconds"].sum()
+            l20_all_toi = l20_rows["total_toi_seconds"].sum()
+            l20_pts     = l20_rows["points"].sum()
+            l20_p60       = l20_pts * 3600.0 / l20_toi if l20_toi > 0 else 0.0
+            l20_ttoi_pct  = float(l20_rows["ttoi_frac"].mean()) * 100.0
+            l20_itoi_pct  = l20_toi * 100.0 / l20_all_toi if l20_all_toi > 0 else 0.0
+            l20_dpl_raw   = l20_rows["line_number"].dropna()
+            l20_dpl       = float(l20_dpl_raw.mean()) if not l20_dpl_raw.empty else None
+            l20_depl_raw  = l20_rows["deployment_score"].dropna()
+            l20_depl      = float(l20_depl_raw.mean()) if not l20_depl_raw.empty else None
+
+        # Weighted metrics
+        if total_player_gp >= 20:
+            weighted_p60      = fs_p60 * 0.8 + l20_p60 * 0.2
+            weighted_ttoi_pct = fs_ttoi_pct * 0.8 + l20_ttoi_pct * 0.2
+            weighted_itoi_pct = fs_itoi_pct * 0.8 + l20_itoi_pct * 0.2
+            if fs_dpl is not None and l20_dpl is not None:
+                weighted_dpl = fs_dpl * 0.8 + l20_dpl * 0.2
+            else:
+                weighted_dpl = fs_dpl  # fall back to full-season if l20 unavailable
+            if fs_depl is not None and l20_depl is not None:
+                weighted_depl = fs_depl * 0.8 + l20_depl * 0.2
+            else:
+                weighted_depl = fs_depl
+        else:
+            # Phase 2: full-season only
+            weighted_p60      = fs_p60
+            weighted_ttoi_pct = fs_ttoi_pct
+            weighted_itoi_pct = fs_itoi_pct
+            weighted_dpl      = fs_dpl
+            weighted_depl     = fs_depl
+
+        # Production gate
+        if weighted_p60 < 2.3:
+            continue
+
+        # 2-of-3 deployment
+        dpl_ok   = weighted_dpl is not None and weighted_dpl <= 2.5
+        ttoi_ok  = weighted_ttoi_pct >= 28.0
+        itoi_ok  = weighted_itoi_pct < 83.0
+
+        if sum([dpl_ok, ttoi_ok, itoi_ok]) < 2:
+            continue
+
+        records.append({
+            "playerId":          pid,
+            "team":              team,
+            "gp":                gp,
+            "toi_min_gp":        round(toi_min_gp, 2),
+            "fs_p60":            round(fs_p60, 4),
+            "l20_p60":           round(l20_p60, 4) if l20_p60 is not None else None,
+            "weighted_p60":      round(weighted_p60, 4),
+            "fs_dpl":            round(fs_dpl, 4) if fs_dpl is not None else None,
+            "l20_dpl":           round(l20_dpl, 4) if l20_dpl is not None else None,
+            "weighted_dpl":      round(weighted_dpl, 4) if weighted_dpl is not None else None,
+            "fs_ttoi_pct":       round(fs_ttoi_pct, 4),
+            "l20_ttoi_pct":      round(l20_ttoi_pct, 4) if l20_ttoi_pct is not None else None,
+            "weighted_ttoi_pct": round(weighted_ttoi_pct, 4),
+            "fs_itoi_pct":       round(fs_itoi_pct, 4),
+            "l20_itoi_pct":      round(l20_itoi_pct, 4) if l20_itoi_pct is not None else None,
+            "weighted_itoi_pct": round(weighted_itoi_pct, 4),
+            "weighted_depl":     round(weighted_depl, 4) if weighted_depl is not None else None,
+        })
+
+    if not records:
+        print("  elite_forwards: 0 rows (no qualifying forwards)")
+        pd.DataFrame(columns=_COLS).to_sql(
+            "elite_forwards", conn, if_exists="replace", index=False
+        )
+        return
+
+    out = pd.DataFrame(records)
+    # Normalize weighted_dps_plus to league avg = 100 across qualifying forwards.
+    # Forwards with all-null deployment_score get weighted_depl=0.0 (from COALESCE in SQL),
+    # so weighted_dps_plus is 0/league_avg*100 — low but not NaN.
+    fwd_league_avg = out["weighted_depl"].dropna().mean()
+    if fwd_league_avg and fwd_league_avg > 0:
+        out["weighted_dps_plus"] = out["weighted_depl"] / fwd_league_avg * 100
+    else:
+        out["weighted_dps_plus"] = None
+    out[_COLS].to_sql("elite_forwards", conn, if_exists="replace", index=False)
+    print(f"  elite_forwards: {len(out)} rows")
 
 
 def recompute_pct_vs_elite_fwd(conn):
@@ -388,161 +476,112 @@ def recompute_pct_vs_elite_fwd(conn):
 
 
 def build_elite_defensemen_table(conn):
-    """Identify elite defensemen per team with two designations:
+    """Identify elite defensemen using a league-wide threshold model.
 
-    Production elite (talent-driven):
-      - GP >= 20, tTOI% >= 33, iTOI% < 83, P/60 >= 1.25
-      - Ranked by P/60 within team, keep only rank 1 (max 1 per team)
+    Gate (all required, GP >= 20):
+      P/60   > 1.2   — production
+      tTOI%  > 35%   — top-pair usage
+      DPS+   > 120   — deployment difficulty (100 = league avg)
 
-    Deployment elite (coaching-driven):
-      - GP >= 20, tTOI% >= 33, iTOI% < 90
-      - Per team, the D with the highest avg pct_vs_top_fwd (vs elite forwards)
+    Full-season stats only — no last-20 blend (points streaks unreliable for D).
 
-    Full elite: a production elite whose vs_ef gap to the team's deployment
-    elite is < 1.5 percentage points (indicating they play as a pair).
-    A player who is both production and deployment elite is also full elite.
+    DPS+ normalization:
+      avg_deploy = SUM(deployment_score) / gp   per player
+      league_avg = mean(avg_deploy) across all D with GP >= 20
+      dps_plus   = avg_deploy / league_avg * 100
+
+    Output columns: playerId, team, gp, toi_min_gp, p60, ttoi_pct, dps_plus
     """
-    stats_sql = """
-    WITH team_totals AS (
-        SELECT gameId, team, SUM(toi_seconds) as team_total
-        FROM competition WHERE position IN ('F','D')
-        GROUP BY gameId, team
-    ),
-    player_points AS (
-        SELECT playerId, SUM(points) as total_pts
-        FROM points_5v5 GROUP BY playerId
+    _COLS = ["playerId", "team", "gp", "toi_min_gp", "p60", "ttoi_pct", "dps_plus", "dpl"]
+
+    comp = pd.read_sql_query("""
+        WITH tt AS (
+            SELECT gameId, team, SUM(toi_seconds) AS team_total
+            FROM competition WHERE position IN ('F', 'D')
+            GROUP BY gameId, team
+        )
+        SELECT c.playerId, c.team, c.gameId,
+               c.toi_seconds,
+               COALESCE(c.deployment_score, 0) AS deployment_score,
+               COALESCE(c.line_number, 4) AS line_number,
+               5.0 * c.toi_seconds / tt.team_total AS ttoi_frac
+        FROM competition c
+        JOIN tt ON tt.gameId = c.gameId AND tt.team = c.team
+        WHERE c.position = 'D'
+    """, conn)
+
+    pts = pd.read_sql_query(
+        "SELECT playerId, gameId, SUM(points) AS points FROM points_5v5 GROUP BY playerId, gameId",
+        conn,
     )
-    SELECT
-        c.playerId, c.team,
-        COUNT(DISTINCT c.gameId) as gp,
-        ROUND(SUM(c.toi_seconds) * 1.0 / COUNT(DISTINCT c.gameId) / 60, 2) as toi_min_gp,
-        AVG(5.0 * c.toi_seconds / tt.team_total) * 100 as ttoi_pct,
-        SUM(c.toi_seconds) * 100.0 / SUM(c.total_toi_seconds) as itoi_pct,
-        COALESCE(pp.total_pts, 0) * 3600.0 / SUM(c.toi_seconds) as p60,
-        AVG(c.pct_any_elite_fwd) as vs_ef_pct
-    FROM competition c
-    JOIN team_totals tt ON tt.gameId = c.gameId AND tt.team = c.team
-    LEFT JOIN player_points pp ON pp.playerId = c.playerId
-    WHERE c.position = 'D'
-    GROUP BY c.playerId, c.team
-    HAVING gp >= 20
-    """
-    df = pd.read_sql_query(stats_sql, conn)
-    if df.empty:
+
+    def _empty():
+        pd.DataFrame(columns=_COLS).to_sql(
+            "elite_defensemen", conn, if_exists="replace", index=False
+        )
+
+    if comp.empty:
+        _empty()
+        print("  elite_defensemen: 0 rows (no competition data)")
+        return
+
+    gd = comp.merge(pts, on=["playerId", "gameId"], how="left")
+    gd["points"] = gd["points"].fillna(0)
+
+    rows = []
+    for pid, grp in gd.groupby("playerId"):
+        gp = grp["gameId"].nunique()
+        if gp < 20:
+            continue
+
+        # Team = whichever team they played the most games for
+        team = grp.groupby("team")["gameId"].nunique().idxmax()
+
+        total_toi = grp["toi_seconds"].sum()
+        total_pts = grp["points"].sum()
+
+        p60        = total_pts * 3600.0 / total_toi if total_toi > 0 else 0.0
+        ttoi_pct   = grp["ttoi_frac"].mean() * 100
+        avg_deploy = grp["deployment_score"].mean()
+
+        avg_pair = grp["line_number"].mean()
+        rows.append({
+            "playerId": pid, "team": team, "gp": gp,
+            "toi_min_gp": round(total_toi / gp / 60, 2),
+            "p60": p60, "ttoi_pct": ttoi_pct, "avg_deploy": avg_deploy,
+            "dpl": round(avg_pair, 2),
+        })
+
+    if not rows:
+        _empty()
         print("  elite_defensemen: 0 rows (no qualifying defensemen)")
         return
 
-    # --- Production elite ---
-    prod = df[
-        (df["ttoi_pct"] >= 33)
-        & (df["itoi_pct"] < 83)
-        & (df["p60"] >= 1.25)
+    df = pd.DataFrame(rows)
+
+    # Normalize deployment scores → DPS+ (100 = league average)
+    league_avg = df["avg_deploy"].mean()
+    if league_avg and league_avg > 0:
+        # Normalized against all qualifying D (GP >= 20), before elite gates.
+        # The elite subset (dps_plus > 120) will have a mean well above 100 by design.
+        df["dps_plus"] = df["avg_deploy"] / league_avg * 100
+    else:
+        df["dps_plus"] = 100.0
+
+    # Apply gates (all three required)
+    elite = df[
+        (df["p60"] > 1.2) &
+        (df["ttoi_pct"] > 35.0) &
+        (df["dps_plus"] > 120.0)
     ].copy()
 
-    if not prod.empty:
-        prod["rank"] = prod.groupby("team")["p60"].rank(
-            ascending=False, method="first"
-        ).astype(int)
-        prod = prod[prod["rank"] == 1].copy()
-        prod["is_production"] = 1
-    else:
-        prod = pd.DataFrame()
-
-    # --- Deployment elite ---
-    dep = df[(df["ttoi_pct"] >= 33) & (df["itoi_pct"] < 90)].copy()
-    if not dep.empty:
-        dep = dep.loc[dep.groupby("team")["vs_ef_pct"].idxmax()].copy()
-        dep["is_deployment"] = 1
-    else:
-        dep = pd.DataFrame()
-
-    if prod.empty and dep.empty:
-        print("  elite_defensemen: 0 rows (no defensemen pass filters)")
+    if elite.empty:
+        _empty()
+        print("  elite_defensemen: 0 rows (no defensemen pass gates)")
         return
 
-    # --- Combine ---
-    key_cols = ["playerId", "team"]
-    if not prod.empty and not dep.empty:
-        combined = pd.merge(
-            prod[key_cols + ["gp", "toi_min_gp", "ttoi_pct", "itoi_pct", "p60",
-                             "vs_ef_pct", "rank", "is_production"]],
-            dep[key_cols + ["is_deployment"]],
-            on=key_cols, how="outer",
-        )
-        # Fill stats for deployment-only players from df
-        dep_only = combined["gp"].isna()
-        if dep_only.any():
-            dep_pids = combined.loc[dep_only, key_cols]
-            dep_stats = pd.merge(dep_pids, df, on=key_cols)
-            for col in ["gp", "toi_min_gp", "ttoi_pct", "itoi_pct", "p60", "vs_ef_pct"]:
-                combined.loc[dep_only, col] = dep_stats[col].values
-            combined.loc[dep_only, "rank"] = 0
-    elif not prod.empty:
-        combined = prod[key_cols + ["gp", "toi_min_gp", "ttoi_pct", "itoi_pct",
-                                     "p60", "vs_ef_pct", "rank", "is_production"]].copy()
-        combined["is_deployment"] = 0
-    else:
-        combined = dep.copy()
-        for col in ["gp", "toi_min_gp", "ttoi_pct", "itoi_pct", "p60", "vs_ef_pct"]:
-            if col not in combined.columns:
-                dep_stats = pd.merge(combined[key_cols], df, on=key_cols)
-                for c in ["gp", "toi_min_gp", "ttoi_pct", "itoi_pct", "p60", "vs_ef_pct"]:
-                    combined[c] = dep_stats[c].values
-                break
-        combined["is_production"] = 0
-        combined["rank"] = 0
-
-    combined["is_production"] = combined.get("is_production", 0).fillna(0).astype(int)
-    combined["is_deployment"] = combined.get("is_deployment", 0).fillna(0).astype(int)
-
-    # Full elite: production + deployment, OR production with vs_ef gap < 1.5pp to team's deployment elite
-    dep_vs_ef = combined[combined["is_deployment"] == 1].set_index("team")["vs_ef_pct"].to_dict()
-
-    def _is_full_elite(row):
-        if row["is_production"] == 1 and row["is_deployment"] == 1:
-            return 1
-        if row["is_production"] == 1 and row["team"] in dep_vs_ef:
-            gap = abs(row["vs_ef_pct"] - dep_vs_ef[row["team"]])
-            if gap < 0.015:
-                return 1
-        return 0
-
-    combined["is_full_elite"] = combined.apply(_is_full_elite, axis=1)
-    combined["rank"] = combined["rank"].fillna(0).astype(int)
-    combined["is_carryover"] = 0
-
-    # --- Trade carry-over (production elites only) ---
-    prod_pids = set(combined[combined["is_production"] == 1]["playerId"].unique())
-    if prod_pids:
-        all_teams_for_pid = pd.read_sql_query(
-            "SELECT DISTINCT playerId, team FROM competition WHERE position = 'D'",
-            conn,
-        )
-        carryover_rows = []
-        for pid in prod_pids:
-            elite_teams = set(combined[combined["playerId"] == pid]["team"])
-            all_teams = set(all_teams_for_pid[all_teams_for_pid["playerId"] == pid]["team"])
-            other_teams = all_teams - elite_teams
-            if other_teams:
-                source = combined[combined["playerId"] == pid].sort_values("gp", ascending=False).iloc[0]
-                for team in other_teams:
-                    carry = source.to_dict()
-                    carry["team"] = team
-                    carry["rank"] = 0
-                    carry["is_carryover"] = 1
-                    carryover_rows.append(carry)
-        if carryover_rows:
-            combined = pd.concat([combined, pd.DataFrame(carryover_rows)], ignore_index=True)
-
-    out_cols = ["playerId", "team", "gp", "toi_min_gp", "ttoi_pct", "itoi_pct",
-                "p60", "vs_ef_pct", "is_production", "is_deployment", "is_full_elite",
-                "rank", "is_carryover"]
-    combined[out_cols].to_sql("elite_defensemen", conn, if_exists="replace", index=False)
-
-    n_prod = int(combined["is_production"].sum())
-    n_dep = int(combined["is_deployment"].sum())
-    n_full = int(combined["is_full_elite"].sum())
-    print(f"  elite_defensemen: {len(combined)} rows ({n_prod} production, {n_dep} deployment, {n_full} full elite)")
+    elite[_COLS].to_sql("elite_defensemen", conn, if_exists="replace", index=False)
+    print(f"  elite_defensemen: {len(elite)} rows")
 
 
 def recompute_pct_vs_elite_def(conn):
@@ -552,7 +591,7 @@ def recompute_pct_vs_elite_def(conn):
     elite D is on the opposing side, 0 otherwise.  Averaged per game per player.
     """
     elite_rows = conn.execute(
-        "SELECT playerId FROM elite_defensemen WHERE is_deployment = 1"
+        "SELECT playerId FROM elite_defensemen"
     ).fetchall()
     if not elite_rows:
         print("  pct_vs_elite_def: skipped (no elite defensemen)")
@@ -630,34 +669,11 @@ def recompute_pct_vs_elite_def(conn):
     print(f"  pct_vs_elite_def: updated {len(frac_updates)} rows across {len(game_ids)} games")
 
 
-def backfill_vs_elite_def_to_forwards(conn):
-    """Add vs_ed_pct to elite_forwards: avg pct_any_elite_def per forward."""
-    cols = {r[1] for r in conn.execute("PRAGMA table_info(elite_forwards)").fetchall()}
-    if "vs_ed_pct" not in cols:
-        conn.execute("ALTER TABLE elite_forwards ADD COLUMN vs_ed_pct REAL DEFAULT 0.0")
-        conn.commit()
-
-    updates = conn.execute(
-        "SELECT c.playerId, c.team, AVG(c.pct_any_elite_def) "
-        "FROM competition c "
-        "JOIN elite_forwards e ON c.playerId = e.playerId AND c.team = e.team "
-        "WHERE c.position = 'F' "
-        "GROUP BY c.playerId, c.team"
-    ).fetchall()
-
-    if updates:
-        conn.executemany(
-            "UPDATE elite_forwards SET vs_ed_pct = ? WHERE playerId = ? AND team = ?",
-            [(round(r[2], 4), r[0], r[1]) for r in updates],
-        )
-        conn.commit()
-    print(f"  vs_elite_def → elite_forwards: backfilled {len(updates)} rows")
-
 
 def _read_old_elites(db_path):
     """Read current elite sets from an existing league.db before it is deleted.
 
-    Returns (fwd_df, def_df) — primary rows only (excludes carry-overs).
+    Returns (fwd_df, def_df) — primary rows only (excludes carry-overs if schema has them).
     Each DataFrame has columns: playerId, playerName, team.
     def_df also has a 'type' column: Full Elite / Production / Deployment.
     Returns empty DataFrames if the DB doesn't exist or tables are missing.
@@ -667,29 +683,42 @@ def _read_old_elites(db_path):
                pd.DataFrame(columns=["playerId", "playerName", "team", "type"])
     try:
         old = sqlite3.connect(db_path)
-        fwd = pd.read_sql_query(
-            "SELECT e.playerId, "
-            "  COALESCE(p.firstName || ' ' || p.lastName, 'Player ' || e.playerId) AS playerName, "
-            "  e.team "
-            "FROM elite_forwards e "
-            "LEFT JOIN players p ON e.playerId = p.playerId "
-            "WHERE e.is_carryover = 0",
-            old,
-        )
-        def_ = pd.read_sql_query(
-            "SELECT e.playerId, "
-            "  COALESCE(p.firstName || ' ' || p.lastName, 'Player ' || e.playerId) AS playerName, "
-            "  e.team, "
-            "  CASE WHEN e.is_full_elite = 1 THEN 'Full Elite' "
-            "       WHEN e.is_production = 1 THEN 'Production' "
-            "       ELSE 'Deployment' END AS type "
-            "FROM elite_defensemen e "
-            "LEFT JOIN players p ON e.playerId = p.playerId "
-            "WHERE e.is_carryover = 0",
-            old,
-        )
-        old.close()
-        return fwd, def_
+        try:
+            # Check if old schema has is_carryover (v1) or not (v2)
+            fwd_cols = {row[1] for row in old.execute("PRAGMA table_info(elite_forwards)").fetchall()}
+            carryover_filter = "WHERE e.is_carryover = 0" if "is_carryover" in fwd_cols else ""
+            fwd = pd.read_sql_query(
+                f"SELECT e.playerId, "
+                f"  COALESCE(p.firstName || ' ' || p.lastName, 'Player ' || e.playerId) AS playerName, "
+                f"  e.team "
+                f"FROM elite_forwards e "
+                f"LEFT JOIN players p ON e.playerId = p.playerId "
+                f"{carryover_filter}",
+                old,
+            )
+            def_cols = {row[1] for row in old.execute("PRAGMA table_info(elite_defensemen)").fetchall()}
+            def_carryover = "WHERE e.is_carryover = 0" if "is_carryover" in def_cols else ""
+            if "is_full_elite" in def_cols:
+                type_expr = (
+                    "CASE WHEN e.is_full_elite = 1 THEN 'Full Elite' "
+                    "     WHEN e.is_production = 1 THEN 'Production' "
+                    "     ELSE 'Deployment' END"
+                )
+            else:
+                type_expr = "'Elite'"
+            def_ = pd.read_sql_query(
+                f"SELECT e.playerId, "
+                f"  COALESCE(p.firstName || ' ' || p.lastName, 'Player ' || e.playerId) AS playerName, "
+                f"  e.team, "
+                f"  {type_expr} AS type "
+                f"FROM elite_defensemen e "
+                f"LEFT JOIN players p ON e.playerId = p.playerId "
+                f"{def_carryover}",
+                old,
+            )
+            return fwd, def_
+        finally:
+            old.close()
     except Exception:
         return pd.DataFrame(columns=["playerId", "playerName", "team"]), \
                pd.DataFrame(columns=["playerId", "playerName", "team", "type"])
@@ -711,13 +740,13 @@ def _log_elite_changes(old_fwd, old_def, conn, changelog_path=None):
     changes = []
 
     # --- Forwards ---
+    # v2 schema: no is_carryover column for elite_forwards
     new_fwd = pd.read_sql_query(
         "SELECT e.playerId, "
         "  COALESCE(p.firstName || ' ' || p.lastName, 'Player ' || e.playerId) AS playerName, "
         "  e.team "
         "FROM elite_forwards e "
-        "LEFT JOIN players p ON e.playerId = p.playerId "
-        "WHERE e.is_carryover = 0",
+        "LEFT JOIN players p ON e.playerId = p.playerId",
         conn,
     )
 
@@ -734,16 +763,25 @@ def _log_elite_changes(old_fwd, old_def, conn, changelog_path=None):
                          "team": team, "position": "F", "type": "Elite", "action": "removed"})
 
     # --- Defensemen ---
+    # Check whether the new DB's elite_defensemen has type-designation columns (v1 schema)
+    # or uses the single-tier v2 schema. Use CASE only if the columns exist.
+    new_def_cols = {
+        row[1] for row in conn.execute("PRAGMA table_info(elite_defensemen)").fetchall()
+    }
+    if "is_full_elite" in new_def_cols:
+        def_type_expr = (
+            "CASE WHEN e.is_full_elite = 1 THEN 'Full Elite' "
+            "     WHEN e.is_production = 1 THEN 'Production' "
+            "     ELSE 'Deployment' END"
+        )
+    else:
+        def_type_expr = "'Elite'"
     new_def = pd.read_sql_query(
         "SELECT e.playerId, "
         "  COALESCE(p.firstName || ' ' || p.lastName, 'Player ' || e.playerId) AS playerName, "
-        "  e.team, "
-        "  CASE WHEN e.is_full_elite = 1 THEN 'Full Elite' "
-        "       WHEN e.is_production = 1 THEN 'Production' "
-        "       ELSE 'Deployment' END AS type "
+        f"  e.team, {def_type_expr} AS type "
         "FROM elite_defensemen e "
-        "LEFT JOIN players p ON e.playerId = p.playerId "
-        "WHERE e.is_carryover = 0",
+        "LEFT JOIN players p ON e.playerId = p.playerId",
         conn,
     )
 
@@ -800,7 +838,6 @@ def main():
         recompute_pct_vs_elite_fwd(conn)
         build_elite_defensemen_table(conn)
         recompute_pct_vs_elite_def(conn)
-        backfill_vs_elite_def_to_forwards(conn)
         build_player_metrics_table(conn)
         _log_elite_changes(old_fwd, old_def, conn)
     finally:

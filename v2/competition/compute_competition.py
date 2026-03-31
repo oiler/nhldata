@@ -379,8 +379,8 @@ def write_output(game_id: str, season: str, scores: Dict[int, dict],
             "weighted_forward_heaviness": round(data.get("weighted_forward_heaviness", 0.0), 4),
             "weighted_defense_heaviness": round(data.get("weighted_defense_heaviness", 0.0), 4),
             "weighted_team_heaviness":    round(data.get("weighted_team_heaviness", 0.0), 4),
-            "line_number":      line_numbers.get(pid) if pos == "F" else None,
-            "deployment_score": deployment_scores.get(pid) if pos == "D" else None,
+            "line_number":      line_numbers.get(pid),
+            "deployment_score": deployment_scores.get(pid),
         })
 
     rows.sort(key=lambda r: r["toi_seconds"], reverse=True)
@@ -453,6 +453,57 @@ def assign_forward_lines(
     return assigned
 
 
+def assign_defense_pairs(
+    rows: List[dict],
+    team_def_ids: set,
+) -> Dict[int, int]:
+    """Greedy defense pair detection for one team.
+
+    Args:
+        rows: all timeline row dicts for the game
+        team_def_ids: set of INTEGER player IDs who are defensemen for this team
+
+    Returns:
+        {player_id: pair_number}  pair_number is 1–4; every ID in team_def_ids is present.
+    """
+    combo_seconds: Dict[tuple, int] = {}
+    for row in rows:
+        if row.get("situationCode") != "1551":
+            continue
+        on_ice: set = set()
+        for col in ("awaySkaters", "homeSkaters"):
+            raw = row.get(col, "")
+            if raw:
+                for pid_str in raw.split("|"):
+                    pid = int(pid_str)
+                    if pid in team_def_ids:
+                        on_ice.add(pid)
+        if len(on_ice) < 2:
+            continue
+        for combo in _combinations(sorted(on_ice), 2):
+            combo_seconds[combo] = combo_seconds.get(combo, 0) + 1
+
+    sorted_combos = sorted(combo_seconds.items(), key=lambda x: x[1], reverse=True)
+    assigned: Dict[int, int] = {}
+    used: set = set()
+    pair = 1
+    for combo, _ in sorted_combos:
+        if pair > 4:
+            break
+        if any(p in used for p in combo):
+            continue
+        for p in combo:
+            assigned[p] = pair
+            used.add(p)
+        pair += 1
+
+    for pid in team_def_ids:
+        if pid not in assigned:
+            assigned[pid] = 4
+
+    return assigned
+
+
 def compute_deployment_scores(
     rows: List[dict],
     positions: Dict[int, str],
@@ -501,6 +552,58 @@ def compute_deployment_scores(
             opp_lines = line_assignments.get(opp_team, {})
             line_sum = sum(opp_lines.get(f, 4) for f in opp_fwds)
             scores[player_id] = scores.get(player_id, 0) + (12 - line_sum)
+
+    return scores
+
+
+def compute_forward_deployment_scores(
+    rows: List[dict],
+    positions: Dict[int, str],
+    teams: Dict[int, str],
+    pair_assignments: Dict[str, Dict[int, int]],
+) -> Dict[int, int]:
+    """Compute raw deployment score per forward for one game.
+
+    For each 5v5 second a F is on ice:
+        points = 8 − (pairA + pairB)  [opposing 2 defensemen]
+    TOI is embedded — more seconds on ice accumulates more points.
+
+    Args:
+        rows: all timeline row dicts for the game
+        positions: {player_id: "F"/"D"/"G"}
+        teams: {player_id: team_abbrev}
+        pair_assignments: {team_abbrev: {player_id: pair_number}}
+
+    Returns:
+        {player_id: deployment_score}  only for F players who faced any scored 5v5 second
+    """
+    scores: Dict[int, int] = {}
+
+    for row in rows:
+        if row.get("situationCode") != "1551":
+            continue
+
+        away = [int(p) for p in row["awaySkaters"].split("|")] if row.get("awaySkaters") else []
+        home = [int(p) for p in row["homeSkaters"].split("|")] if row.get("homeSkaters") else []
+
+        for player_id, opponents in (
+            [(p, home) for p in away] +
+            [(p, away) for p in home]
+        ):
+            if positions.get(player_id) != "F":
+                continue
+
+            opp_team = teams.get(opponents[0], "") if opponents else ""
+            if not opp_team:
+                continue
+
+            opp_defs = [p for p in opponents if positions.get(p, "F") == "D"]
+            if len(opp_defs) != 2:
+                continue  # strict 5v5 only — skip malformed rows
+
+            opp_pairs = pair_assignments.get(opp_team, {})
+            pair_sum = sum(opp_pairs.get(d, 4) for d in opp_defs)
+            scores[player_id] = scores.get(player_id, 0) + (8 - pair_sum)
 
     return scores
 
@@ -559,6 +662,26 @@ def run_game(game_number: int, season: str) -> Path:
     deployment_scores = compute_deployment_scores(
         timeline_rows, positions, teams, line_assignments
     )
+
+    # Loop 3 — D pair detection (must precede forward deployment scoring)
+    team_to_defs: Dict[str, set] = {}
+    for pid, team in teams.items():
+        if positions.get(pid) == "D":
+            team_to_defs.setdefault(team, set()).add(pid)
+
+    pair_assignments: Dict[str, Dict[int, int]] = {}
+    for team, def_ids in team_to_defs.items():
+        pair_assignments[team] = assign_defense_pairs(timeline_rows, def_ids)
+
+    # Store D pair numbers in line_numbers (same column, both positions)
+    for team_pairs in pair_assignments.values():
+        line_numbers.update(team_pairs)
+
+    # Loop 4 — forward deployment scoring (uses D pair assignments from Loop 3)
+    fwd_deployment_scores = compute_forward_deployment_scores(
+        timeline_rows, positions, teams, pair_assignments
+    )
+    deployment_scores.update(fwd_deployment_scores)
 
     return write_output(
         game_id, season, scores, toi, total_toi, positions, teams,

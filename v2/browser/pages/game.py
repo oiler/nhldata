@@ -81,12 +81,10 @@ def _make_position_table(df, pos="F"):
         "playerName", "toi_display", "toi_share", "itoi_pct",
         "pct_any_elite_fwd", "pct_any_elite_def",
     ]
-    if pos == "F":
-        columns.append({"name": "Line", "id": "line_number", "type": "numeric"})
-        display_cols.append("line_number")
-    else:  # D
-        columns.append({"name": "Dep Score", "id": "deployment_score", "type": "numeric"})
-        display_cols.append("deployment_score")
+    col_label = "Line" if pos == "F" else "Pair"
+    columns.append({"name": col_label, "id": "line_number", "type": "numeric"})
+    columns.append({"name": "Dep Score", "id": "deployment_score", "type": "numeric"})
+    display_cols.extend(["line_number", "deployment_score"])
 
     return dash_table.DataTable(
         columns=columns,

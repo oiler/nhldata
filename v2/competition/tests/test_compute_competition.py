@@ -203,20 +203,20 @@ def test_run_game_produces_output():
     for row in rows:
         assert row["position"] in {"F", "D"}, f"Unexpected position value: {row['position']}"
 
-    # Forwards have line_number 1–4; D have empty line_number
+    # Both F and D have line_number 1–4
     fwds = [r for r in rows if r["position"] == "F"]
     defs = [r for r in rows if r["position"] == "D"]
 
-    assert all(r["line_number"] in {"1", "2", "3", "4"} for r in fwds), \
+    assert all(r["line_number"] and r["line_number"] in {"1", "2", "3", "4"} for r in fwds), \
         "All forwards should have line_number 1-4"
-    assert all(r["line_number"] == "" for r in defs), \
-        "All D should have empty line_number"
+    assert all(r["line_number"] and r["line_number"] in {"1", "2", "3", "4"} for r in defs), \
+        "All D should have pair_number (line_number) 1-4"
 
-    # D have deployment_score >= 0; forwards have empty deployment_score
+    # Both F and D have deployment_score >= 0
     assert all(int(r["deployment_score"]) >= 0 for r in defs if r["deployment_score"]), \
         "D deployment_score must be non-negative"
-    assert all(r["deployment_score"] == "" for r in fwds), \
-        "Forwards should have empty deployment_score"
+    assert all(int(r["deployment_score"]) >= 0 for r in fwds if r["deployment_score"]), \
+        "F deployment_score must be non-negative"
 
     # pct columns must be in [0.0, 1.0]
     for row in rows:
@@ -545,3 +545,147 @@ def test_deployment_score_mixed():
 
     assert scores.get(10) == 1500  # 900 + 600
     assert scores.get(11) == 1500
+
+
+from compute_competition import assign_defense_pairs
+
+
+def test_assign_defense_pairs_top_pair_gets_pair1():
+    """D pair with most 5v5 seconds together gets pair 1."""
+    # D 21+22 play together 3 seconds; D 23+24 play together 1 second
+    rows = [
+        {"situationCode": "1551", "awaySkaters": "21|22|1|2|3", "homeSkaters": "6|7|8|9|10"},
+        {"situationCode": "1551", "awaySkaters": "21|22|1|2|3", "homeSkaters": "6|7|8|9|10"},
+        {"situationCode": "1551", "awaySkaters": "21|22|1|2|3", "homeSkaters": "6|7|8|9|10"},
+        {"situationCode": "1551", "awaySkaters": "23|24|1|2|3", "homeSkaters": "6|7|8|9|10"},
+    ]
+    team_def_ids = {21, 22, 23, 24}
+    result = assign_defense_pairs(rows, team_def_ids)
+    assert result[21] == 1
+    assert result[22] == 1
+    assert result[23] == 2
+    assert result[24] == 2
+
+
+def test_assign_defense_pairs_uses_5v5_only():
+    """Non-5v5 rows are ignored for pair detection."""
+    rows = [
+        {"situationCode": "1441", "awaySkaters": "21|22|1|2", "homeSkaters": "6|7|8|9"},
+        {"situationCode": "1551", "awaySkaters": "23|24|1|2|3", "homeSkaters": "6|7|8|9|10"},
+    ]
+    team_def_ids = {21, 22, 23, 24}
+    result = assign_defense_pairs(rows, team_def_ids)
+    # 23+24 in 5v5 → pair 1; 21+22 only in 1441 → default pair 4
+    assert result[23] == 1
+    assert result[24] == 1
+    assert result[21] == 4
+    assert result[22] == 4
+
+
+def test_assign_defense_pairs_unassigned_gets_pair4():
+    """D with no 5v5 ice time get assigned pair 4."""
+    result = assign_defense_pairs([], {21, 22})
+    assert result[21] == 4
+    assert result[22] == 4
+
+
+def test_assign_defense_pairs_requires_at_least_2_dmen():
+    """Rows where fewer than 2 D from this team are on ice are skipped."""
+    rows = [
+        # Only D 21 on ice — no pair possible
+        {"situationCode": "1551", "awaySkaters": "21|1|2|3|4", "homeSkaters": "6|7|8|9|10"},
+    ]
+    team_def_ids = {21, 22}
+    result = assign_defense_pairs(rows, team_def_ids)
+    # 21 never forms a pair → both default to 4
+    assert result[21] == 4
+    assert result[22] == 4
+
+
+from compute_competition import compute_forward_deployment_scores
+
+
+def test_compute_forward_deployment_scores_basic():
+    """Forward facing opposing D pair 1 + pair 2 scores 8-(1+2)=5 per second."""
+    rows = [
+        {"situationCode": "1551", "awaySkaters": "1|2|3|4|5", "homeSkaters": "6|7|8|9|10"},
+    ]
+    positions = {1: "F", 2: "F", 3: "F", 4: "D", 5: "D",
+                 6: "F", 7: "F", 8: "F", 9: "D", 10: "D"}
+    teams = {1: "EDM", 2: "EDM", 3: "EDM", 4: "EDM", 5: "EDM",
+             6: "FLA", 7: "FLA", 8: "FLA", 9: "FLA", 10: "FLA"}
+    # FLA D: pair 9→1, pair 10→2  EDM D: pair 4→1, pair 5→2
+    pair_assignments = {"FLA": {9: 1, 10: 2}, "EDM": {4: 1, 5: 2}}
+    result = compute_forward_deployment_scores(rows, positions, teams, pair_assignments)
+    # Away F 1,2,3 face FLA D 9(pair1)+10(pair2) → 8-(1+2)=5 per second
+    assert result[1] == 5
+    assert result[2] == 5
+    assert result[3] == 5
+    # Home F 6,7,8 face EDM D 4(pair1)+5(pair2) → 8-(1+2)=5 per second
+    assert result[6] == 5
+    assert result[7] == 5
+    assert result[8] == 5
+    # D should not appear in result
+    assert 4 not in result
+    assert 9 not in result
+
+
+def test_compute_forward_deployment_scores_accumulates_across_seconds():
+    """Score accumulates: 3 identical rows → 3× the single-row score."""
+    row = {"situationCode": "1551", "awaySkaters": "1|2|3|4|5", "homeSkaters": "6|7|8|9|10"}
+    positions = {1: "F", 2: "F", 3: "F", 4: "D", 5: "D",
+                 6: "F", 7: "F", 8: "F", 9: "D", 10: "D"}
+    teams = {1: "EDM", 2: "EDM", 3: "EDM", 4: "EDM", 5: "EDM",
+             6: "FLA", 7: "FLA", 8: "FLA", 9: "FLA", 10: "FLA"}
+    pair_assignments = {"FLA": {9: 1, 10: 2}, "EDM": {4: 1, 5: 2}}
+    result = compute_forward_deployment_scores([row, row, row], positions, teams, pair_assignments)
+    assert result[1] == 15  # 5 × 3 seconds
+
+
+def test_compute_forward_deployment_scores_uses_5v5_only():
+    """Non-5v5 rows are skipped."""
+    rows = [
+        {"situationCode": "1441", "awaySkaters": "1|2|3|4", "homeSkaters": "6|7|8|9"},
+        {"situationCode": "1551", "awaySkaters": "1|2|3|4|5", "homeSkaters": "6|7|8|9|10"},
+    ]
+    positions = {1: "F", 2: "F", 3: "F", 4: "D", 5: "D",
+                 6: "F", 7: "F", 8: "F", 9: "D", 10: "D"}
+    teams = {1: "EDM", 2: "EDM", 3: "EDM", 4: "EDM", 5: "EDM",
+             6: "FLA", 7: "FLA", 8: "FLA", 9: "FLA", 10: "FLA"}
+    pair_assignments = {"FLA": {9: 1, 10: 2}, "EDM": {4: 1, 5: 2}}
+    result = compute_forward_deployment_scores(rows, positions, teams, pair_assignments)
+    # Only the 1551 row counts → 1 second, score = 5
+    assert result[1] == 5
+
+
+def test_compute_forward_deployment_scores_skips_not_exactly_2_defs():
+    """Rows without exactly 2 opposing D are skipped."""
+    rows = [
+        # Only 1 D per side — malformed 5v5, should skip
+        {"situationCode": "1551", "awaySkaters": "1|2|3|4|5", "homeSkaters": "6|7|8|9|10"},
+    ]
+    positions = {1: "F", 2: "F", 3: "F", 4: "F", 5: "D",   # EDM has 1 D
+                 6: "F", 7: "F", 8: "F", 9: "F", 10: "D"}  # FLA has 1 D
+    teams = {1: "EDM", 2: "EDM", 3: "EDM", 4: "EDM", 5: "EDM",
+             6: "FLA", 7: "FLA", 8: "FLA", 9: "FLA", 10: "FLA"}
+    pair_assignments = {"FLA": {10: 1}, "EDM": {5: 1}}
+    result = compute_forward_deployment_scores(rows, positions, teams, pair_assignments)
+    assert result == {}
+
+
+def test_compute_forward_deployment_scores_missing_pair_defaults_to_4():
+    """Opposing D with no pair assignment defaults to pair 4."""
+    rows = [
+        {"situationCode": "1551", "awaySkaters": "1|2|3|4|5", "homeSkaters": "6|7|8|9|10"},
+    ]
+    positions = {1: "F", 2: "F", 3: "F", 4: "D", 5: "D",
+                 6: "F", 7: "F", 8: "F", 9: "D", 10: "D"}
+    teams = {1: "EDM", 2: "EDM", 3: "EDM", 4: "EDM", 5: "EDM",
+             6: "FLA", 7: "FLA", 8: "FLA", 9: "FLA", 10: "FLA"}
+    # FLA D 9 has pair 2, D 10 is not assigned → defaults to pair 4
+    pair_assignments = {"FLA": {9: 2}, "EDM": {4: 1, 5: 2}}
+    result = compute_forward_deployment_scores(rows, positions, teams, pair_assignments)
+    # Away F face FLA D: pair_sum = 2 + 4 = 6 → score = 8 - 6 = 2
+    assert result[1] == 2
+    assert result[2] == 2
+    assert result[3] == 2

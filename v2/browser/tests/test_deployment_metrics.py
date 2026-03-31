@@ -95,7 +95,7 @@ def test_eligible_players_included():
 def test_output_columns():
     comp, ppi = _standard_data()
     result = compute_deployment_metrics(comp, ppi)
-    assert list(result.columns) == ["ppi", "ppi_plus", "wppi", "wppi_plus", "avg_toi_share", "deployment_rate"]
+    assert list(result.columns) == ["ppi", "ppi_plus", "wppi", "wppi_plus", "avg_toi_share", "deployment_rate", "fwd_deployment_rate"]
 
 
 # --- PPI pass-through ---
@@ -262,3 +262,57 @@ def test_deployment_rate_forwards_null():
 
     assert pd.isna(result.loc[1, "deployment_rate"])       # forward → NaN
     assert not pd.isna(result.loc[2, "deployment_rate"])   # D → has value
+
+
+def test_fwd_deployment_rate_normalization():
+    """F with higher avg deployment_score gets rate > 100; mean = 100."""
+    comp_rows = (
+        [{"playerId": 1, "team": "EDM", "gameId": g, "position": "F",
+          "toi_seconds": 900, "deployment_score": 4000} for g in range(1, 11)]
+      + [{"playerId": 2, "team": "EDM", "gameId": g, "position": "F",
+          "toi_seconds": 900, "deployment_score": 2000} for g in range(1, 11)]
+    )
+    ppi_rows = [
+        {"playerId": 1, "ppi": 3.0, "ppi_plus": 100.0},
+        {"playerId": 2, "ppi": 2.9, "ppi_plus": 98.0},
+    ]
+    result = compute_deployment_metrics(pd.DataFrame(comp_rows), pd.DataFrame(ppi_rows))
+    assert result.loc[1, "fwd_deployment_rate"] > 100
+    assert result.loc[2, "fwd_deployment_rate"] < 100
+    assert abs(result["fwd_deployment_rate"].mean() - 100.0) < 0.001
+
+
+def test_fwd_deployment_rate_defense_null():
+    """D players receive NaN for fwd_deployment_rate; F receives a value."""
+    comp_rows = (
+        [{"playerId": 1, "team": "EDM", "gameId": g, "position": "F",
+          "toi_seconds": 900, "deployment_score": 4000} for g in range(1, 11)]
+      + [{"playerId": 2, "team": "EDM", "gameId": g, "position": "D",
+          "toi_seconds": 1000, "deployment_score": 5000} for g in range(1, 11)]
+    )
+    ppi_rows = [
+        {"playerId": 1, "ppi": 3.0, "ppi_plus": 100.0},
+        {"playerId": 2, "ppi": 3.0, "ppi_plus": 100.0},
+    ]
+    result = compute_deployment_metrics(pd.DataFrame(comp_rows), pd.DataFrame(ppi_rows))
+    assert not pd.isna(result.loc[1, "fwd_deployment_rate"])   # F → has value
+    assert pd.isna(result.loc[2, "fwd_deployment_rate"])       # D → NaN
+
+
+def test_fwd_deployment_rate_all_null_scores():
+    """fwd_deployment_rate is None/NaN when all F deployment_scores are null."""
+    comp_rows = (
+        [{"playerId": 1, "team": "EDM", "gameId": g, "position": "F",
+          "toi_seconds": 900, "deployment_score": None} for g in range(1, 11)]
+      + [{"playerId": 2, "team": "EDM", "gameId": g, "position": "D",
+          "toi_seconds": 1000, "deployment_score": 5000} for g in range(1, 11)]
+    )
+    ppi_rows = [
+        {"playerId": 1, "ppi": 3.0, "ppi_plus": 100.0},
+        {"playerId": 2, "ppi": 3.0, "ppi_plus": 100.0},
+    ]
+    result = compute_deployment_metrics(pd.DataFrame(comp_rows), pd.DataFrame(ppi_rows))
+    # All F deployment_scores are None → fwd_league_avg is NaN → fwd_deployment_rate is None
+    assert pd.isna(result.loc[1, "fwd_deployment_rate"])
+    # D deployment_rate should still be computed
+    assert not pd.isna(result.loc[2, "deployment_rate"])

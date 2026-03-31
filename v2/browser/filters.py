@@ -186,4 +186,25 @@ def compute_deployment_metrics(comp_df: pd.DataFrame, ppi_df: pd.DataFrame) -> p
     else:
         eligible["deployment_rate"] = None
 
-    return eligible[["ppi", "ppi_plus", "wppi", "wppi_plus", "avg_toi_share", "deployment_rate"]]
+    # Forward deployment rate — F only, requires deployment_score column in comp_df
+    if "deployment_score" in comp_df.columns:
+        f_comp = comp_df[comp_df["position"] == "F"].copy()
+        if not f_comp.empty:
+            f_comp["deployment_score"] = pd.to_numeric(f_comp["deployment_score"], errors="coerce")
+            f_agg = f_comp.groupby("playerId").agg(
+                total_score=("deployment_score", "sum"),
+                f_gp=("gameId", "nunique"),
+            )
+            f_agg["avg_score"] = f_agg["total_score"] / f_agg["f_gp"]
+            fwd_league_avg = f_agg["avg_score"].mean()
+            if fwd_league_avg and fwd_league_avg > 0:
+                f_agg["fwd_deployment_rate"] = f_agg["avg_score"] / fwd_league_avg * 100
+            else:
+                f_agg["fwd_deployment_rate"] = None
+            eligible = eligible.join(f_agg[["fwd_deployment_rate"]])
+        else:
+            eligible["fwd_deployment_rate"] = None
+    else:
+        eligible["fwd_deployment_rate"] = None
+
+    return eligible[["ppi", "ppi_plus", "wppi", "wppi_plus", "avg_toi_share", "deployment_rate", "fwd_deployment_rate"]]
