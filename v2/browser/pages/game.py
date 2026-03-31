@@ -45,8 +45,6 @@ SELECT
     c.toi_seconds * 1.0 / NULLIF(c.total_toi_seconds, 0) AS itoi_pct,
     c.comp_fwd,
     c.comp_def,
-    c.pct_any_elite_fwd,
-    c.pct_any_elite_def,
     c.line_number,
     c.deployment_score
 FROM competition c
@@ -74,12 +72,9 @@ def _make_position_table(df, pos="F"):
         {"name": "5v5 TOI",        "id": "toi_display"},
         {"name": "tTOI%",          "id": "toi_share", "type": "numeric", "format": FormatTemplate.percentage(1)},
         {"name": "iTOI%",          "id": "itoi_pct",  "type": "numeric", "format": FormatTemplate.percentage(1)},
-        {"name": "vs Elite Fwd %", "id": "pct_any_elite_fwd", "type": "numeric", "format": FormatTemplate.percentage(2)},
-        {"name": "vs Elite Def %", "id": "pct_any_elite_def", "type": "numeric", "format": FormatTemplate.percentage(2)},
     ]
     display_cols = [
         "playerName", "toi_display", "toi_share", "itoi_pct",
-        "pct_any_elite_fwd", "pct_any_elite_def",
     ]
     col_label = "Line" if pos == "F" else "Pair"
     columns.append({"name": col_label, "id": "line_number", "type": "numeric"})

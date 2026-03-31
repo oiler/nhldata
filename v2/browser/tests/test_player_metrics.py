@@ -78,16 +78,21 @@ def test_ppi_plus_mean_is_100():
 def test_wppi_traded_player():
     """
     Player 3 is the only eligible player on EDM (3 games) and VAN (3 games).
-    Per-game avg TOI: 600s/game per stint; team avg also 600s/game (only player).
-    So share = 1.0 on each team.
-    Games-weighted average: wPPI = PPI × (1.0×3 + 1.0×3) / (3+3) = PPI × 1.0.
+    Per-game avg TOI: 600s/game; team_toi per game = 600s (only skater on team).
+    avg_toi_share = mean(5 × 600 / 600) = 5.0 across all 6 games.
+
+    New formula: wPPI = (PPI - mean_PPI) × avg_toi_share.
+    mean_PPI = mean(198/72, 220/74, 180/70) across the 3 eligible players.
+    wPPI = (180/70 - mean_PPI) × 5.0
     """
     conn = _setup_db()
     build_player_metrics_table(conn)
     row = conn.execute("SELECT wppi FROM player_metrics WHERE playerId = 3").fetchone()
     assert row is not None
-    # games-weighted average of per-game shares across stints
-    expected = (180 / 70) * (1.0 * 3 + 1.0 * 3) / (3 + 3)
+    ppi_p3 = 180 / 70
+    mean_ppi = (198 / 72 + 220 / 74 + 180 / 70) / 3
+    avg_toi_share = 5.0  # 5 × 600 / 600 = 5.0 per game
+    expected = (ppi_p3 - mean_ppi) * avg_toi_share
     assert abs(row[0] - expected) < 0.001
 
 
