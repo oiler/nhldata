@@ -26,8 +26,7 @@ SELECT c.gameId, g.gameDate, c.team,
        c.total_toi_seconds,
        5.0 * c.toi_seconds / NULLIF(tt.team_total, 0) AS toi_share,
        c.toi_seconds * 1.0 / NULLIF(c.total_toi_seconds, 0) AS itoi_pct,
-       c.comp_fwd, c.comp_def,
-       c.pct_vs_top_fwd, c.pct_vs_top_def
+       c.line_number, c.deployment_score
 FROM competition c
 JOIN games g ON c.gameId = g.gameId
 JOIN (
@@ -334,11 +333,9 @@ def update_player(date_start, date_end, home_away, pid, position, season):
             "result":         result,
             "toi_display":    seconds_to_mmss(r["toi_seconds"]),
             "toi_share":      round(float(r["toi_share"]), 4) if r["toi_share"] is not None else None,
-            "itoi_pct":       round(float(r["itoi_pct"]), 4) if r["itoi_pct"] is not None else None,
-            "comp_fwd":       seconds_to_mmss(r["comp_fwd"]),
-            "comp_def":       seconds_to_mmss(r["comp_def"]),
-            "pct_vs_top_fwd": round(float(r["pct_vs_top_fwd"]), 4) if r["pct_vs_top_fwd"] is not None else None,
-            "pct_vs_top_def": round(float(r["pct_vs_top_def"]), 4) if r["pct_vs_top_def"] is not None else None,
+            "itoi_pct":        round(float(r["itoi_pct"]), 4) if r["itoi_pct"] is not None else None,
+            "line_number":     int(r["line_number"]) if r["line_number"] is not None else None,
+            "deployment_score": int(r["deployment_score"]) if r["deployment_score"] is not None else None,
         })
 
     _ci = {"case": "insensitive"}
@@ -351,12 +348,10 @@ def update_player(date_start, date_end, home_away, pid, position, season):
         {"name": "Score",        "id": "score",           "type": "text",    "filter_options": _ci},
         {"name": "Result",       "id": "result",          "type": "text",    "filter_options": _ci},
         {"name": "5v5 TOI",      "id": "toi_display",     "type": "text",    "filter_options": _ci},
-        {"name": "tTOI%",        "id": "toi_share",        "type": "numeric", "format": FormatTemplate.percentage(1)},
-        {"name": "iTOI%",        "id": "itoi_pct",        "type": "numeric", "format": FormatTemplate.percentage(1)},
-        {"name": "OPP F TOI",    "id": "comp_fwd",        "type": "text",    "filter_options": _ci},
-        {"name": "OPP D TOI",    "id": "comp_def",        "type": "text",    "filter_options": _ci},
-        {"name": "vs Top Fwd %", "id": "pct_vs_top_fwd",  "type": "numeric", "format": FormatTemplate.percentage(2)},
-        {"name": "vs Top Def %", "id": "pct_vs_top_def",  "type": "numeric", "format": FormatTemplate.percentage(2)},
+        {"name": "tTOI%",      "id": "toi_share",        "type": "numeric", "format": FormatTemplate.percentage(1)},
+        {"name": "iTOI%",      "id": "itoi_pct",         "type": "numeric", "format": FormatTemplate.percentage(1)},
+        {"name": "Line",       "id": "line_number",      "type": "numeric"},
+        {"name": "Dep Score",  "id": "deployment_score", "type": "numeric"},
     ]
 
     return html.Div([
