@@ -46,9 +46,11 @@ SELECT
     c.comp_fwd,
     c.comp_def,
     c.line_number,
-    c.deployment_score
+    c.deployment_score,
+    pm.ppi_plus
 FROM competition c
 LEFT JOIN players p ON c.playerId = p.playerId
+LEFT JOIN player_metrics pm ON c.playerId = pm.playerId
 JOIN (
     SELECT gameId, team, SUM(toi_seconds) AS team_total
     FROM competition
@@ -77,9 +79,11 @@ def _make_position_table(df, pos="F"):
         "playerName", "toi_display", "toi_share", "itoi_pct",
     ]
     col_label = "Line" if pos == "F" else "Pair"
-    columns.append({"name": col_label, "id": "line_number", "type": "numeric"})
-    columns.append({"name": "Dep Score", "id": "deployment_score", "type": "numeric"})
-    display_cols.extend(["line_number", "deployment_score"])
+    columns.append({"name": col_label,      "id": "line_number",      "type": "numeric"})
+    columns.append({"name": "Dep Score",    "id": "deployment_score", "type": "numeric"})
+    columns.append({"name": "PPI+",         "id": "ppi_plus",         "type": "numeric"})
+    columns.append({"name": "Game wPPI+",   "id": "game_wppi_plus",   "type": "numeric"})
+    display_cols.extend(["line_number", "deployment_score", "ppi_plus", "game_wppi_plus"])
 
     return dash_table.DataTable(
         columns=columns,
@@ -192,6 +196,19 @@ def layout(game_id=None):
             ]),
         ]),
     ], style={"borderCollapse": "collapse", "marginBottom": "1.5rem"})
+
+    # Compute per-team game wPPI+: normalize toi_share within each team, then apply to PPI+
+    if not players_df.empty:
+        mean_toi = players_df.groupby("team")["toi_share"].transform("mean")
+        toi_factor = players_df["toi_share"] / mean_toi.where(mean_toi > 0)
+        players_df["game_wppi_plus"] = (
+            players_df["ppi_plus"].where(players_df["ppi_plus"].notna())
+            .sub(100.0)
+            .mul(toi_factor)
+            .add(100.0)
+            .round(1)
+        )
+        players_df["ppi_plus"] = players_df["ppi_plus"].round(1)
 
     # Player tables by team
     if players_df.empty:
