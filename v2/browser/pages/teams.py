@@ -28,7 +28,7 @@ WHERE c.position IN ('F', 'D')
   AND g.gameDate BETWEEN ? AND ?
 """
 
-_PPI_SQL = "SELECT playerId, ppi, ppi_plus FROM player_metrics"
+_PPI_SQL = "SELECT playerId, ppi, ppi_plus, wppi_plus FROM player_metrics"
 _POINTS_SQL = "SELECT playerId, gameId, goals FROM points_5v5"
 
 _DIVISIONS = {
@@ -141,26 +141,29 @@ def update_teams(date_start, date_end, home_away, season):
     if not metrics.empty:
         pt_toi = ha_comp.groupby(["playerId", "team"])["toi_seconds"].sum().reset_index()
         pt_toi = pt_toi.merge(
-            metrics[["ppi_plus"]].reset_index(),
+            metrics[["ppi_plus", "wppi_plus"]].reset_index(),
             on="playerId", how="inner",
         )
         pt_toi["w_ppi"] = pt_toi["ppi_plus"] * pt_toi["toi_seconds"]
+        pt_toi["w_wppi"] = pt_toi["wppi_plus"] * pt_toi["toi_seconds"]
 
         team_ppi = pt_toi.groupby("team").agg(
             w_ppi_sum=("w_ppi", "sum"),
+            w_wppi_sum=("w_wppi", "sum"),
             total_toi=("toi_seconds", "sum"),
         )
         team_ppi["ppi_plus"] = team_ppi["w_ppi_sum"] / team_ppi["total_toi"]
+        team_ppi["wppi_plus"] = team_ppi["w_wppi_sum"] / team_ppi["total_toi"]
     else:
-        team_ppi = pd.DataFrame(columns=["ppi_plus"])
+        team_ppi = pd.DataFrame(columns=["ppi_plus", "wppi_plus"])
 
     # --- Combine all metrics ---
     df = records[["gp", "pct", "rw"]].copy()
     if not team_ppi.empty:
-        df = df.join(team_ppi[["ppi_plus"]], how="left")
+        df = df.join(team_ppi[["ppi_plus", "wppi_plus"]], how="left")
     if not goal_agg.empty:
         df = df.join(goal_agg[["gf", "ga", "gd_5v5"]], how="left")
-    for col in ["ppi_plus", "gf", "ga", "gd_5v5"]:
+    for col in ["ppi_plus", "wppi_plus", "gf", "ga", "gd_5v5"]:
         if col not in df.columns:
             df[col] = None
     for col in ["gf", "ga", "gd_5v5"]:
@@ -203,7 +206,7 @@ def update_teams(date_start, date_end, home_away, season):
         ]
 
     tercile_cond = []
-    for col_id, higher in [("pct", True), ("rw", True), ("ppi_plus", True),
+    for col_id, higher in [("pct", True), ("rw", True), ("ppi_plus", True), ("wppi_plus", True),
                             ("gf", True), ("ga", False), ("gd_5v5", True)]:
         tercile_cond.extend(_tercile_styles(col_id, higher))
 
@@ -216,13 +219,15 @@ def update_teams(date_start, date_end, home_away, season):
         {"name": "P%",     "id": "pct",       "type": "numeric",
          "format": Format(precision=3, scheme=Scheme.fixed)},
         {"name": "RW",     "id": "rw",        "type": "numeric"},
-        {"name": "PPI+",   "id": "ppi_plus",  "type": "numeric",
+        {"name": "PPI+",   "id": "ppi_plus",   "type": "numeric",
          "format": Format(precision=1, scheme=Scheme.fixed)},
-        {"name": "5v5 GF", "id": "gf",       "type": "numeric"},
+        {"name": "wPPI+",  "id": "wppi_plus",  "type": "numeric",
+         "format": Format(precision=1, scheme=Scheme.fixed)},
+        {"name": "5v5 GF", "id": "gf",        "type": "numeric"},
         {"name": "5v5 GA", "id": "ga",       "type": "numeric"},
         {"name": "5v5 GD", "id": "gd_5v5",   "type": "numeric"},
     ]
-    display_cols = ["team_link", "division", "conference", "gp", "pct", "rw", "ppi_plus", "gf", "ga", "gd_5v5"]
+    display_cols = ["team_link", "division", "conference", "gp", "pct", "rw", "ppi_plus", "wppi_plus", "gf", "ga", "gd_5v5"]
 
     return dash_table.DataTable(
         columns=columns,

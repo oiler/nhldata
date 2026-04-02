@@ -17,7 +17,6 @@ _COMP_SQL = """
 SELECT c.playerId,
        COALESCE(p.firstName || ' ' || p.lastName, 'Player ' || c.playerId) AS playerName,
        c.position, c.team, c.gameId, c.toi_seconds, c.total_toi_seconds,
-       c.pct_any_elite_fwd, c.pct_any_elite_def,
        c.comp_fwd, c.comp_def, c.deployment_score, c.line_number,
        g.gameDate, g.homeTeam_abbrev, g.awayTeam_abbrev
 FROM competition c
@@ -89,8 +88,6 @@ def _make_position_table(df, pos="F"):
         {"name": "5v5 TOI/GP",   "id": "toi_display"},
         {"name": "tTOI%",        "id": "avg_toi_share", "type": "numeric", "format": FormatTemplate.percentage(1)},
         {"name": "iTOI%",        "id": "avg_itoi_pct", "type": "numeric", "format": FormatTemplate.percentage(1)},
-        {"name": "vs Elite Fwd %", "id": "avg_pct_any_elite_fwd", "type": "numeric", "format": FormatTemplate.percentage(2)},
-        {"name": "vs Elite Def %", "id": "avg_pct_any_elite_def", "type": "numeric", "format": FormatTemplate.percentage(2)},
         {"name": "PPI",   "id": "ppi",       "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed)},
         {"name": "PPI+",  "id": "ppi_plus",  "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
         {"name": "wPPI+", "id": "wppi_plus", "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
@@ -99,15 +96,16 @@ def _make_position_table(df, pos="F"):
         "player_link", "games_played",
         "total_goals", "total_assists", "total_points", "p_per_60",
         "toi_display", "avg_toi_share", "avg_itoi_pct",
-        "avg_pct_any_elite_fwd", "avg_pct_any_elite_def",
         "ppi", "ppi_plus", "wppi_plus",
     ]
     if pos == "F":
-        columns.append({"name": "DPL", "id": "avg_line", "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed)})
-        display_cols.append("avg_line")
+        columns.append({"name": "DPL",  "id": "avg_line",            "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed)})
+        columns.append({"name": "DPS+", "id": "fwd_deployment_rate", "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)})
+        display_cols.extend(["avg_line", "fwd_deployment_rate"])
     if pos == "D":
+        columns.append({"name": "DPL",  "id": "avg_line",        "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed)})
         columns.append({"name": "DPS+", "id": "deployment_rate", "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)})
-        display_cols.append("deployment_rate")
+        display_cols.extend(["avg_line", "deployment_rate"])
 
     return dash_table.DataTable(
         columns=columns,
@@ -183,15 +181,11 @@ def update_team(date_start, date_end, home_away, abbrev, season):
             games_played=("gameId", "nunique"),
             total_toi=("toi_seconds", "sum"),
             total_all_toi=("total_toi_seconds", "sum"),
-            weighted_pct_fwd=("pct_any_elite_fwd", lambda x: (x * comp_df.loc[x.index, "toi_seconds"]).sum()),
-            weighted_pct_def=("pct_any_elite_def", lambda x: (x * comp_df.loc[x.index, "toi_seconds"]).sum()),
             weighted_comp_fwd=("comp_fwd", lambda x: (x * comp_df.loc[x.index, "toi_seconds"]).sum()),
             weighted_comp_def=("comp_def", lambda x: (x * comp_df.loc[x.index, "toi_seconds"]).sum()),
             avg_line=("line_number", "mean"),
         )
         grouped["toi_per_game"] = grouped["total_toi"] / grouped["games_played"]
-        grouped["avg_pct_any_elite_fwd"] = grouped["weighted_pct_fwd"] / grouped["total_toi"].where(grouped["total_toi"] > 0)
-        grouped["avg_pct_any_elite_def"] = grouped["weighted_pct_def"] / grouped["total_toi"].where(grouped["total_toi"] > 0)
         grouped["avg_comp_fwd"] = grouped["weighted_comp_fwd"] / grouped["total_toi"].where(grouped["total_toi"] > 0)
         grouped["avg_comp_def"] = grouped["weighted_comp_def"] / grouped["total_toi"].where(grouped["total_toi"] > 0)
         grouped["avg_itoi_pct"] = grouped["total_toi"] / grouped["total_all_toi"].where(grouped["total_all_toi"] > 0)
@@ -199,10 +193,10 @@ def update_team(date_start, date_end, home_away, abbrev, season):
         metrics = compute_deployment_metrics(comp_df, ppi_df)
         if not metrics.empty:
             grouped = grouped.join(
-                metrics[["ppi", "ppi_plus", "wppi", "wppi_plus", "avg_toi_share", "deployment_rate"]]
+                metrics[["ppi", "ppi_plus", "wppi", "wppi_plus", "avg_toi_share", "deployment_rate", "fwd_deployment_rate"]]
             )
         else:
-            for col in ["ppi", "ppi_plus", "wppi", "wppi_plus", "avg_toi_share", "deployment_rate"]:
+            for col in ["ppi", "ppi_plus", "wppi", "wppi_plus", "avg_toi_share", "deployment_rate", "fwd_deployment_rate"]:
                 grouped[col] = None
 
         # 5v5 points
@@ -221,7 +215,7 @@ def update_team(date_start, date_end, home_away, abbrev, season):
         grouped["p_per_60"] = grouped["total_points"] * 3600 / grouped["total_toi"].where(grouped["total_toi"] > 0)
 
         player_df = grouped.reset_index().sort_values("toi_per_game", ascending=False)
-        for col, dec in [("ppi", 2), ("ppi_plus", 1), ("wppi_plus", 1), ("avg_line", 2), ("deployment_rate", 1)]:
+        for col, dec in [("ppi", 2), ("ppi_plus", 1), ("wppi_plus", 1), ("avg_line", 2), ("deployment_rate", 1), ("fwd_deployment_rate", 1)]:
             player_df[col] = pd.to_numeric(player_df[col], errors="coerce").round(dec)
     else:
         player_df = pd.DataFrame()

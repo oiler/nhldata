@@ -77,13 +77,11 @@ def test_ppi_plus_mean_is_100():
 
 def test_wppi_traded_player():
     """
-    Player 3 is the only eligible player on EDM (3 games) and VAN (3 games).
-    Per-game avg TOI: 600s/game; team_toi per game = 600s (only skater on team).
-    avg_toi_share = mean(5 × 600 / 600) = 5.0 across all 6 games.
-
-    New formula: wPPI = (PPI - mean_PPI) × avg_toi_share.
-    mean_PPI = mean(198/72, 220/74, 180/70) across the 3 eligible players.
-    wPPI = (180/70 - mean_PPI) × 5.0
+    Player 3 is alone on EDM/VAN → avg_toi_share = 5.0.
+    Players 1 & 2 share FLA games → avg_toi_share = 5×900/1900 and 5×1000/1900.
+    mean_toi_share = (5×900/1900 + 5×1000/1900 + 5.0) / 3 = 10/3.
+    toi_factor_p3 = 5.0 / (10/3) = 1.5.
+    wPPI = (ppi_p3 - mean_ppi) × 1.5
     """
     conn = _setup_db()
     build_player_metrics_table(conn)
@@ -91,18 +89,32 @@ def test_wppi_traded_player():
     assert row is not None
     ppi_p3 = 180 / 70
     mean_ppi = (198 / 72 + 220 / 74 + 180 / 70) / 3
-    avg_toi_share = 5.0  # 5 × 600 / 600 = 5.0 per game
-    expected = (ppi_p3 - mean_ppi) * avg_toi_share
+    avg_toi_share_p1 = 5 * 900 / 1900
+    avg_toi_share_p2 = 5 * 1000 / 1900
+    avg_toi_share_p3 = 5.0  # 5 × 600 / 600
+    mean_toi_share = (avg_toi_share_p1 + avg_toi_share_p2 + avg_toi_share_p3) / 3
+    toi_factor_p3 = avg_toi_share_p3 / mean_toi_share
+    expected = (ppi_p3 - mean_ppi) * toi_factor_p3
     assert abs(row[0] - expected) < 0.001
 
 
-def test_wppi_plus_mean_is_100():
-    conn = _setup_db()
+def test_mean_ppi_player_gets_wppi_plus_100():
+    """A player at exactly mean PPI gets wPPI+ = 100 regardless of minutes."""
+    conn = sqlite3.connect(":memory:")
+    mean_ppi = (3.00 + 2.50 + 2.00) / 3  # 2.50 = player 2's PPI
+    rows = []
+    for game in range(1, 7):
+        rows.append({"playerId": 1, "team": "FLA", "gameId": game, "position": "F",
+                     "toi_seconds": 1200, "height_in": 72, "weight_lbs": round(3.00 * 72)})
+        rows.append({"playerId": 2, "team": "FLA", "gameId": game, "position": "F",
+                     "toi_seconds": 600, "height_in": 72, "weight_lbs": round(2.50 * 72)})
+        rows.append({"playerId": 3, "team": "FLA", "gameId": game, "position": "F",
+                     "toi_seconds": 300, "height_in": 72, "weight_lbs": round(2.00 * 72)})
+    pd.DataFrame(rows).to_sql("competition", conn, index=False, if_exists="replace")
     build_player_metrics_table(conn)
-    rows = conn.execute("SELECT wppi_plus FROM player_metrics").fetchall()
-    values = [r[0] for r in rows]
-    assert len(values) == 3
-    assert abs(sum(values) / len(values) - 100.0) < 0.001
+    row = conn.execute("SELECT wppi_plus FROM player_metrics WHERE playerId = 2").fetchone()
+    assert row is not None
+    assert abs(row[0] - 100.0) < 0.001
 
 
 def test_wppi_per_game_normalization():

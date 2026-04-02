@@ -45,18 +45,18 @@ def compute_wppi_and_toi_share(eligible: pd.DataFrame, comp_df: pd.DataFrame) ->
     if eligible.empty:
         return pd.DataFrame()
 
-    # wPPI: deviation from mean PPI, scaled by TOI share.
-    # Light players (below mean) who play more drag their score further negative.
-    # Heavy players (above mean) who play more push their score further positive.
+    # wPPI: deviation from mean PPI, scaled by TOI share relative to league average.
+    # toi_factor is normalized so the mean = 1.0: players at average minutes get 1.0,
+    # above-average minutes > 1.0, below-average < 1.0.
+    # This ensures a player with below-average TOI gets wPPI+ closer to 100 than their PPI+.
     mean_ppi = eligible["ppi"].mean()
-    eligible["wppi"] = (eligible["ppi"] - mean_ppi) * eligible["avg_toi_share"]
+    toi_factor = eligible["avg_toi_share"] / eligible["avg_toi_share"].mean()
+    eligible["wppi"] = (eligible["ppi"] - mean_ppi) * toi_factor
 
-    # wPPI+: z-score normalized, centered at 100 with std=15.
-    # Cannot use ratio normalization (mean wPPI ≈ 0), so use z-score instead.
-    wppi_std = eligible["wppi"].std()
-    if wppi_std and wppi_std > 0:
-        eligible["wppi_plus"] = 100.0 + (eligible["wppi"] - eligible["wppi"].mean()) / wppi_std * 15.0
-    else:
-        eligible["wppi_plus"] = 100.0
+    # wPPI+: PPI+ deviation scaled by toi_factor, directly comparable to PPI+.
+    # A player at mean PPI (PPI+ = 100) always gets wPPI+ = 100 regardless of minutes.
+    # A heavy player (PPI+ > 100) with below-average minutes gets wPPI+ < PPI+.
+    # A heavy player with above-average minutes gets wPPI+ > PPI+.
+    eligible["wppi_plus"] = 100.0 + (eligible["ppi_plus"] - 100.0) * toi_factor
 
     return eligible

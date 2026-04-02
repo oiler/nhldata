@@ -112,10 +112,11 @@ def test_ppi_values_passed_through():
 
 def test_wppi_single_team():
     """
-    wPPI = (PPI - mean_PPI) * avg_toi_share.
+    wPPI = (PPI - mean_PPI) * toi_factor, where toi_factor = avg_toi_share / mean(avg_toi_share).
     3 players on FLA, 6 games each. No ineligible players in fixture to keep denominator clean.
-    Player 1: PPI=2.75, mean_PPI=(2.75+2.97+2.57)/3=2.763, avg_toi_share=5*900/2500=1.8
-    wPPI = (2.75 - 2.763) * 1.8 = -0.0234
+    Player 1: PPI=2.75, avg_toi_share=1.8, mean_toi_share=(1.8+2.0+1.2)/3=5/3
+    toi_factor = 1.8 / (5/3) = 1.08
+    wPPI = (2.75 - 2.763) * 1.08
     """
     comp_rows = []
     for game in range(1, 7):
@@ -129,19 +130,33 @@ def test_wppi_single_team():
     ]
     result = compute_deployment_metrics(_make_comp(comp_rows), _make_ppi(ppi_rows))
     mean_ppi = (2.75 + 2.97 + 2.57) / 3
-    team_toi_per_game = 900 + 1000 + 600  # 2500, no ineligible players in fixture
+    team_toi_per_game = 900 + 1000 + 600  # 2500
     avg_toi_share_p1 = 5 * 900 / team_toi_per_game  # 1.8
-    expected_wppi = (2.75 - mean_ppi) * avg_toi_share_p1
+    avg_toi_share_p2 = 5 * 1000 / team_toi_per_game  # 2.0
+    avg_toi_share_p3 = 5 * 600 / team_toi_per_game   # 1.2
+    mean_toi_share = (avg_toi_share_p1 + avg_toi_share_p2 + avg_toi_share_p3) / 3
+    toi_factor_p1 = avg_toi_share_p1 / mean_toi_share
+    expected_wppi = (2.75 - mean_ppi) * toi_factor_p1
     assert abs(result.loc[1, "wppi"] - expected_wppi) < 0.001
 
 
 # --- wPPI+ ---
 
-def test_wppi_plus_mean_is_100():
-    comp, ppi = _standard_data()
-    result = compute_deployment_metrics(comp, ppi)
-    mean_wppi_plus = result["wppi_plus"].mean()
-    assert abs(mean_wppi_plus - 100.0) < 0.001
+def test_mean_ppi_player_gets_wppi_plus_100():
+    """A player at exactly mean PPI gets wPPI+ = 100 regardless of minutes played."""
+    comp_rows = []
+    for game in range(1, 7):
+        comp_rows.append({"playerId": 1, "team": "FLA", "gameId": game, "position": "F", "toi_seconds": 1200})
+        comp_rows.append({"playerId": 2, "team": "FLA", "gameId": game, "position": "F", "toi_seconds": 600})
+        comp_rows.append({"playerId": 3, "team": "FLA", "gameId": game, "position": "F", "toi_seconds": 300})
+    mean_ppi = (3.00 + 2.50 + 2.00) / 3  # = 2.50 = player 3's PPI
+    ppi_rows = [
+        {"playerId": 1, "ppi": 3.00, "ppi_plus": 100 * 3.00 / mean_ppi},
+        {"playerId": 2, "ppi": 2.50, "ppi_plus": 100 * 2.50 / mean_ppi},  # exactly mean PPI
+        {"playerId": 3, "ppi": 2.00, "ppi_plus": 100 * 2.00 / mean_ppi},
+    ]
+    result = compute_deployment_metrics(_make_comp(comp_rows), _make_ppi(ppi_rows))
+    assert abs(result.loc[2, "wppi_plus"] - 100.0) < 0.001
 
 
 # --- Traded player ---
