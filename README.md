@@ -55,6 +55,6 @@ A multi-page Dash app serves all of the data. Everything is filterable by date r
 
   Once classified, elite players feed into the competition metrics — every second of 5v5 play is scored against whether the opponents on the ice were elite. That gives every skater in the league a competition quality measure that the box score never could.
 
-  - **tTOI% and iTOI%**
+- **tTOI% and iTOI%**
 
   Seperating 5v5 TOI percentages into these two values tells us how much a player skates relative to their team's 5v5 ice time (tTOI%) and how much of a player's individual ice time is at 5v5 vs other situations (iTOI%). For the latter, a lower iTOI% value means the player is called upon in other situations (4v4, 3v3, PP, or SH) so a lower iTOI% is usually better. For tTOI%, a higher value is usually better because it means this player plays a lot at 5v5. But this data reveals that some players, like Matt Boldy or Tim Stützle, can have an average tTOI% and an extremely low iTOI% and still be a top point producer at 5v5
