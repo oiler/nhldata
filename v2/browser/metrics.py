@@ -7,23 +7,27 @@ import pandas as pd
 def compute_wppi_and_toi_share(eligible: pd.DataFrame, comp_df: pd.DataFrame) -> pd.DataFrame:
     """Compute wPPI, wPPI+, avg_toi_share for eligible players.
 
-    wPPI formula: (PPI - mean_PPI) × avg_toi_share
-    - Below-mean PPI players accumulate negative wPPI as they play more.
-    - Above-mean PPI players accumulate positive wPPI as they play more.
-    - A player at exactly mean PPI gets wPPI = 0 regardless of minutes.
+    wPPI (raw) = avg(ppi_plus × toi_seconds) per game.
+    Every second a player is on ice they contribute their PPI+ to the raw score.
+    A player at 100 PPI+ playing average minutes scores exactly the league mean.
 
-    avg_toi_share: per-game mean of (5 × player_toi / team_toi).
-    wPPI+: z-score normalized, mean=100, std=15.
+    wPPI+ = wPPI / league_mean(wPPI) × 100  (ratio-normalized, same as PPI+)
+    - Heavy player (PPI+ > 100) playing few minutes: wPPI+ < PPI+
+    - Heavy player playing heavy minutes: wPPI+ > PPI+
+    - Light player (PPI+ < 100) playing heavy minutes: wPPI+ > PPI+ (more below 100 in absolute terms)
+    - Light player playing few minutes: wPPI+ closer to 100 than PPI+
+
+    avg_toi_share: per-game mean of (5 × player_toi / team_toi), retained for display.
 
     Args:
-        eligible: DataFrame indexed by playerId with at least a 'ppi' column.
+        eligible: DataFrame indexed by playerId with columns: ppi, ppi_plus.
                   Rows should already be filtered to eligible players (GP >= 5).
         comp_df:  Full competition data with columns:
                   playerId, team, gameId, toi_seconds.
 
     Returns:
         Copy of eligible with added columns: wppi, wppi_plus, avg_toi_share.
-        Players with missing avg_toi_share are dropped.
+        Players with no valid games are dropped.
         Returns empty DataFrame if no valid values can be computed.
     """
     eligible = eligible.copy()
@@ -45,18 +49,28 @@ def compute_wppi_and_toi_share(eligible: pd.DataFrame, comp_df: pd.DataFrame) ->
     if eligible.empty:
         return pd.DataFrame()
 
-    # wPPI: deviation from mean PPI, scaled by TOI share relative to league average.
-    # toi_factor is normalized so the mean = 1.0: players at average minutes get 1.0,
-    # above-average minutes > 1.0, below-average < 1.0.
-    # This ensures a player with below-average TOI gets wPPI+ closer to 100 than their PPI+.
-    mean_ppi = eligible["ppi"].mean()
-    toi_factor = eligible["avg_toi_share"] / eligible["avg_toi_share"].mean()
-    eligible["wppi"] = (eligible["ppi"] - mean_ppi) * toi_factor
+    # wPPI: avg per-game raw score = ppi_plus × toi_seconds.
+    # Each second on ice contributes the player's PPI+ to the running total.
+    player_games = cs[cs["playerId"].isin(eligible.index)].merge(
+        eligible[["ppi_plus"]].reset_index(), on="playerId"
+    )
+    player_games["raw_score"] = player_games["ppi_plus"] * player_games["toi_seconds"]
+    wppi = (
+        player_games.groupby("playerId")["raw_score"]
+        .mean()
+        .rename("wppi")
+    )
+    eligible = eligible.join(wppi)
+    eligible = eligible[eligible["wppi"].notna()]
 
-    # wPPI+: PPI+ deviation scaled by toi_factor, directly comparable to PPI+.
-    # A player at mean PPI (PPI+ = 100) always gets wPPI+ = 100 regardless of minutes.
-    # A heavy player (PPI+ > 100) with below-average minutes gets wPPI+ < PPI+.
-    # A heavy player with above-average minutes gets wPPI+ > PPI+.
-    eligible["wppi_plus"] = 100.0 + (eligible["ppi_plus"] - 100.0) * toi_factor
+    if eligible.empty:
+        return pd.DataFrame()
+
+    # wPPI+: ratio-normalized to league mean = 100, same pattern as PPI+.
+    league_mean = eligible["wppi"].mean()
+    if league_mean and league_mean > 0:
+        eligible["wppi_plus"] = eligible["wppi"] / league_mean * 100.0
+    else:
+        eligible["wppi_plus"] = 100.0
 
     return eligible

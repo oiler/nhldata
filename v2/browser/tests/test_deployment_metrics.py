@@ -112,11 +112,11 @@ def test_ppi_values_passed_through():
 
 def test_wppi_single_team():
     """
-    wPPI = (PPI - mean_PPI) * toi_factor, where toi_factor = avg_toi_share / mean(avg_toi_share).
-    3 players on FLA, 6 games each. No ineligible players in fixture to keep denominator clean.
-    Player 1: PPI=2.75, avg_toi_share=1.8, mean_toi_share=(1.8+2.0+1.2)/3=5/3
-    toi_factor = 1.8 / (5/3) = 1.08
-    wPPI = (2.75 - 2.763) * 1.08
+    wPPI = avg(ppi_plus × toi_seconds per game).
+    wPPI+ = wPPI / league_mean(wPPI) × 100.
+    Player 1: 100.0 × 900 = 90000 per game.
+    league_mean = (100*900 + 108*1000 + 93.5*600) / 3 = (90000+108000+56100)/3 = 84700
+    wPPI+_p1 = 90000 / 84700 * 100 = 106.26
     """
     comp_rows = []
     for game in range(1, 7):
@@ -129,43 +129,33 @@ def test_wppi_single_team():
         {"playerId": 3, "ppi": 2.57, "ppi_plus": 93.5},
     ]
     result = compute_deployment_metrics(_make_comp(comp_rows), _make_ppi(ppi_rows))
-    mean_ppi = (2.75 + 2.97 + 2.57) / 3
-    team_toi_per_game = 900 + 1000 + 600  # 2500
-    avg_toi_share_p1 = 5 * 900 / team_toi_per_game  # 1.8
-    avg_toi_share_p2 = 5 * 1000 / team_toi_per_game  # 2.0
-    avg_toi_share_p3 = 5 * 600 / team_toi_per_game   # 1.2
-    mean_toi_share = (avg_toi_share_p1 + avg_toi_share_p2 + avg_toi_share_p3) / 3
-    toi_factor_p1 = avg_toi_share_p1 / mean_toi_share
-    expected_wppi = (2.75 - mean_ppi) * toi_factor_p1
-    assert abs(result.loc[1, "wppi"] - expected_wppi) < 0.001
+    expected_wppi_p1 = 100.0 * 900
+    league_mean = (100.0 * 900 + 108.0 * 1000 + 93.5 * 600) / 3
+    expected_wppi_plus_p1 = expected_wppi_p1 / league_mean * 100
+    assert abs(result.loc[1, "wppi"] - expected_wppi_p1) < 0.1
+    assert abs(result.loc[1, "wppi_plus"] - expected_wppi_plus_p1) < 0.1
 
 
 # --- wPPI+ ---
 
-def test_mean_ppi_player_gets_wppi_plus_100():
-    """A player at exactly mean PPI gets wPPI+ = 100 regardless of minutes played."""
+def test_equal_players_all_get_wppi_plus_100():
+    """When all eligible players have identical ppi_plus and toi_seconds, all get wPPI+ = 100."""
     comp_rows = []
-    for game in range(1, 7):
-        comp_rows.append({"playerId": 1, "team": "FLA", "gameId": game, "position": "F", "toi_seconds": 1200})
-        comp_rows.append({"playerId": 2, "team": "FLA", "gameId": game, "position": "F", "toi_seconds": 600})
-        comp_rows.append({"playerId": 3, "team": "FLA", "gameId": game, "position": "F", "toi_seconds": 300})
-    mean_ppi = (3.00 + 2.50 + 2.00) / 3  # = 2.50 = player 3's PPI
-    ppi_rows = [
-        {"playerId": 1, "ppi": 3.00, "ppi_plus": 100 * 3.00 / mean_ppi},
-        {"playerId": 2, "ppi": 2.50, "ppi_plus": 100 * 2.50 / mean_ppi},  # exactly mean PPI
-        {"playerId": 3, "ppi": 2.00, "ppi_plus": 100 * 2.00 / mean_ppi},
-    ]
+    for pid in range(1, 4):
+        for game in range(1, 7):
+            comp_rows.append({"playerId": pid, "team": "FLA", "gameId": game, "position": "F", "toi_seconds": 900})
+    ppi_rows = [{"playerId": pid, "ppi": 2.75, "ppi_plus": 100.0} for pid in range(1, 4)]
     result = compute_deployment_metrics(_make_comp(comp_rows), _make_ppi(ppi_rows))
-    assert abs(result.loc[2, "wppi_plus"] - 100.0) < 0.001
+    for pid in range(1, 4):
+        assert abs(result.loc[pid, "wppi_plus"] - 100.0) < 0.001
 
 
 # --- Traded player ---
 
 def test_wppi_traded_player():
     """
-    Under the new wPPI formula (ppi - mean_ppi) * avg_toi_share:
-    Player 5 is the only eligible player on both EDM and VAN.
-    mean_ppi = player's own ppi on each team → deviation = 0 → wPPI = 0 regardless of TOI.
+    Player 5 is the only eligible player → their raw score IS the league mean → wPPI+ = 100.
+    wPPI = ppi_plus × avg_toi_seconds = 100.0 × 800 = 80000.
     """
     comp_rows = []
     for game in range(1, 4):
@@ -174,16 +164,14 @@ def test_wppi_traded_player():
         comp_rows.append({"playerId": 5, "team": "VAN", "gameId": game, "position": "F", "toi_seconds": 800})
     ppi_rows = [{"playerId": 5, "ppi": 2.60, "ppi_plus": 100.0}]
     result = compute_deployment_metrics(_make_comp(comp_rows), _make_ppi(ppi_rows))
-    assert abs(result.loc[5, "wppi"] - 0.0) < 0.001
+    assert abs(result.loc[5, "wppi"] - 100.0 * 800) < 0.1
+    assert abs(result.loc[5, "wppi_plus"] - 100.0) < 0.001
 
 
-def test_wppi_ppi_sign_determines_wppi_sign():
+def test_wppi_higher_ppi_plus_higher_wppi_plus():
     """
-    Under wPPI = (ppi - mean_ppi) * toi_share:
-    - above-mean PPI → positive wPPI
-    - below-mean PPI → negative wPPI
-    - exactly mean PPI → wPPI ≈ 0
-    All players share equal TOI to isolate the PPI sign effect.
+    All else equal (same TOI), higher ppi_plus → higher wPPI+.
+    wPPI = ppi_plus × toi_seconds, so ordering matches ppi_plus ordering.
     """
     comp_rows = []
     for game in range(1, 7):
@@ -196,16 +184,13 @@ def test_wppi_ppi_sign_determines_wppi_sign():
         {"playerId": 3, "ppi": 2.25, "ppi_plus": 82.5},
     ]
     result = compute_deployment_metrics(_make_comp(comp_rows), _make_ppi(ppi_rows))
-    assert result.loc[1, "wppi"] > 0, "heavy player should have positive wPPI"
-    assert abs(result.loc[2, "wppi"]) < 0.01, "avg PPI player should have wPPI ≈ 0"
-    assert result.loc[3, "wppi"] < 0, "light player should have negative wPPI"
+    assert result.loc[1, "wppi_plus"] > result.loc[2, "wppi_plus"] > result.loc[3, "wppi_plus"]
 
 
-def test_wppi_light_player_more_toi_amplifies_penalty():
+def test_wppi_more_toi_higher_wppi_plus():
     """
-    Players 1 and 2 have identical PPI (2.25, below mean), so their deviation from
-    team mean is equal. Only TOI differs (1000s vs 400s), isolating the amplification effect.
-    Player 1 (more TOI) should produce a more negative wPPI than Player 2 (less TOI).
+    Players 1 and 2 have identical ppi_plus but different TOI.
+    More TOI → higher raw score → higher wPPI+.
     """
     comp_rows = []
     for game in range(1, 7):
@@ -218,8 +203,8 @@ def test_wppi_light_player_more_toi_amplifies_penalty():
         {"playerId": 3, "ppi": 2.73, "ppi_plus": 100.0},
     ]
     result = compute_deployment_metrics(_make_comp(comp_rows), _make_ppi(ppi_rows))
-    assert result.loc[1, "wppi"] < result.loc[2, "wppi"], \
-        "light player with more TOI should have lower (more negative) wPPI"
+    assert result.loc[1, "wppi_plus"] > result.loc[2, "wppi_plus"], \
+        "player with more TOI and same ppi_plus should have higher wPPI+"
 
 
 def test_wppi_traded_player_no_inflation():

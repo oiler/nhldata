@@ -21,11 +21,11 @@ SELECT c.team,
        MAX(c.weighted_forward_heaviness)                                        AS fwd_ppi,
        MAX(c.weighted_defense_heaviness)                                        AS def_ppi,
        MAX(c.weighted_team_heaviness)                                           AS team_ppi,
-       SUM(CASE WHEN c.position = 'F' THEN pm.wppi * c.toi_seconds ELSE 0 END)
+       SUM(CASE WHEN c.position = 'F' THEN pm.ppi_plus * c.toi_seconds ELSE 0 END)
            / NULLIF(SUM(CASE WHEN c.position = 'F' THEN c.toi_seconds ELSE 0 END), 0) AS fwd_wppi,
-       SUM(CASE WHEN c.position = 'D' THEN pm.wppi * c.toi_seconds ELSE 0 END)
+       SUM(CASE WHEN c.position = 'D' THEN pm.ppi_plus * c.toi_seconds ELSE 0 END)
            / NULLIF(SUM(CASE WHEN c.position = 'D' THEN c.toi_seconds ELSE 0 END), 0) AS def_wppi,
-       SUM(pm.wppi * c.toi_seconds)
+       SUM(pm.ppi_plus * c.toi_seconds)
            / NULLIF(SUM(c.toi_seconds), 0)                                     AS team_wppi
 FROM competition c
 LEFT JOIN player_metrics pm ON c.playerId = pm.playerId
@@ -197,17 +197,17 @@ def layout(game_id=None):
         ]),
     ], style={"borderCollapse": "collapse", "marginBottom": "1.5rem"})
 
-    # Compute per-team game wPPI+: normalize toi_share within each team, then apply to PPI+
+    # Compute game wPPI+: (ppi_plus × toi_seconds) / league_mean_wppi × 100
+    # Uses same league mean as the seasonal metric — only the toi_seconds differs (this game vs season avg).
     if not players_df.empty:
-        mean_toi = players_df.groupby("team")["toi_share"].transform("mean")
-        toi_factor = players_df["toi_share"] / mean_toi.where(mean_toi > 0)
-        players_df["game_wppi_plus"] = (
-            players_df["ppi_plus"].where(players_df["ppi_plus"].notna())
-            .sub(100.0)
-            .mul(toi_factor)
-            .add(100.0)
-            .round(1)
-        )
+        league_mean_df = league_query("SELECT AVG(wppi) AS mean_wppi FROM player_metrics", season=season)
+        league_mean_wppi = float(league_mean_df.iloc[0]["mean_wppi"]) if not league_mean_df.empty else None
+        if league_mean_wppi and league_mean_wppi > 0:
+            players_df["game_wppi_plus"] = (
+                (players_df["ppi_plus"] * players_df["toi_seconds"]) / league_mean_wppi * 100
+            ).round(1)
+        else:
+            players_df["game_wppi_plus"] = None
         players_df["ppi_plus"] = players_df["ppi_plus"].round(1)
 
     # Player tables by team
