@@ -1,7 +1,7 @@
 """
 Build a league-wide SQLite database for the NHL Data Browser.
 
-Creates 7 tables:
+Creates 8 tables:
   - competition:      all rows from data/<season>/generated/competition/*.csv
   - players:          from data/<season>/generated/players/csv/players.csv
   - games:            from data/<season>/generated/flatboxscores/boxscores.csv
@@ -9,6 +9,8 @@ Creates 7 tables:
   - elite_forwards:   per-team elite forward classification (tTOI%, iTOI%, P/60 model)
   - elite_defensemen: per-team elite defensemen (production + deployment designations)
   - player_metrics:   PPI, PPI+, wPPI, wPPI+, avg_toi_share per eligible skater (GP >= 5)
+  - constants:        scalar league-wide values used as fixed denominators in the browser
+                      (e.g. league_mean_team_wppi — the full-season baseline for team wPPI+)
 
 After building elite_forwards, pct_vs_top_fwd in the competition table is
 overwritten with the fraction of opposing forwards who are in the elite set.
@@ -670,6 +672,39 @@ def recompute_pct_vs_elite_def(conn):
 
 
 
+def build_constants_table(conn):
+    """Compute and store league-wide scalar constants used as fixed denominators in the browser.
+
+    league_mean_team_wppi:
+        For each team-game, sums (ppi_plus × toi_seconds) across all eligible skaters.
+        Averages that raw score across each team's games → team wPPI.
+        Takes the mean across all 32 teams → the fixed denominator for team wPPI+.
+
+    Stored as key/value rows in the constants table.
+    """
+    comp = pd.read_sql_query(
+        "SELECT playerId, team, gameId, toi_seconds FROM competition WHERE position IN ('F', 'D')",
+        conn,
+    )
+    metrics = pd.read_sql_query("SELECT playerId, ppi_plus FROM player_metrics", conn)
+    if comp.empty or metrics.empty:
+        print("  constants: SKIPPED (no competition or player_metrics data)")
+        return
+
+    comp = comp.merge(metrics, on="playerId", how="inner")
+    comp["raw_score"] = comp["ppi_plus"] * comp["toi_seconds"]
+
+    # Per team-game: sum of raw scores. Per team: mean across games.
+    team_game = comp.groupby(["team", "gameId"])["raw_score"].sum().reset_index()
+    team_wppi = team_game.groupby("team")["raw_score"].mean()
+    league_mean = float(team_wppi.mean())
+
+    pd.DataFrame([{"key": "league_mean_team_wppi", "value": round(league_mean, 4)}]).to_sql(
+        "constants", conn, if_exists="replace", index=False
+    )
+    print(f"  constants: league_mean_team_wppi = {league_mean:.2f}")
+
+
 def _read_old_elites(db_path):
     """Read current elite sets from an existing league.db before it is deleted.
 
@@ -839,6 +874,7 @@ def main():
         build_elite_defensemen_table(conn)
         recompute_pct_vs_elite_def(conn)
         build_player_metrics_table(conn)
+        build_constants_table(conn)
         _log_elite_changes(old_fwd, old_def, conn)
     finally:
         conn.close()

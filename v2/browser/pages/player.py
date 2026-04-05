@@ -57,7 +57,7 @@ WHERE c.playerId = ?
 _COMP_HA_HOME = " AND c.team = g.homeTeam_abbrev"
 _COMP_HA_AWAY = " AND c.team = g.awayTeam_abbrev"
 
-_PPI_SQL = "SELECT playerId, ppi, ppi_plus FROM player_metrics"
+_PPI_SQL = "SELECT playerId, ppi, ppi_plus, wppi, wppi_plus FROM player_metrics"
 _POINTS_SQL = "SELECT playerId, gameId, goals, assists, points FROM points_5v5"
 
 _ALL_COMP_SQL = """

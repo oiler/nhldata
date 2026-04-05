@@ -4,7 +4,6 @@
 import pandas as pd
 from dash import html, dcc, callback, Input, Output, ctx
 from db import league_query
-from metrics import compute_wppi_and_toi_share
 
 
 def season_date_range(season: str = "2025") -> tuple[str, str]:
@@ -136,23 +135,28 @@ def register_home_away_callback(page_id: str):
 
 
 def compute_deployment_metrics(comp_df: pd.DataFrame, ppi_df: pd.DataFrame) -> pd.DataFrame:
-    """Compute wPPI, wPPI+, avg_toi_share, and deployment_rate from filtered competition data.
+    """Return per-player deployment metrics using stored wPPI/wPPI+ from the database.
+
+    wPPI and wPPI+ are the full-season values stored in player_metrics — the filtered
+    window determines which players are shown (GP >= 5 in window) and their avg_toi_share,
+    but does not shift the wPPI+ baseline. This mirrors how wRC+ uses year-to-date league
+    constants as a stable denominator rather than recomputing per filtered view.
 
     Args:
         comp_df: Filtered competition rows with columns:
                  playerId, team, gameId, toi_seconds, position
                  (deployment_score column optional — if absent, deployment_rate = NaN)
-        ppi_df:  Player metrics with columns: playerId, ppi, ppi_plus
+        ppi_df:  Player metrics with columns: playerId, ppi, ppi_plus, wppi, wppi_plus
                  (full-season, not filtered)
 
     Returns:
         DataFrame indexed by playerId with columns:
-        ppi, ppi_plus, wppi, wppi_plus, avg_toi_share, deployment_rate
+        ppi, ppi_plus, wppi, wppi_plus, avg_toi_share, deployment_rate, fwd_deployment_rate
     """
     if comp_df.empty or ppi_df.empty:
         return pd.DataFrame()
 
-    ppi = ppi_df.set_index("playerId")[["ppi", "ppi_plus"]]
+    ppi = ppi_df.set_index("playerId")[["ppi", "ppi_plus", "wppi", "wppi_plus"]]
 
     # Games played per player in filtered window
     gp = comp_df.groupby("playerId")["gameId"].nunique().rename("games_played")
@@ -161,7 +165,19 @@ def compute_deployment_metrics(comp_df: pd.DataFrame, ppi_df: pd.DataFrame) -> p
     if eligible.empty:
         return pd.DataFrame()
 
-    eligible = compute_wppi_and_toi_share(eligible, comp_df)
+    # avg_toi_share: computed from filtered window.
+    # Denominator uses full comp (all skaters), matching real per-game deployment totals.
+    game_team_toi = comp_df.groupby(["team", "gameId"])["toi_seconds"].transform("sum")
+    cs = comp_df.copy()
+    cs["toi_share"] = 5.0 * cs["toi_seconds"] / game_team_toi.where(game_team_toi > 0)
+    avg_toi_share = (
+        cs[cs["playerId"].isin(eligible.index)]
+        .groupby("playerId")["toi_share"]
+        .mean()
+        .rename("avg_toi_share")
+    )
+    eligible = eligible.join(avg_toi_share)
+    eligible = eligible[eligible["avg_toi_share"].notna()]
     if eligible.empty:
         return pd.DataFrame()
 

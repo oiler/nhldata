@@ -29,9 +29,7 @@ WHERE c.position IN ('F', 'D')
 _HA_HOME = " AND c.team = g.homeTeam_abbrev"
 _HA_AWAY = " AND c.team = g.awayTeam_abbrev"
 
-_PPI_SQL = """
-SELECT playerId, ppi, ppi_plus FROM player_metrics
-"""
+_PPI_SQL = "SELECT playerId, ppi, ppi_plus, wppi, wppi_plus FROM player_metrics"
 
 _POINTS_SQL = "SELECT playerId, gameId, goals, assists, points FROM points_5v5"
 

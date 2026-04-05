@@ -18,7 +18,7 @@ def _make_comp(rows):
 
 
 def _make_ppi(rows):
-    """Build a ppi_df DataFrame from a list of dicts with playerId, ppi, ppi_plus."""
+    """Build a ppi_df DataFrame from a list of dicts with playerId, ppi, ppi_plus, wppi, wppi_plus."""
     return pd.DataFrame(rows)
 
 
@@ -27,9 +27,9 @@ def _make_ppi(rows):
 def _standard_data():
     """
     3 eligible players on FLA (6 games each), 1 ineligible (3 games):
-      Player 1: F, 900s/game, PPI=2.75, PPI+=100.0
-      Player 2: D, 1000s/game, PPI=2.97, PPI+=108.0
-      Player 3: F, 600s/game, PPI=2.57, PPI+=93.5
+      Player 1: F, 900s/game, PPI=2.75, PPI+=100.0, wPPI=90000, wPPI+=106.26
+      Player 2: D, 1000s/game, PPI=2.97, PPI+=108.0, wPPI=108000, wPPI+=127.51
+      Player 3: F, 600s/game, PPI=2.57, PPI+=93.5, wPPI=56100, wPPI+=66.23
       Player 4: F, 400s/game, PPI=2.57, PPI+=93.5 (only 3 games → ineligible)
     """
     comp_rows = []
@@ -41,10 +41,10 @@ def _standard_data():
         comp_rows.append({"playerId": 4, "team": "FLA", "gameId": game, "position": "F", "toi_seconds": 400})
 
     ppi_rows = [
-        {"playerId": 1, "ppi": 2.75, "ppi_plus": 100.0},
-        {"playerId": 2, "ppi": 2.97, "ppi_plus": 108.0},
-        {"playerId": 3, "ppi": 2.57, "ppi_plus": 93.5},
-        {"playerId": 4, "ppi": 2.57, "ppi_plus": 93.5},
+        {"playerId": 1, "ppi": 2.75, "ppi_plus": 100.0, "wppi": 90000.0, "wppi_plus": 106.26},
+        {"playerId": 2, "ppi": 2.97, "ppi_plus": 108.0, "wppi": 108000.0, "wppi_plus": 127.51},
+        {"playerId": 3, "ppi": 2.57, "ppi_plus": 93.5,  "wppi": 56100.0,  "wppi_plus": 66.23},
+        {"playerId": 4, "ppi": 2.57, "ppi_plus": 93.5,  "wppi": 56100.0,  "wppi_plus": 66.23},
     ]
     return _make_comp(comp_rows), _make_ppi(ppi_rows)
 
@@ -53,14 +53,14 @@ def _standard_data():
 
 def test_empty_comp_returns_empty():
     comp = pd.DataFrame(columns=["playerId", "team", "gameId", "position", "toi_seconds"])
-    ppi = _make_ppi([{"playerId": 1, "ppi": 2.75, "ppi_plus": 100.0}])
+    ppi = _make_ppi([{"playerId": 1, "ppi": 2.75, "ppi_plus": 100.0, "wppi": 90000.0, "wppi_plus": 100.0}])
     result = compute_deployment_metrics(comp, ppi)
     assert result.empty
 
 
 def test_empty_ppi_returns_empty():
     comp = _make_comp([{"playerId": 1, "team": "FLA", "gameId": 1, "position": "F", "toi_seconds": 900}])
-    ppi = pd.DataFrame(columns=["playerId", "ppi", "ppi_plus"])
+    ppi = pd.DataFrame(columns=["playerId", "ppi", "ppi_plus", "wppi", "wppi_plus"])
     result = compute_deployment_metrics(comp, ppi)
     assert result.empty
 
@@ -71,7 +71,7 @@ def test_no_eligible_players_returns_empty():
         {"playerId": 1, "team": "FLA", "gameId": g, "position": "F", "toi_seconds": 900}
         for g in range(1, 4)
     ]
-    ppi_rows = [{"playerId": 1, "ppi": 2.75, "ppi_plus": 100.0}]
+    ppi_rows = [{"playerId": 1, "ppi": 2.75, "ppi_plus": 100.0, "wppi": 90000.0, "wppi_plus": 100.0}]
     result = compute_deployment_metrics(_make_comp(comp_rows), _make_ppi(ppi_rows))
     assert result.empty
 
@@ -108,126 +108,47 @@ def test_ppi_values_passed_through():
     assert abs(result.loc[1, "ppi_plus"] - 100.0) < 0.001
 
 
-# --- wPPI ---
+# --- wPPI / wPPI+ pass-through ---
 
-def test_wppi_single_team():
-    """
-    wPPI = avg(ppi_plus × toi_seconds per game).
-    wPPI+ = wPPI / league_mean(wPPI) × 100.
-    Player 1: 100.0 × 900 = 90000 per game.
-    league_mean = (100*900 + 108*1000 + 93.5*600) / 3 = (90000+108000+56100)/3 = 84700
-    wPPI+_p1 = 90000 / 84700 * 100 = 106.26
-    """
-    comp_rows = []
+def test_wppi_passed_through_from_ppi_df():
+    """wPPI and wPPI+ come from ppi_df unchanged — not recomputed from the filtered window."""
+    comp, ppi = _standard_data()
+    result = compute_deployment_metrics(comp, ppi)
+    assert abs(result.loc[1, "wppi"] - 90000.0) < 0.001
+    assert abs(result.loc[1, "wppi_plus"] - 106.26) < 0.001
+    assert abs(result.loc[2, "wppi"] - 108000.0) < 0.001
+    assert abs(result.loc[2, "wppi_plus"] - 127.51) < 0.001
+    assert abs(result.loc[3, "wppi"] - 56100.0) < 0.001
+    assert abs(result.loc[3, "wppi_plus"] - 66.23) < 0.001
+
+
+def test_wppi_plus_stable_across_different_windows():
+    """Same player in two different filtered windows gets the same wPPI+ (stored value)."""
+    ppi_rows = [
+        {"playerId": 1, "ppi": 2.75, "ppi_plus": 100.0, "wppi": 90000.0, "wppi_plus": 112.5},
+        {"playerId": 2, "ppi": 2.97, "ppi_plus": 108.0, "wppi": 108000.0, "wppi_plus": 135.0},
+        {"playerId": 3, "ppi": 2.57, "ppi_plus": 93.5,  "wppi": 56100.0,  "wppi_plus": 70.0},
+    ]
+
+    # Window A: 6 games, all players
+    comp_a = []
     for game in range(1, 7):
-        comp_rows.append({"playerId": 1, "team": "FLA", "gameId": game, "position": "F", "toi_seconds": 900})
-        comp_rows.append({"playerId": 2, "team": "FLA", "gameId": game, "position": "D", "toi_seconds": 1000})
-        comp_rows.append({"playerId": 3, "team": "FLA", "gameId": game, "position": "F", "toi_seconds": 600})
-    ppi_rows = [
-        {"playerId": 1, "ppi": 2.75, "ppi_plus": 100.0},
-        {"playerId": 2, "ppi": 2.97, "ppi_plus": 108.0},
-        {"playerId": 3, "ppi": 2.57, "ppi_plus": 93.5},
-    ]
-    result = compute_deployment_metrics(_make_comp(comp_rows), _make_ppi(ppi_rows))
-    expected_wppi_p1 = 100.0 * 900
-    league_mean = (100.0 * 900 + 108.0 * 1000 + 93.5 * 600) / 3
-    expected_wppi_plus_p1 = expected_wppi_p1 / league_mean * 100
-    assert abs(result.loc[1, "wppi"] - expected_wppi_p1) < 0.1
-    assert abs(result.loc[1, "wppi_plus"] - expected_wppi_plus_p1) < 0.1
+        comp_a.append({"playerId": 1, "team": "FLA", "gameId": game, "position": "F", "toi_seconds": 900})
+        comp_a.append({"playerId": 2, "team": "FLA", "gameId": game, "position": "D", "toi_seconds": 1000})
+        comp_a.append({"playerId": 3, "team": "FLA", "gameId": game, "position": "F", "toi_seconds": 600})
+
+    # Window B: games 1-5 only (player 3 still eligible, avg TOI different mix)
+    comp_b = [r for r in comp_a if r["gameId"] <= 5]
+
+    result_a = compute_deployment_metrics(_make_comp(comp_a), _make_ppi(ppi_rows))
+    result_b = compute_deployment_metrics(_make_comp(comp_b), _make_ppi(ppi_rows))
+
+    # wPPI+ must be identical regardless of filtered window
+    assert abs(result_a.loc[1, "wppi_plus"] - result_b.loc[1, "wppi_plus"]) < 0.001
+    assert abs(result_a.loc[2, "wppi_plus"] - result_b.loc[2, "wppi_plus"]) < 0.001
 
 
-# --- wPPI+ ---
-
-def test_equal_players_all_get_wppi_plus_100():
-    """When all eligible players have identical ppi_plus and toi_seconds, all get wPPI+ = 100."""
-    comp_rows = []
-    for pid in range(1, 4):
-        for game in range(1, 7):
-            comp_rows.append({"playerId": pid, "team": "FLA", "gameId": game, "position": "F", "toi_seconds": 900})
-    ppi_rows = [{"playerId": pid, "ppi": 2.75, "ppi_plus": 100.0} for pid in range(1, 4)]
-    result = compute_deployment_metrics(_make_comp(comp_rows), _make_ppi(ppi_rows))
-    for pid in range(1, 4):
-        assert abs(result.loc[pid, "wppi_plus"] - 100.0) < 0.001
-
-
-# --- Traded player ---
-
-def test_wppi_traded_player():
-    """
-    Player 5 is the only eligible player → their raw score IS the league mean → wPPI+ = 100.
-    wPPI = ppi_plus × avg_toi_seconds = 100.0 × 800 = 80000.
-    """
-    comp_rows = []
-    for game in range(1, 4):
-        comp_rows.append({"playerId": 5, "team": "EDM", "gameId": game, "position": "F", "toi_seconds": 800})
-    for game in range(4, 7):
-        comp_rows.append({"playerId": 5, "team": "VAN", "gameId": game, "position": "F", "toi_seconds": 800})
-    ppi_rows = [{"playerId": 5, "ppi": 2.60, "ppi_plus": 100.0}]
-    result = compute_deployment_metrics(_make_comp(comp_rows), _make_ppi(ppi_rows))
-    assert abs(result.loc[5, "wppi"] - 100.0 * 800) < 0.1
-    assert abs(result.loc[5, "wppi_plus"] - 100.0) < 0.001
-
-
-def test_wppi_higher_ppi_plus_higher_wppi_plus():
-    """
-    All else equal (same TOI), higher ppi_plus → higher wPPI+.
-    wPPI = ppi_plus × toi_seconds, so ordering matches ppi_plus ordering.
-    """
-    comp_rows = []
-    for game in range(1, 7):
-        comp_rows.append({"playerId": 1, "team": "FLA", "gameId": game, "position": "F", "toi_seconds": 1000})
-        comp_rows.append({"playerId": 2, "team": "FLA", "gameId": game, "position": "F", "toi_seconds": 1000})
-        comp_rows.append({"playerId": 3, "team": "FLA", "gameId": game, "position": "F", "toi_seconds": 1000})
-    ppi_rows = [
-        {"playerId": 1, "ppi": 3.20, "ppi_plus": 117.4},
-        {"playerId": 2, "ppi": 2.727, "ppi_plus": 100.0},
-        {"playerId": 3, "ppi": 2.25, "ppi_plus": 82.5},
-    ]
-    result = compute_deployment_metrics(_make_comp(comp_rows), _make_ppi(ppi_rows))
-    assert result.loc[1, "wppi_plus"] > result.loc[2, "wppi_plus"] > result.loc[3, "wppi_plus"]
-
-
-def test_wppi_more_toi_higher_wppi_plus():
-    """
-    Players 1 and 2 have identical ppi_plus but different TOI.
-    More TOI → higher raw score → higher wPPI+.
-    """
-    comp_rows = []
-    for game in range(1, 7):
-        comp_rows.append({"playerId": 1, "team": "FLA", "gameId": game, "position": "F", "toi_seconds": 1000})
-        comp_rows.append({"playerId": 2, "team": "FLA", "gameId": game, "position": "F", "toi_seconds": 400})
-        comp_rows.append({"playerId": 3, "team": "FLA", "gameId": game, "position": "F", "toi_seconds": 700})
-    ppi_rows = [
-        {"playerId": 1, "ppi": 2.25, "ppi_plus": 82.5},
-        {"playerId": 2, "ppi": 2.25, "ppi_plus": 82.5},
-        {"playerId": 3, "ppi": 2.73, "ppi_plus": 100.0},
-    ]
-    result = compute_deployment_metrics(_make_comp(comp_rows), _make_ppi(ppi_rows))
-    assert result.loc[1, "wppi_plus"] > result.loc[2, "wppi_plus"], \
-        "player with more TOI and same ppi_plus should have higher wPPI+"
-
-
-def test_wppi_traded_player_no_inflation():
-    """Traded player with same per-game TOI as single-team player gets same wPPI."""
-    comp_rows = []
-    # Player 10: single-team ANA, 10 games, 900s/game
-    for game in range(1, 11):
-        comp_rows.append({"playerId": 10, "team": "ANA", "gameId": game, "position": "F", "toi_seconds": 900})
-    # Player 11: traded ANA→BOS, 5+5 games, same 900s/game
-    for game in range(101, 106):
-        comp_rows.append({"playerId": 11, "team": "ANA", "gameId": game, "position": "F", "toi_seconds": 900})
-    for game in range(201, 206):
-        comp_rows.append({"playerId": 11, "team": "BOS", "gameId": game, "position": "F", "toi_seconds": 900})
-
-    ppi_rows = [
-        {"playerId": 10, "ppi": 2.75, "ppi_plus": 100.0},
-        {"playerId": 11, "ppi": 2.75, "ppi_plus": 100.0},
-    ]
-    result = compute_deployment_metrics(_make_comp(comp_rows), _make_ppi(ppi_rows))
-    assert abs(result.loc[10, "wppi"] - result.loc[11, "wppi"]) < 0.001
-
-
-# --- avg_toi_share ---
+# --- avg_toi_share (still computed from filtered window) ---
 
 def test_avg_toi_share():
     """
@@ -247,7 +168,8 @@ def test_avg_toi_share():
             comp_rows.append({"playerId": pid, "team": "FLA", "gameId": game,
                               "position": "F", "toi_seconds": 300})
 
-    ppi_rows = [{"playerId": pid, "ppi": 2.75, "ppi_plus": 100.0} for pid in range(1, 11)]
+    ppi_rows = [{"playerId": pid, "ppi": 2.75, "ppi_plus": 100.0, "wppi": 90000.0, "wppi_plus": 100.0}
+                for pid in range(1, 11)]
     result = compute_deployment_metrics(_make_comp(comp_rows), _make_ppi(ppi_rows))
     assert abs(result.loc[1, "avg_toi_share"] - 2 / 3) < 0.001
     assert abs(result.loc[6, "avg_toi_share"] - 1 / 3) < 0.001
@@ -266,7 +188,7 @@ def test_avg_toi_share_uses_full_comp():
                           "position": "F", "toi_seconds": 600})
 
     # Only player 1 in ppi_df
-    ppi_rows = [{"playerId": 1, "ppi": 2.75, "ppi_plus": 100.0}]
+    ppi_rows = [{"playerId": 1, "ppi": 2.75, "ppi_plus": 100.0, "wppi": 90000.0, "wppi_plus": 100.0}]
     result = compute_deployment_metrics(_make_comp(comp_rows), _make_ppi(ppi_rows))
     # team_total = 900 + 600 = 1500. share = 5 * 900 / 1500 = 3.0
     assert abs(result.loc[1, "avg_toi_share"] - 5 * 900 / 1500) < 0.001
@@ -284,12 +206,9 @@ def test_deployment_rate_normalization():
       + [{"playerId": 2, "team": "EDM", "gameId": g, "position": "D",
           "toi_seconds": 900,  "deployment_score": 3000} for g in range(1, 11)]
     )
-    # League avg = (5000+3000)/2 = 4000
-    # Player 1 rate = 5000/4000 * 100 = 125
-    # Player 2 rate = 3000/4000 * 100 = 75
     ppi_rows = [
-        {"playerId": 1, "ppi": 3.0, "ppi_plus": 100.0},
-        {"playerId": 2, "ppi": 2.9, "ppi_plus": 98.0},
+        {"playerId": 1, "ppi": 3.0, "ppi_plus": 100.0, "wppi": 90000.0, "wppi_plus": 110.0},
+        {"playerId": 2, "ppi": 2.9, "ppi_plus": 98.0,  "wppi": 88000.0, "wppi_plus": 90.0},
     ]
     result = compute_deployment_metrics(pd.DataFrame(comp_rows), pd.DataFrame(ppi_rows))
 
@@ -307,8 +226,8 @@ def test_deployment_rate_forwards_null():
           "toi_seconds": 1000, "deployment_score": 5000} for g in range(1, 11)]
     )
     ppi_rows = [
-        {"playerId": 1, "ppi": 3.0, "ppi_plus": 100.0},
-        {"playerId": 2, "ppi": 3.0, "ppi_plus": 100.0},
+        {"playerId": 1, "ppi": 3.0, "ppi_plus": 100.0, "wppi": 90000.0, "wppi_plus": 100.0},
+        {"playerId": 2, "ppi": 3.0, "ppi_plus": 100.0, "wppi": 90000.0, "wppi_plus": 100.0},
     ]
     result = compute_deployment_metrics(pd.DataFrame(comp_rows), pd.DataFrame(ppi_rows))
 
@@ -325,8 +244,8 @@ def test_fwd_deployment_rate_normalization():
           "toi_seconds": 900, "deployment_score": 2000} for g in range(1, 11)]
     )
     ppi_rows = [
-        {"playerId": 1, "ppi": 3.0, "ppi_plus": 100.0},
-        {"playerId": 2, "ppi": 2.9, "ppi_plus": 98.0},
+        {"playerId": 1, "ppi": 3.0, "ppi_plus": 100.0, "wppi": 90000.0, "wppi_plus": 110.0},
+        {"playerId": 2, "ppi": 2.9, "ppi_plus": 98.0,  "wppi": 88000.0, "wppi_plus": 90.0},
     ]
     result = compute_deployment_metrics(pd.DataFrame(comp_rows), pd.DataFrame(ppi_rows))
     assert result.loc[1, "fwd_deployment_rate"] > 100
@@ -343,8 +262,8 @@ def test_fwd_deployment_rate_defense_null():
           "toi_seconds": 1000, "deployment_score": 5000} for g in range(1, 11)]
     )
     ppi_rows = [
-        {"playerId": 1, "ppi": 3.0, "ppi_plus": 100.0},
-        {"playerId": 2, "ppi": 3.0, "ppi_plus": 100.0},
+        {"playerId": 1, "ppi": 3.0, "ppi_plus": 100.0, "wppi": 90000.0, "wppi_plus": 100.0},
+        {"playerId": 2, "ppi": 3.0, "ppi_plus": 100.0, "wppi": 90000.0, "wppi_plus": 100.0},
     ]
     result = compute_deployment_metrics(pd.DataFrame(comp_rows), pd.DataFrame(ppi_rows))
     assert not pd.isna(result.loc[1, "fwd_deployment_rate"])   # F → has value
@@ -360,11 +279,9 @@ def test_fwd_deployment_rate_all_null_scores():
           "toi_seconds": 1000, "deployment_score": 5000} for g in range(1, 11)]
     )
     ppi_rows = [
-        {"playerId": 1, "ppi": 3.0, "ppi_plus": 100.0},
-        {"playerId": 2, "ppi": 3.0, "ppi_plus": 100.0},
+        {"playerId": 1, "ppi": 3.0, "ppi_plus": 100.0, "wppi": 90000.0, "wppi_plus": 100.0},
+        {"playerId": 2, "ppi": 3.0, "ppi_plus": 100.0, "wppi": 90000.0, "wppi_plus": 100.0},
     ]
     result = compute_deployment_metrics(pd.DataFrame(comp_rows), pd.DataFrame(ppi_rows))
-    # All F deployment_scores are None → fwd_league_avg is NaN → fwd_deployment_rate is None
     assert pd.isna(result.loc[1, "fwd_deployment_rate"])
-    # D deployment_rate should still be computed
     assert not pd.isna(result.loc[2, "deployment_rate"])

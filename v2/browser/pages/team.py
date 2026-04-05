@@ -66,7 +66,7 @@ WHERE gameId IN ({placeholders})
 GROUP BY gameId, team
 """
 
-_PPI_SQL = "SELECT playerId, ppi, ppi_plus FROM player_metrics"
+_PPI_SQL = "SELECT playerId, ppi, ppi_plus, wppi, wppi_plus FROM player_metrics"
 
 _POINTS_SQL = "SELECT playerId, gameId, goals, assists, points FROM points_5v5"
 

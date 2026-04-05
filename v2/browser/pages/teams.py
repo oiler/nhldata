@@ -5,7 +5,7 @@ from dash import html, dash_table, callback, Input, Output
 from dash.dash_table.Format import Format, Scheme
 
 from db import league_query
-from filters import make_filter_bar, register_home_away_callback, register_season_callback, compute_deployment_metrics
+from filters import make_filter_bar, register_home_away_callback, register_season_callback
 
 dash.register_page(__name__, path="/teams", name="Teams")
 register_home_away_callback("teams")
@@ -28,7 +28,8 @@ WHERE c.position IN ('F', 'D')
   AND g.gameDate BETWEEN ? AND ?
 """
 
-_PPI_SQL = "SELECT playerId, ppi, ppi_plus, wppi_plus FROM player_metrics"
+_PPI_SQL = "SELECT playerId, ppi_plus FROM player_metrics"
+_CONSTANTS_SQL = "SELECT key, value FROM constants"
 _POINTS_SQL = "SELECT playerId, gameId, goals FROM points_5v5"
 
 _DIVISIONS = {
@@ -128,7 +129,7 @@ def update_teams(date_start, date_end, home_away, season):
     else:
         goal_agg = pd.DataFrame(columns=["gf", "ga", "gd_5v5"])
 
-    # --- PPI+ — TOI-weighted team average ---
+    # --- PPI+ and wPPI+ — team-level ---
     if home_away == "home":
         ha_comp = comp_df[comp_df["team"] == comp_df["homeTeam_abbrev"]]
     elif home_away == "away":
@@ -136,24 +137,39 @@ def update_teams(date_start, date_end, home_away, season):
     else:
         ha_comp = comp_df
 
-    metrics = compute_deployment_metrics(ha_comp, ppi_df)
+    # Fetch full-season league mean team wPPI (fixed denominator for wPPI+)
+    constants_df = league_query(_CONSTANTS_SQL, season=season)
+    league_mean_team_wppi = None
+    if not constants_df.empty:
+        row = constants_df[constants_df["key"] == "league_mean_team_wppi"]
+        if not row.empty:
+            league_mean_team_wppi = float(row.iloc[0]["value"])
 
-    if not metrics.empty:
-        pt_toi = ha_comp.groupby(["playerId", "team"])["toi_seconds"].sum().reset_index()
-        pt_toi = pt_toi.merge(
-            metrics[["ppi_plus", "wppi_plus"]].reset_index(),
-            on="playerId", how="inner",
-        )
-        pt_toi["w_ppi"] = pt_toi["ppi_plus"] * pt_toi["toi_seconds"]
-        pt_toi["w_wppi"] = pt_toi["wppi_plus"] * pt_toi["toi_seconds"]
+    if not ha_comp.empty and not ppi_df.empty:
+        ppi_lookup = ppi_df.set_index("playerId")["ppi_plus"]
+        ha_comp_ppi = ha_comp.copy()
+        ha_comp_ppi["ppi_plus"] = ha_comp_ppi["playerId"].map(ppi_lookup)
+        ha_comp_ppi = ha_comp_ppi.dropna(subset=["ppi_plus"])
 
-        team_ppi = pt_toi.groupby("team").agg(
+        # Team PPI+: TOI-weighted average of individual PPI+
+        ha_comp_ppi["w_ppi"] = ha_comp_ppi["ppi_plus"] * ha_comp_ppi["toi_seconds"]
+        team_agg = ha_comp_ppi.groupby("team").agg(
             w_ppi_sum=("w_ppi", "sum"),
-            w_wppi_sum=("w_wppi", "sum"),
             total_toi=("toi_seconds", "sum"),
         )
-        team_ppi["ppi_plus"] = team_ppi["w_ppi_sum"] / team_ppi["total_toi"]
-        team_ppi["wppi_plus"] = team_ppi["w_wppi_sum"] / team_ppi["total_toi"]
+        team_agg["ppi_plus"] = team_agg["w_ppi_sum"] / team_agg["total_toi"]
+
+        # Team wPPI+: mean over games of sum(ppi_plus × toi_seconds), normalized by
+        # the full-season league mean stored in constants — same stable baseline every day.
+        if league_mean_team_wppi:
+            ha_comp_ppi["raw_score"] = ha_comp_ppi["ppi_plus"] * ha_comp_ppi["toi_seconds"]
+            team_game_score = ha_comp_ppi.groupby(["team", "gameId"])["raw_score"].sum()
+            team_wppi = team_game_score.groupby("team").mean()
+            team_agg["wppi_plus"] = team_wppi / league_mean_team_wppi * 100
+        else:
+            team_agg["wppi_plus"] = None
+
+        team_ppi = team_agg[["ppi_plus", "wppi_plus"]]
     else:
         team_ppi = pd.DataFrame(columns=["ppi_plus", "wppi_plus"])
 
