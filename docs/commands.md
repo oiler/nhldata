@@ -63,3 +63,23 @@ uv run python v2/competition/compute_competition.py 1 900 2025
 ```
 Output: `data/{season}/generated/competition/{gameId}.csv`
 
+## Common Operations
+
+### Regular DB update — run daily pipeline (fetch yesterday's games, generate, rebuild DB)
+```bash
+uv run python v2/orchestrator/runner.py
+```
+
+### Recalculate and reprocess all games — full season regeneration from raw data
+```bash
+uv run python v2/orchestrator/sync_season.py 2025
+```
+Runs all generation steps in order: flatten boxscores → flatten plays → fetch players →
+generate timelines → compute competition → backfill players → build league DB.
+Raw data (boxscores, plays, meta, shifts) must already be downloaded.
+
+### Start the browser app
+```bash
+uv run python v2/browser/app.py
+```
+
