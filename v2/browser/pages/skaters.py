@@ -112,11 +112,11 @@ def update_skaters(date_start, date_end, home_away, season):
     grouped["p_per_60"] = grouped["total_points"] * 3600 / grouped["total_toi"].where(grouped["total_toi"] > 0)
 
     df = grouped.reset_index()
-    df = df.sort_values("toi_per_game", ascending=False)
+    df = df.sort_values("total_points", ascending=False)
 
     # Display formatting
     import pandas as pd
-    for col, decimals in [("ppi", 2), ("ppi_plus", 1), ("wppi", 4), ("wppi_plus", 1), ("deployment_rate", 1), ("fwd_deployment_rate", 1), ("avg_line", 2)]:
+    for col, decimals in [("ppi", 2), ("ppi_plus", 1), ("wppi_plus", 1), ("deployment_rate", 1), ("fwd_deployment_rate", 1), ("avg_line", 2)]:
         df[col] = pd.to_numeric(df[col], errors="coerce").round(decimals)
     df["team"] = df["teams_raw"].apply(lambda s: "/".join(sorted(s.split(","))) if s else "")
     df["player_link"] = df.apply(lambda r: f"[{r['playerName']}](/player/{r['playerId']})", axis=1)
@@ -143,7 +143,6 @@ def update_skaters(date_start, date_end, home_away, season):
         {"name": "iTOI%",        "id": "avg_itoi_pct", "type": "numeric", "format": FormatTemplate.percentage(1)},
         {"name": "PPI",   "id": "ppi",       "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed)},
         {"name": "PPI+",  "id": "ppi_plus",  "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
-        {"name": "wPPI",  "id": "wppi",      "type": "numeric", "format": Format(precision=4, scheme=Scheme.fixed)},
         {"name": "wPPI+", "id": "wppi_plus", "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
         {"name": "DPL",  "id": "avg_line",  "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed)},
         {"name": "DPS+", "id": "dps_plus",  "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
@@ -153,7 +152,7 @@ def update_skaters(date_start, date_end, home_away, season):
         "total_goals", "total_assists", "total_points", "p_per_60",
         "toi_display",
         "avg_toi_share", "avg_itoi_pct",
-        "ppi", "ppi_plus", "wppi", "wppi_plus", "avg_line", "dps_plus",
+        "ppi", "ppi_plus", "wppi_plus", "avg_line", "dps_plus",
     ]
 
     return dash_table.DataTable(

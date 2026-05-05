@@ -4,3 +4,5 @@ data/
 temp/
 __pycache__
 .env
+
+*archive*
