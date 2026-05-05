@@ -79,6 +79,12 @@ app.layout = html.Div([
                 "high values indicate explosive skaters. Top-line forwards typically sit in the 5–10 range; "
                 "defensemen usually 1–4."
             ),
+            html.Dt("Max MPH"),
+            html.Dd(
+                "Top season skating speed in mph, recorded by the NHL EDGE tracking system. "
+                "A single peak value across all 2025-26 regular-season ice time. "
+                "League average ≈ 22.2; McDavid leads at 24.6."
+            ),
             html.Dt("tTOI%"),
             html.Dd(
                 "Share of the team's 5v5 ice time played by this skater per game. "

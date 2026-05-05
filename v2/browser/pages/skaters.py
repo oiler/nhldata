@@ -20,8 +20,8 @@ _BURSTS_CSV = Path(__file__).resolve().parents[3] / "data/2025/generated/edge/pl
 
 def _load_bursts() -> pd.DataFrame:
     if not _BURSTS_CSV.exists():
-        return pd.DataFrame(columns=["playerId", "bursts_per_60"])
-    return pd.read_csv(_BURSTS_CSV)[["playerId", "bursts_per_60"]]
+        return pd.DataFrame(columns=["playerId", "bursts_per_60", "speed_max_mph"])
+    return pd.read_csv(_BURSTS_CSV)[["playerId", "bursts_per_60", "speed_max_mph"]]
 
 
 _BURSTS_DF = _load_bursts().set_index("playerId")
@@ -160,6 +160,7 @@ def update_skaters(date_start, date_end, home_away, season):
         {"name": "PPI+",  "id": "ppi_plus",  "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
         {"name": "wPPI+", "id": "wppi_plus", "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
         {"name": "SB/a60", "id": "bursts_per_60", "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed)},
+        {"name": "Max MPH", "id": "speed_max_mph", "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed)},
         {"name": "DPL",  "id": "avg_line",  "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed)},
         {"name": "DPS+", "id": "dps_plus",  "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
     ]
@@ -168,7 +169,7 @@ def update_skaters(date_start, date_end, home_away, season):
         "total_goals", "total_assists", "total_points", "p_per_60",
         "toi_display",
         "avg_toi_share", "avg_itoi_pct",
-        "ppi", "ppi_plus", "wppi_plus", "bursts_per_60", "avg_line", "dps_plus",
+        "ppi", "ppi_plus", "wppi_plus", "bursts_per_60", "speed_max_mph", "avg_line", "dps_plus",
     ]
 
     return dash_table.DataTable(
