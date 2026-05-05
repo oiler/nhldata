@@ -1,5 +1,7 @@
 # Glossary
 
+> **Convention:** All metrics are computed at 5v5 unless otherwise noted. Any stat name ending in `/a60` (e.g., `SB/a60`) is computed across all-situation ice time (5v5, PP, PK, OT combined).
+
 ## wPPI+ (individual skater)
 
 **wPPI** (weighted PPI) is a player's average per-game build contribution, scaled by how much ice time they receive:
@@ -53,3 +55,27 @@ team wPPI+ = 1,519,486 / 1,493,937 × 100 = 101.7
 ```
 
 EDM sits just above league average at 101.7 — the metric captures the net effect of each skater's build and how heavily they're deployed.
+
+---
+
+## SB/a60 (Speed Bursts per all-situation 60)
+
+**SB/a60** counts a player's NHL EDGE skating bursts above 20 mph, normalized per 60 minutes of all-situation ice time:
+
+```
+SB/a60 = bursts_over_20 × 3600 / total_toi_seconds
+```
+
+A "burst" is recorded by the NHL EDGE tracking system whenever a player crosses the 20 mph threshold during a shift. The denominator is **total TOI** (all strengths: 5v5, PP, PK, OT), not 5v5 only, because the NHL EDGE API publishes burst counts only as a season aggregate without strength splits. Pairing season-total bursts with full-season all-situation TOI gives the most defensible per-60 rate for a player's skating-explosiveness *attribute*.
+
+**Example — Connor McDavid (2025-26):**
+
+McDavid recorded 681 bursts over 113,088 seconds of all-situation ice time:
+
+```
+SB/a60 = 681 × 3600 / 113,088 = 21.68
+```
+
+Typical full-season top-line forwards sit in the 5–10 range. Top-pair defensemen are usually 1–4 (their deployment limits explosive skating). Small-sample call-ups can post very high SB/a60 values from short stints — interpret with care for players below ~500 minutes of TOI.
+
+**Why this metric is filter-stable:** unlike most columns on the skaters leaderboard, SB/a60 is computed from season totals. When the page is date-filtered, the rest of the row updates but this column continues to reflect the player's full-season skating attribute.

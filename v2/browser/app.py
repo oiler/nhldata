@@ -51,6 +51,18 @@ app.layout = html.Div([
     html.Footer([
         html.Hr(style={"borderColor": "#dee2e6", "marginBottom": "1rem"}),
         html.H6("Stat Glossary", style={"fontWeight": "bold", "marginBottom": "0.75rem", "color": "#495057"}),
+        html.P(
+            [
+                "All metrics are computed at ",
+                html.B("5v5"),
+                " unless otherwise noted. Any stat ending in ",
+                html.Code("/a60"),
+                " is computed across ",
+                html.B("all-situation"),
+                " ice time (5v5, PP, PK, OT).",
+            ],
+            style={"fontSize": "0.82rem", "color": "#6c757d", "marginBottom": "0.6rem"},
+        ),
         html.Dl([
             html.Dt("PPI"),
             html.Dd("Pounds Per Inch — a player's weight (lbs) divided by height (inches). A purely physical build metric."),
@@ -60,6 +72,13 @@ app.layout = html.Div([
             html.Dd("Weighted PPI — PPI scaled by a player's average 5v5 TOI share relative to their team. Measures deployment-adjusted physical presence per game."),
             html.Dt("wPPI+"),
             html.Dd("wPPI indexed to the league average (100 = average). Accounts for both build and 5v5 deployment rate."),
+            html.Dt("SB/a60"),
+            html.Dd(
+                "Speed Bursts per all-situation 60 — count of NHL EDGE skating bursts above 20 mph "
+                "per 60 minutes of total ice time (all strengths). A pure speed-attribute metric; "
+                "high values indicate explosive skaters. Top-line forwards typically sit in the 5–10 range; "
+                "defensemen usually 1–4."
+            ),
             html.Dt("tTOI%"),
             html.Dd(
                 "Share of the team's 5v5 ice time played by this skater per game. "
@@ -73,8 +92,6 @@ app.layout = html.Div([
             ),
             html.Dt("5v5 TOI/GP"),
             html.Dd("Average 5-on-5 time on ice per game played."),
-            html.Dt("vs Top Fwd % / vs Top Def %"),
-            html.Dd("Fraction of a player's 5v5 TOI spent against the opposing team's top forwards or defensemen (by TOI)."),
             html.Dt("DPS+"),
             html.Dd("Deployment Score Plus — a defenseman's raw deployment score indexed to the league average (100 = average). The raw score accumulates points each 5v5 second based on the opposing forward line faced (line 1 opponents score highest). DPS+ normalizes across the league so 110 means a defenseman faces 10% tougher forward deployment than average."),
             html.Dt("DPL"),

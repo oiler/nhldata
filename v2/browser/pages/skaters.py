@@ -1,5 +1,8 @@
 # v2/browser/pages/skaters.py
+from pathlib import Path
+
 import dash
+import pandas as pd
 from dash import html, dash_table, callback, Input, Output
 from dash.dash_table import FormatTemplate
 from dash.dash_table.Format import Format, Scheme
@@ -11,6 +14,17 @@ from utils import seconds_to_mmss
 dash.register_page(__name__, path="/skaters", name="Skaters")
 register_home_away_callback("skaters")
 register_season_callback("skaters")
+
+_BURSTS_CSV = Path(__file__).resolve().parents[3] / "data/2025/generated/edge/player_bursts.csv"
+
+
+def _load_bursts() -> pd.DataFrame:
+    if not _BURSTS_CSV.exists():
+        return pd.DataFrame(columns=["playerId", "bursts_per_60"])
+    return pd.read_csv(_BURSTS_CSV)[["playerId", "bursts_per_60"]]
+
+
+_BURSTS_DF = _load_bursts().set_index("playerId")
 
 _COMP_SQL = """
 SELECT c.playerId,
@@ -111,11 +125,12 @@ def update_skaters(date_start, date_end, home_away, season):
         grouped[c] = grouped[c].fillna(0).astype(int) if c in grouped.columns else 0
     grouped["p_per_60"] = grouped["total_points"] * 3600 / grouped["total_toi"].where(grouped["total_toi"] > 0)
 
+    grouped = grouped.join(_BURSTS_DF)
+
     df = grouped.reset_index()
     df = df.sort_values("total_points", ascending=False)
 
     # Display formatting
-    import pandas as pd
     for col, decimals in [("ppi", 2), ("ppi_plus", 1), ("wppi_plus", 1), ("deployment_rate", 1), ("fwd_deployment_rate", 1), ("avg_line", 2)]:
         df[col] = pd.to_numeric(df[col], errors="coerce").round(decimals)
     df["team"] = df["teams_raw"].apply(lambda s: "/".join(sorted(s.split(","))) if s else "")
@@ -144,6 +159,7 @@ def update_skaters(date_start, date_end, home_away, season):
         {"name": "PPI",   "id": "ppi",       "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed)},
         {"name": "PPI+",  "id": "ppi_plus",  "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
         {"name": "wPPI+", "id": "wppi_plus", "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
+        {"name": "SB/a60", "id": "bursts_per_60", "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed)},
         {"name": "DPL",  "id": "avg_line",  "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed)},
         {"name": "DPS+", "id": "dps_plus",  "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
     ]
@@ -152,7 +168,7 @@ def update_skaters(date_start, date_end, home_away, season):
         "total_goals", "total_assists", "total_points", "p_per_60",
         "toi_display",
         "avg_toi_share", "avg_itoi_pct",
-        "ppi", "ppi_plus", "wppi_plus", "avg_line", "dps_plus",
+        "ppi", "ppi_plus", "wppi_plus", "bursts_per_60", "avg_line", "dps_plus",
     ]
 
     return dash_table.DataTable(
