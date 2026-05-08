@@ -57,17 +57,19 @@ def extract_edge_fields(payload: dict) -> dict:
     Returns None for any field that's missing — the EDGE endpoint occasionally
     omits sub-blocks for players with very little ice time.
     """
+    player = payload.get("player") or {}
     skating = payload.get("skatingSpeed") or {}
     bursts = skating.get("burstsOver20") or {}
     speed_max = skating.get("speedMax") or {}
     distance = payload.get("totalDistanceSkated") or {}
-    team = (payload.get("player") or {}).get("team") or {}
+    team = player.get("team") or {}
 
     return {
         "bursts_over_20":   bursts.get("value"),
         "speed_max_mph":    speed_max.get("imperial"),
         "distance_miles":   distance.get("imperial"),
         "current_team":     team.get("abbrev"),
+        "birth_date":       player.get("birthDate"),
     }
 
 
@@ -95,6 +97,7 @@ def build_burst_table(db_path: Path, edge_dir: Path) -> pd.DataFrame:
             edge_fields = {
                 "bursts_over_20": None, "speed_max_mph": None,
                 "distance_miles": None, "current_team": None,
+                "birth_date": None,
             }
         rows.append({
             "playerId":          pid,
@@ -106,6 +109,7 @@ def build_burst_table(db_path: Path, edge_dir: Path) -> pd.DataFrame:
             "bursts_over_20":    edge_fields["bursts_over_20"],
             "speed_max_mph":     edge_fields["speed_max_mph"],
             "distance_miles":    edge_fields["distance_miles"],
+            "birth_date":        edge_fields["birth_date"],
             "bursts_per_60":     bursts_per_60(
                                     edge_fields["bursts_over_20"],
                                     totals_row["total_toi_seconds"],

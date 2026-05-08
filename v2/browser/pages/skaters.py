@@ -1,4 +1,5 @@
 # v2/browser/pages/skaters.py
+from datetime import date
 from pathlib import Path
 
 import dash
@@ -17,11 +18,24 @@ register_season_callback("skaters")
 
 _BURSTS_CSV = Path(__file__).resolve().parents[3] / "data/2025/generated/edge/player_bursts.csv"
 
+# NHL convention: integer age as of Sept 15 of the season's start year.
+_AGE_CUTOFFS = {"2025": date(2025, 9, 15)}
+
+
+def _age_on(birth_date_str, cutoff: date):
+    if not birth_date_str or pd.isna(birth_date_str):
+        return None
+    birth = date.fromisoformat(birth_date_str)
+    age = cutoff.year - birth.year
+    if (cutoff.month, cutoff.day) < (birth.month, birth.day):
+        age -= 1
+    return age
+
 
 def _load_bursts() -> pd.DataFrame:
     if not _BURSTS_CSV.exists():
-        return pd.DataFrame(columns=["playerId", "bursts_per_60", "speed_max_mph"])
-    return pd.read_csv(_BURSTS_CSV)[["playerId", "bursts_per_60", "speed_max_mph"]]
+        return pd.DataFrame(columns=["playerId", "bursts_per_60", "speed_max_mph", "birth_date"])
+    return pd.read_csv(_BURSTS_CSV)[["playerId", "bursts_per_60", "speed_max_mph", "birth_date"]]
 
 
 _BURSTS_DF = _load_bursts().set_index("playerId")
@@ -126,6 +140,11 @@ def update_skaters(date_start, date_end, home_away, season):
     grouped["p_per_60"] = grouped["total_points"] * 3600 / grouped["total_toi"].where(grouped["total_toi"] > 0)
 
     grouped = grouped.join(_BURSTS_DF)
+    cutoff = _AGE_CUTOFFS.get(season)
+    if cutoff is not None:
+        grouped["age"] = grouped["birth_date"].apply(lambda b: _age_on(b, cutoff))
+    else:
+        grouped["age"] = None
 
     df = grouped.reset_index()
     df = df.sort_values("total_points", ascending=False)
@@ -148,6 +167,7 @@ def update_skaters(date_start, date_end, home_away, season):
         {"name": "Team",         "id": "team",               "filter_options": _ci},
         {"name": "Shoots",      "id": "shoots",              "filter_options": _ci},
         {"name": "Pos",          "id": "position",           "filter_options": _ci},
+        {"name": "Age",          "id": "age",                "type": "numeric"},
         {"name": "GP",           "id": "games_played",       "type": "numeric"},
         {"name": "G",     "id": "total_goals",   "type": "numeric"},
         {"name": "A",     "id": "total_assists",  "type": "numeric"},
@@ -165,7 +185,7 @@ def update_skaters(date_start, date_end, home_away, season):
         {"name": "DPS+", "id": "dps_plus",  "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
     ]
     display_cols = [
-        "player_link", "team", "shoots", "position", "games_played",
+        "player_link", "team", "shoots", "position", "age", "games_played",
         "total_goals", "total_assists", "total_points", "p_per_60",
         "toi_display",
         "avg_toi_share", "avg_itoi_pct",

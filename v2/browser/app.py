@@ -64,6 +64,8 @@ app.layout = html.Div([
             style={"fontSize": "0.82rem", "color": "#6c757d", "marginBottom": "0.6rem"},
         ),
         html.Dl([
+            html.Dt("Age"),
+            html.Dd("Player's age in years as of Sept 15 of the season's start year (Sept 15, 2025 for the 2025-26 season)."),
             html.Dt("PPI"),
             html.Dd("Pounds Per Inch — a player's weight (lbs) divided by height (inches). A purely physical build metric."),
             html.Dt("PPI+"),

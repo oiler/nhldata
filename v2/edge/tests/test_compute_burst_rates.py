@@ -85,7 +85,7 @@ def test_extract_edge_fields_picks_burst_and_speed():
     from v2.edge.compute_burst_rates import extract_edge_fields
 
     payload = {
-        "player": {"id": 8478402, "team": {"abbrev": "EDM"}},
+        "player": {"id": 8478402, "team": {"abbrev": "EDM"}, "birthDate": "1997-01-13"},
         "skatingSpeed": {
             "burstsOver20": {"value": 681, "percentile": 1.0,
                              "leagueAvg": {"value": 75.2}},
@@ -98,6 +98,7 @@ def test_extract_edge_fields_picks_burst_and_speed():
     assert out["speed_max_mph"] == pytest.approx(24.6119)
     assert out["distance_miles"] == pytest.approx(330.2671)
     assert out["current_team"] == "EDM"
+    assert out["birth_date"] == "1997-01-13"
 
 
 def test_extract_edge_fields_returns_none_for_missing_fields():
@@ -110,6 +111,7 @@ def test_extract_edge_fields_returns_none_for_missing_fields():
     assert out["speed_max_mph"] is None
     assert out["distance_miles"] is None
     assert out["current_team"] == "XXX"
+    assert out["birth_date"] is None
 
 
 def test_bursts_per_60_basic():
