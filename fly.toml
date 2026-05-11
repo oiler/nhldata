@@ -9,6 +9,7 @@ primary_region = 'iad'
 [build]
 
 [env]
+  CANONICAL_HOST = 'app.nhldata.org'
   DASH_ENABLE_SECURITY_HEADERS = '1'
   DATA_DIR = '/app/runtime_data'
   PORT = '8080'

@@ -23,6 +23,9 @@ if os.environ.get("DASH_ENABLE_SECURITY_HEADERS") == "1":
     from security import install as install_security
     install_security(server)
 
+from canonical_host import install as install_canonical_host
+install_canonical_host(server)
+
 app.layout = html.Div([
     # Shared state
     dcc.Store(id="store-season", storage_type="session", data=DEFAULT_SEASON),
