@@ -27,8 +27,10 @@ from canonical_host import install as install_canonical_host
 install_canonical_host(server)
 
 app.layout = html.Div([
-    # Shared state
-    dcc.Store(id="store-season", storage_type="session", data=DEFAULT_SEASON),
+    # Shared state — memory (not session) while only one season is available, so
+    # users who previously selected 2024 don't keep a stale value in browser
+    # session storage. Switch back to "session" when SEASONS grows again.
+    dcc.Store(id="store-season", storage_type="memory", data=DEFAULT_SEASON),
 
     # Header + nav
     html.Div([
