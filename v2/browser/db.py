@@ -1,14 +1,8 @@
 # v2/browser/db.py
-from pathlib import Path
 import sqlite3
 import pandas as pd
 
-_PROJECT_ROOT = Path(__file__).resolve().parents[2]  # nhl/
-
-_DB_PATHS = {
-    "2025": _PROJECT_ROOT / "data" / "2025" / "generated" / "browser" / "edm.db",
-    "2024": _PROJECT_ROOT / "data" / "2024" / "generated" / "browser" / "edm.db",
-}
+from runtime_paths import league_db, edm_db
 
 
 def query(season: str, sql: str) -> pd.DataFrame:
@@ -16,8 +10,8 @@ def query(season: str, sql: str) -> pd.DataFrame:
 
     IMPORTANT: Only pass string literals as sql. Never interpolate user input.
     """
-    db_path = _DB_PATHS.get(season)
-    if db_path is None or not db_path.exists():
+    db_path = edm_db(season)
+    if not db_path.exists():
         return pd.DataFrame()
     conn = sqlite3.connect(str(db_path))
     try:
@@ -34,19 +28,13 @@ def available_teams(season: str) -> list[str]:
     return df["opponent"].tolist()
 
 
-_LEAGUE_DB_PATHS = {
-    "2025": _PROJECT_ROOT / "data" / "2025" / "generated" / "browser" / "league.db",
-    "2024": _PROJECT_ROOT / "data" / "2024" / "generated" / "browser" / "league.db",
-}
-
-
-def league_query(sql: str, params=(), season: str = "2025") -> "pd.DataFrame":
+def league_query(sql: str, params=(), season: str = "2025") -> pd.DataFrame:
     """Run parameterized sql against the league DB. Returns empty DataFrame if DB is missing.
 
     IMPORTANT: Only pass string literals as sql. Never interpolate user input.
     """
-    db_path = _LEAGUE_DB_PATHS.get(season)
-    if db_path is None or not db_path.exists():
+    db_path = league_db(season)
+    if not db_path.exists():
         return pd.DataFrame()
     conn = sqlite3.connect(str(db_path))
     try:

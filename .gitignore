@@ -6,3 +6,8 @@ __pycache__
 .env
 
 *archive*
+
+# Runtime data is built locally and baked into Docker image — not in git
+v2/browser/runtime_data/2024/
+v2/browser/runtime_data/2025/
+!v2/browser/runtime_data/.gitkeep

@@ -1,6 +1,5 @@
 # v2/browser/pages/skaters.py
 from datetime import date
-from pathlib import Path
 
 import dash
 import pandas as pd
@@ -10,13 +9,14 @@ from dash.dash_table.Format import Format, Scheme
 
 from db import league_query
 from filters import make_filter_bar, register_home_away_callback, register_season_callback, compute_deployment_metrics
+from runtime_paths import player_bursts_csv
 from utils import seconds_to_mmss
 
 dash.register_page(__name__, path="/skaters", name="Skaters")
 register_home_away_callback("skaters")
 register_season_callback("skaters")
 
-_BURSTS_CSV = Path(__file__).resolve().parents[3] / "data/2025/generated/edge/player_bursts.csv"
+_BURSTS_CSV = player_bursts_csv("2025")
 
 # NHL convention: integer age as of Sept 15 of the season's start year.
 _AGE_CUTOFFS = {"2025": date(2025, 9, 15)}

@@ -58,3 +58,42 @@ A multi-page Dash app serves all of the data. Everything is filterable by date r
 - **tTOI% and iTOI%**
 
   Seperating 5v5 TOI percentages into these two values tells us how much a player skates relative to their team's 5v5 ice time (tTOI%) and how much of a player's individual ice time is at 5v5 vs other situations (iTOI%). For the latter, a lower iTOI% value means the player is called upon in other situations (4v4, 3v3, PP, or SH) so a lower iTOI% is usually better. For tTOI%, a higher value is usually better because it means this player plays a lot at 5v5. But this data reveals that some players, like Matt Boldy or Tim Stützle, can have an average tTOI% and an extremely low iTOI% and still be a top point producer at 5v5
+
+## Deployment
+
+The `v2/browser/` app deploys to Fly.io. See `resources/vps-setup-guide-fly.md`
+for the platform-level setup and `docs/plans/2026-05-07-fly-deploy.md` for the
+implementation plan.
+
+### Refresh production data
+
+```bash
+# 1. Rebuild source DBs locally
+python v2/browser/build_league_db.py 2024
+python v2/browser/build_league_db.py 2025
+python v2/browser/build_edm_db.py
+
+# 2. Sync to runtime_data/
+./tools/sync-runtime-data.sh
+
+# 3. Deploy
+fly deploy --remote-only
+```
+
+### Local dev
+
+`runtime_paths.py` falls back to the legacy `data/<season>/generated/...` layout
+when `DATA_DIR` is unset, so `cd v2/browser && python app.py` Just Works without
+any env vars.
+
+### First-time setup on a fresh clone
+
+`v2/browser/runtime_data/` is gitignored, so a fresh clone won't have the DB
+files baked in. Before the first `fly deploy`, run:
+
+```bash
+./tools/sync-runtime-data.sh
+```
+
+This copies the four runtime files (`league.db` for 2024 and 2025, `edm.db`,
+`player_bursts.csv`) from `data/<season>/generated/...` into `runtime_data/`.

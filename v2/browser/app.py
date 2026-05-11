@@ -14,6 +14,14 @@ app = dash.Dash(
 )
 server = app.server  # for gunicorn
 
+from healthz import healthz_bp
+server.register_blueprint(healthz_bp)
+
+import os
+if os.environ.get("DASH_ENABLE_SECURITY_HEADERS") == "1":
+    from security import install as install_security
+    install_security(server)
+
 app.layout = html.Div([
     # Shared state
     dcc.Store(id="store-season", storage_type="session", data=DEFAULT_SEASON),

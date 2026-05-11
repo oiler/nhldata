@@ -1,0 +1,48 @@
+# VCS / editor / OS noise
+.git
+.github
+.gitignore
+.DS_Store
+*.swp
+
+# Python caches
+__pycache__
+*.pyc
+.pytest_cache
+.coverage
+.venv
+venv
+
+# Secrets
+.env
+.env.*
+
+# Pipeline data tree — only runtime_data/ is shipped, via v2/browser/
+data/
+sample-data/
+archive_*.tar.gz
+
+# Other project subtrees the app doesn't need
+v1/
+tools/
+docs/
+resources/
+
+# Tests don't need to be in the runtime image
+v2/browser/tests/
+
+# Build scripts not used at runtime
+v2/browser/build_league_db.py
+v2/browser/build_edm_db.py
+
+# Top-level files the app doesn't need
+README.md
+GLOSSARY.md
+Project\ Kickoff.md
+pyproject.toml
+uv.lock
+fly.toml
+
+# IDE
+.vscode
+.idea
