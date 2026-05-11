@@ -34,11 +34,12 @@ app.layout = html.Div([
 
     # Header + nav
     html.Div([
-        html.H1("NHL Data Browser"),
+        html.H1("NHL Data", id="top"),
         html.Div([
             dcc.Link(page["name"], href=page["relative_path"])
             for page in dash.page_registry.values()
             if page["path_template"] is None
+            and page["relative_path"] != "/elites"
         ], className="app-nav"),
     ], className="app-header"),
 
@@ -67,7 +68,12 @@ app.layout = html.Div([
     # Glossary footer
     html.Footer([
         html.Hr(style={"borderColor": "#dee2e6", "marginBottom": "1rem"}),
-        html.H6("Stat Glossary", style={"fontWeight": "bold", "marginBottom": "0.75rem", "color": "#495057"}),
+        html.Div([
+            html.H6("Stat Glossary", id="glossary",
+                    style={"fontWeight": "bold", "color": "#495057", "display": "inline", "marginRight": "0.75rem"}),
+            html.A("↑ Back to top", href="#top",
+                   style={"fontSize": "0.8rem", "color": "#6c757d", "textDecoration": "none"}),
+        ], style={"marginBottom": "0.75rem"}),
         html.P(
             [
                 "All metrics are computed at ",

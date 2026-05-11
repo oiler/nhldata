@@ -65,6 +65,9 @@ _POINTS_SQL = "SELECT playerId, gameId, goals, assists, points FROM points_5v5"
 def layout():
     return html.Div([
         html.H2("Skaters"),
+        html.A("Jump to glossary ↓", href="#glossary",
+               style={"fontSize": "0.85rem", "color": "#6c757d", "textDecoration": "none",
+                      "display": "inline-block", "marginBottom": "0.5rem"}),
         make_filter_bar("skaters", include_home_away=True),
         html.Div(id="skaters-content"),
     ])
