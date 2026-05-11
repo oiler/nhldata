@@ -3,7 +3,8 @@ import dash
 from dash import html, dcc, callback, Input, Output
 import dash_bootstrap_components as dbc
 
-SEASONS = ["2024", "2025"]
+# 2024 temporarily disabled until all pages handle it; re-add to SEASONS to restore.
+SEASONS = ["2025"]
 DEFAULT_SEASON = "2025"
 
 app = dash.Dash(
@@ -36,7 +37,10 @@ app.layout = html.Div([
         ], className="app-nav"),
     ], className="app-header"),
 
-    # Filter bar
+    # Filter bar — hidden while only one season is available. The RadioItems
+    # stays in the tree so callbacks that Input("filter-season", "value") keep
+    # firing with DEFAULT_SEASON. Remove the display:none and restore SEASONS
+    # above to bring the filter back.
     html.Div([
         html.Div([
             html.Label("Season"),
@@ -50,7 +54,7 @@ app.layout = html.Div([
                             "fontSize": "0.9rem", "color": "#212529"},
             ),
         ], style={"display": "flex", "alignItems": "center"}),
-    ], className="filter-bar"),
+    ], className="filter-bar", style={"display": "none"}),
 
     # Page content
     html.Div(dash.page_container, className="page-content"),
