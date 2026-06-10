@@ -5,6 +5,7 @@ from dash import html, dash_table
 from dash.dash_table.Format import Format, Scheme
 
 from db import league_query
+from table_style import table_styles
 
 dash.register_page(__name__, path="/elites", name="Elites")
 
@@ -29,14 +30,6 @@ LEFT JOIN players p ON e.playerId = p.playerId
 ORDER BY e.p60 DESC
 """
 
-_TABLE_STYLE_HEADER = {
-    "backgroundColor": "#f8f9fa", "fontWeight": "bold",
-    "border": "1px solid #dee2e6", "fontSize": "13px",
-}
-_TABLE_STYLE_CELL = {
-    "textAlign": "left", "padding": "8px 12px",
-    "border": "1px solid #dee2e6", "fontSize": "14px",
-}
 _CI = {"case": "insensitive"}
 
 
@@ -71,20 +64,17 @@ def _build_fwd_table(df):
         "weighted_dps_plus",
     ]
 
-    return dash_table.DataTable(
-        columns=columns,
-        data=df[display_cols].to_dict("records"),
-        markdown_options={"link_target": "_self"},
-        sort_action="native",
-        filter_action="native",
-        css=[{"selector": ".dash-filter--case", "rule": "display: none"}],
-        page_action="none",
-        style_table={"overflowX": "auto"},
-        style_header=_TABLE_STYLE_HEADER,
-        style_cell=_TABLE_STYLE_CELL,
-        style_data_conditional=[
-            {"if": {"row_index": "odd"}, "backgroundColor": "#f8f9fa"},
-        ],
+    return html.Div(
+        dash_table.DataTable(
+            columns=columns,
+            data=df[display_cols].to_dict("records"),
+            markdown_options={"link_target": "_self"},
+            sort_action="native",
+            filter_action="native",
+            page_action="none",
+            **table_styles(),
+        ),
+        className="table-wrap",
     )
 
 
@@ -115,20 +105,17 @@ def _build_def_table(df):
     ]
     display_cols = ["player_link", "team_link", "gp", "toi_min_gp", "p60", "ttoi_pct", "dps_plus", "dpl"]
 
-    return dash_table.DataTable(
-        columns=columns,
-        data=df[display_cols].to_dict("records"),
-        markdown_options={"link_target": "_self"},
-        sort_action="native",
-        filter_action="native",
-        css=[{"selector": ".dash-filter--case", "rule": "display: none"}],
-        page_action="none",
-        style_table={"overflowX": "auto"},
-        style_header=_TABLE_STYLE_HEADER,
-        style_cell=_TABLE_STYLE_CELL,
-        style_data_conditional=[
-            {"if": {"row_index": "odd"}, "backgroundColor": "#f8f9fa"},
-        ],
+    return html.Div(
+        dash_table.DataTable(
+            columns=columns,
+            data=df[display_cols].to_dict("records"),
+            markdown_options={"link_target": "_self"},
+            sort_action="native",
+            filter_action="native",
+            page_action="none",
+            **table_styles(),
+        ),
+        className="table-wrap",
     )
 
 

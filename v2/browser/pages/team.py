@@ -7,6 +7,7 @@ from dash.dash_table.Format import Format, Scheme
 
 from db import league_query
 from filters import make_filter_bar, register_home_away_callback, register_season_callback, compute_deployment_metrics
+from table_style import table_styles
 from utils import seconds_to_mmss
 
 dash.register_page(__name__, path_template="/team/<abbrev>", name="Team")
@@ -107,23 +108,15 @@ def _make_position_table(df, pos="F"):
         columns.append({"name": "DPS+", "id": "deployment_rate", "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)})
         display_cols.extend(["avg_line", "deployment_rate"])
 
-    return dash_table.DataTable(
-        columns=columns,
-        data=df[display_cols].to_dict("records"),
-        markdown_options={"link_target": "_self"},
-        sort_action="native",
-        style_table={"overflowX": "auto"},
-        style_header={
-            "backgroundColor": "#f8f9fa", "fontWeight": "bold",
-            "border": "1px solid #dee2e6", "fontSize": "13px",
-        },
-        style_cell={
-            "textAlign": "left", "padding": "8px 12px",
-            "border": "1px solid #dee2e6", "fontSize": "14px",
-        },
-        style_data_conditional=[
-            {"if": {"row_index": "odd"}, "backgroundColor": "#f8f9fa"},
-        ],
+    return html.Div(
+        dash_table.DataTable(
+            columns=columns,
+            data=df[display_cols].to_dict("records"),
+            markdown_options={"link_target": "_self"},
+            sort_action="native",
+            **table_styles(),
+        ),
+        className="table-wrap",
     )
 
 

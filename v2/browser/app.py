@@ -15,6 +15,34 @@ app = dash.Dash(
 )
 server = app.server  # for gunicorn
 
+app.index_string = """<!DOCTYPE html>
+<html>
+  <head>
+    {%metas%}
+    <title>{%title%}</title>
+    {%favicon%}
+    <style>
+      @font-face {
+        font-family: "Geist";
+        src: url("/assets/fonts/geist-latin.woff2") format("woff2");
+        font-weight: 100 900;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "Geist Mono";
+        src: url("/assets/fonts/geist-mono-latin.woff2") format("woff2");
+        font-weight: 100 900;
+        font-display: swap;
+      }
+    </style>
+    {%css%}
+  </head>
+  <body>
+    {%app_entry%}
+    <footer>{%config%}{%scripts%}{%renderer%}</footer>
+  </body>
+</html>"""
+
 from healthz import healthz_bp
 server.register_blueprint(healthz_bp)
 
@@ -31,16 +59,24 @@ app.layout = html.Div([
     # users who previously selected 2024 don't keep a stale value in browser
     # session storage. Switch back to "session" when SEASONS grows again.
     dcc.Store(id="store-season", storage_type="memory", data=DEFAULT_SEASON),
+    dcc.Location(id="url", refresh=False),
 
     # Header + nav
     html.Div([
         html.H1("NHL Data", id="top"),
-        html.Div([
-            dcc.Link(page["name"], href=page["relative_path"])
-            for page in dash.page_registry.values()
-            if page["path_template"] is None
-            and page["relative_path"] != "/elites"
-        ], className="app-nav"),
+        dbc.Nav(
+            [
+                dbc.NavLink(
+                    page["name"],
+                    href=page["relative_path"],
+                    active="exact",
+                )
+                for page in dash.page_registry.values()
+                if page["path_template"] is None
+                and page["relative_path"] != "/elites"
+            ],
+            className="app-nav",
+        ),
     ], className="app-header"),
 
     # Filter bar — hidden while only one season is available. The RadioItems
@@ -67,13 +103,11 @@ app.layout = html.Div([
 
     # Glossary footer
     html.Footer([
-        html.Hr(style={"borderColor": "#dee2e6", "marginBottom": "1rem"}),
         html.Div([
-            html.H6("Stat Glossary", id="glossary",
-                    style={"fontWeight": "bold", "color": "#495057", "display": "inline", "marginRight": "0.75rem"}),
-            html.A("↑ Back to top", href="#top",
-                   style={"fontSize": "0.8rem", "color": "#6c757d", "textDecoration": "none"}),
-        ], style={"marginBottom": "0.75rem"}),
+            html.H6("Stat Glossary", id="glossary", className="glossary-heading"),
+            html.A("↑ Back to top", href="#top", className="glossary-backtotop"),
+        ], className="glossary-header"),
+        html.Div([
         html.P(
             [
                 "All metrics are computed at ",
@@ -84,7 +118,7 @@ app.layout = html.Div([
                 html.B("all-situation"),
                 " ice time (5v5, PP, PK, OT).",
             ],
-            style={"fontSize": "0.82rem", "color": "#6c757d", "marginBottom": "0.6rem"},
+            className="glossary-note",
         ),
         html.Dl([
             html.Dt("Age"),
@@ -127,25 +161,22 @@ app.layout = html.Div([
             html.Dd("Deployment Score Plus — a defenseman's raw deployment score indexed to the league average (100 = average). The raw score accumulates points each 5v5 second based on the opposing forward line faced (line 1 opponents score highest). DPS+ normalizes across the league so 110 means a defenseman faces 10% tougher forward deployment than average."),
             html.Dt("DPL"),
             html.Dd("Deployment Line — a forward's average line assignment (1–4) across games played, where line 1 is the top line. Lower values indicate higher deployment; 1.0 means exclusively used as a first-line forward, 4.0 exclusively as a fourth-liner."),
-        ], style={
-            "display": "grid",
-            "gridTemplateColumns": "max-content 1fr",
-            "columnGap": "1.5rem",
-            "rowGap": "0.35rem",
-            "fontSize": "0.82rem",
-            "color": "#6c757d",
-        }),
-    ], style={
-        "maxWidth": "860px",
-        "margin": "3rem auto 2rem auto",
-        "padding": "0 1rem",
-    }),
+        ], className="glossary"),
+        ], className="glossary-card"),
+    ], id="glossary-footer", className="app-footer"),
 ])
 
 
 @callback(Output("store-season", "data"), Input("filter-season", "value"))
 def sync_season(season):
     return season
+
+
+# The glossary footer lives in the global layout (shows on every page). Hide it on
+# the home page only, which has its own intro content and doesn't need the glossary.
+@callback(Output("glossary-footer", "style"), Input("url", "pathname"))
+def toggle_glossary_footer(pathname):
+    return {"display": "none"} if pathname == "/" else {}
 
 
 

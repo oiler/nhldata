@@ -11,3 +11,6 @@ __pycache__
 v2/browser/runtime_data/2024/
 v2/browser/runtime_data/2025/
 !v2/browser/runtime_data/.gitkeep
+
+# Local-only operational runbook — kept out of the repo intentionally
+docs/fly-deploy-runbook.md

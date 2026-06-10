@@ -4,6 +4,7 @@ from dash import html, dash_table, callback, Input, Output
 
 from db import league_query
 from filters import make_filter_bar, register_season_callback
+from table_style import table_styles
 
 dash.register_page(__name__, path="/games", name="Games")
 register_season_callback("games")
@@ -71,26 +72,17 @@ def update_games(date_start, date_end, season):
     ]
     display_cols = ["game_link", "gameDate", "awayTeam_abbrev", "homeTeam_abbrev", "score", "result"]
 
-    return dash_table.DataTable(
-        columns=columns,
-        data=df[display_cols].to_dict("records"),
-        markdown_options={"link_target": "_self"},
-        sort_action="native",
-        filter_action="native",
-        filter_options={"case": "insensitive"},
-        css=[{"selector": ".dash-filter--case", "rule": "display: none"}],
-        page_action="native",
-        page_size=50,
-        style_table={"overflowX": "auto"},
-        style_header={
-            "backgroundColor": "#f8f9fa", "fontWeight": "bold",
-            "border": "1px solid #dee2e6", "fontSize": "13px",
-        },
-        style_cell={
-            "textAlign": "left", "padding": "8px 12px",
-            "border": "1px solid #dee2e6", "fontSize": "14px",
-        },
-        style_data_conditional=[
-            {"if": {"row_index": "odd"}, "backgroundColor": "#f8f9fa"},
-        ],
+    return html.Div(
+        dash_table.DataTable(
+            columns=columns,
+            data=df[display_cols].to_dict("records"),
+            markdown_options={"link_target": "_self"},
+            sort_action="native",
+            filter_action="native",
+            filter_options={"case": "insensitive"},
+            page_action="native",
+            page_size=50,
+            **table_styles(),
+        ),
+        className="table-wrap",
     )

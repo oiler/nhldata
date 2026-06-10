@@ -1,70 +1,284 @@
-/* v2/browser/assets/style.css */
+/* v2/browser/assets/style.css — NHL Data design system. Source of truth: /DESIGN.md */
+
+:root {
+  /* Surfaces */
+  --canvas: #ffffff;
+  --tint: #fafafa;
+  --navy: #00205B;
+  --navy-hover: #0a2f7a;
+  --orange: #FF4C00;
+
+  /* Text */
+  --text: #171717;
+  --text-2: #4d4d4d;
+  --text-3: #666666;
+  --text-4: #808080;
+  --on-navy: #ffffff;
+  --on-navy-muted: rgba(255, 255, 255, 0.72);
+
+  /* Status */
+  --pos: #0a7d5a;
+  --neg: #c43c33;
+
+  /* Borders & shadows */
+  --divider: #ebebeb;
+  --divider-2: #f0f0f0;
+  --shadow-border: 0 0 0 1px rgba(0, 0, 0, 0.08);
+  --shadow-card: 0 0 0 1px rgba(0, 0, 0, 0.08), 0 2px 2px rgba(0, 0, 0, 0.04),
+    0 8px 8px -8px rgba(0, 0, 0, 0.04);
+
+  /* Type */
+  --font-sans: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius: 8px;
+}
+
+* { box-sizing: border-box; }
+
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background-color: #f8f9fa;
-    margin: 0;
+  font-family: var(--font-sans);
+  font-feature-settings: "liga" 1;
+  background-color: var(--canvas);
+  color: var(--text);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
 }
 
+/* ---- Header / brand bar ---- */
 .app-header {
-    background-color: #212529;
-    padding: 0.75rem 1.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+  background-color: var(--navy);
+  padding: 0.75rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
 }
-
 .app-header h1 {
-    color: #ffffff;
-    margin: 0;
-    font-size: 1.2rem;
-    font-weight: 600;
-    letter-spacing: 0.02em;
+  color: var(--on-navy);
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
-.app-nav a {
-    color: #adb5bd;
-    text-decoration: none;
-    margin-left: 1.25rem;
-    font-size: 0.9rem;
+/* ---- Nav (dbc.NavLink renders a.nav-link) ---- */
+.app-nav { display: flex; align-items: center; }
+.app-nav .nav-link {
+  color: var(--on-navy-muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  padding: 0.2rem 0.1rem;
+  margin-left: 1.25rem;
+  border-bottom: 2px solid transparent;
+  transition: color 0.12s ease;
+}
+.app-nav .nav-link:hover { color: var(--on-navy); }
+.app-nav .nav-link.active {
+  color: var(--on-navy);
+  border-bottom-color: var(--orange);
 }
 
-.app-nav a:hover {
-    color: #ffffff;
-}
-
+/* ---- Filter bar ---- */
 .filter-bar {
-    background-color: #ffffff;
-    border-bottom: 1px solid #dee2e6;
-    padding: 0.6rem 1.5rem;
-    display: flex;
-    gap: 2rem;
-    align-items: center;
+  background-color: var(--canvas);
+  border-bottom: 1px solid var(--divider);
+  padding: 0.6rem 1.5rem;
+  display: flex;
+  gap: 2rem;
+  align-items: center;
 }
-
 .filter-bar label {
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: #6c757d;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-right: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-right: 0.5rem;
 }
 
-.page-content {
-    padding: 1.5rem;
+/* ---- Page content ---- */
+.page-content { padding: 1.5rem; max-width: min(1680px, 94vw); margin: 0 auto; }
+.page-content h1 {
+  font-size: 1.875rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+.page-content h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.page-content a { color: var(--navy); text-decoration: none; }
+.page-content a:hover { color: var(--navy-hover); text-decoration: underline; }
+
+/* ---- Card ---- */
+.card {
+  background: var(--canvas);
+  border: none;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  padding: 1.25rem;
 }
 
-.dash-spreadsheet-container {
-    counter-reset: row-number;
+/* Home page example cards — clickable cards linking to sample pages. */
+.example-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0 2rem;
+}
+.example-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  background: var(--canvas);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  padding: 1.1rem 1.25rem;
+  text-decoration: none;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+.example-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-border), 0 8px 20px -6px rgba(0, 32, 91, 0.22);
+}
+.example-card-eyebrow {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--navy);
+}
+.example-card-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+.example-card-path {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-3);
 }
 
+/* ---- Table container ---- */
+.table-wrap {
+  box-shadow: var(--shadow-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin: 1.5rem 0;
+}
+.table-wrap .dash-spreadsheet-container { border-radius: var(--radius); }
+
+/* Header layout: Dash renders the header as a flex row [sort-arrow][label]. Move
+   the arrow after the label (order: 2) and let the label hug its content, so the
+   sort affordance sits just to the RIGHT of the label. Numeric headers (right-
+   aligned via style_header_conditional) group label+arrow at the right edge, over
+   the right-aligned numbers; text headers keep label+arrow grouped at the left. */
+.dash-header .column-actions { order: 2; }
+/* !important overrides Dash's bundled `.dash-table-container … .column-header-name
+   { flex-grow: 1 }` (specificity 0,4,0), which otherwise stretches the label and
+   strands the arrow at the cell edge. flex-grow: 0 lets the label hug its text. */
+.dash-header .column-header-name { flex-grow: 0 !important; }
+.dash-header[style*="text-align: right"] > div { justify-content: flex-end; }
+
+/* Row-number gutter — preserve technique, restyle to tokens */
+.dash-spreadsheet-container { counter-reset: row-number; }
 .dash-spreadsheet-container td:first-child::before {
-    counter-increment: row-number;
-    content: counter(row-number);
-    display: inline-block;
-    min-width: 1.5em;
-    text-align: right;
-    margin-right: 0.5em;
-    color: #adb5bd;
-    font-size: 0.85em;
+  counter-increment: row-number;
+  content: counter(row-number);
+  display: inline-block;
+  min-width: 1.5em;
+  text-align: right;
+  margin-right: 0.5em;
+  color: var(--text-4);
+  font-size: 0.85em;
+  font-family: var(--font-mono);
+  vertical-align: middle;
 }
+/* Markdown cells (Player/Team links) keep a default <p> margin that Dash does
+   NOT reset (its reset excludes .cell-markdown), which pushes the link text off
+   the row-number baseline. Clear it and middle-align so the gutter number and
+   the cell text line up. */
+.table-wrap .cell-markdown p { margin: 0; }
+.dash-spreadsheet-container td:first-child .cell-markdown { vertical-align: middle; }
+
+/* ---- Footer / glossary ---- */
+.app-footer { max-width: 860px; margin: 3.5rem auto 2.5rem; padding: 0 1rem; }
+
+.glossary-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 0.85rem;
+}
+.glossary-heading {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--navy);
+}
+.glossary-backtotop {
+  font-size: 0.8rem;
+  color: var(--text-3);
+  text-decoration: none;
+}
+.glossary-backtotop:hover { color: var(--navy); }
+
+.glossary-card {
+  background: var(--canvas);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  padding: 1.25rem 1.5rem;
+}
+.app-footer .glossary-note {
+  font-size: 0.82rem;
+  color: var(--text-3);
+  margin: 0 0 0.5rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--divider);
+}
+.app-footer .glossary-note code { color: var(--navy); }
+
+.app-footer .glossary {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  column-gap: 0;
+  font-size: 0.82rem;
+  align-items: baseline;
+}
+.app-footer .glossary dt {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--navy);
+  white-space: nowrap;
+  padding: 0.6rem 1.5rem 0.6rem 0;
+  border-bottom: 1px solid var(--divider-2);
+}
+.app-footer .glossary dd {
+  margin: 0;
+  color: var(--text-2);
+  line-height: 1.5;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--divider-2);
+}
+.app-footer .glossary dt:last-of-type,
+.app-footer .glossary dd:last-of-type { border-bottom: none; }
+
+/* ---- dbc / Bootstrap overrides ---- */
+.btn-primary {
+  --bs-btn-bg: var(--navy);
+  --bs-btn-border-color: var(--navy);
+  --bs-btn-hover-bg: var(--navy-hover);
+  --bs-btn-hover-border-color: var(--navy-hover);
+}
+a { color: var(--navy); }
+code { font-family: var(--font-mono); }

@@ -6,6 +6,7 @@ from dash.dash_table.Format import Format, Scheme
 
 from db import league_query
 from filters import make_filter_bar, register_home_away_callback, register_season_callback
+from table_style import table_styles
 
 dash.register_page(__name__, path="/teams", name="Teams")
 register_home_away_callback("teams")
@@ -245,24 +246,18 @@ def update_teams(date_start, date_end, home_away, season):
     ]
     display_cols = ["team_link", "division", "conference", "gp", "pct", "rw", "ppi_plus", "wppi_plus", "gf", "ga", "gd_5v5"]
 
-    return dash_table.DataTable(
-        columns=columns,
-        data=df[display_cols].to_dict("records"),
-        markdown_options={"link_target": "_self"},
-        sort_action="native",
-        filter_action="native",
-        css=[{"selector": ".dash-filter--case", "rule": "display: none"}],
-        page_action="none",
-        style_table={"overflowX": "auto"},
-        style_header={
-            "backgroundColor": "#f8f9fa", "fontWeight": "bold",
-            "border": "1px solid #dee2e6", "fontSize": "13px",
-        },
-        style_cell={
-            "textAlign": "left", "padding": "8px 12px",
-            "border": "1px solid #dee2e6", "fontSize": "14px",
-        },
-        style_data_conditional=[
-            {"if": {"row_index": "odd"}, "backgroundColor": "#f8f9fa"},
-        ] + tercile_cond,
+    _styles = table_styles()
+    _styles["style_data_conditional"] = _styles["style_data_conditional"] + tercile_cond
+
+    return html.Div(
+        dash_table.DataTable(
+            columns=columns,
+            data=df[display_cols].to_dict("records"),
+            markdown_options={"link_target": "_self"},
+            sort_action="native",
+            filter_action="native",
+            page_action="none",
+            **_styles,
+        ),
+        className="table-wrap",
     )

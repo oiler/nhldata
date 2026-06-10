@@ -6,6 +6,7 @@ from dash import html, dash_table
 from dash.dash_table import FormatTemplate
 
 from db import league_query
+from table_style import table_styles
 from utils import seconds_to_mmss
 
 dash.register_page(__name__, path_template="/game/<game_id>", name="Game")
@@ -85,22 +86,14 @@ def _make_position_table(df, pos="F"):
     columns.append({"name": "Game wPPI+",   "id": "game_wppi_plus",   "type": "numeric"})
     display_cols.extend(["line_number", "deployment_score", "ppi_plus", "game_wppi_plus"])
 
-    return dash_table.DataTable(
-        columns=columns,
-        data=df[display_cols].to_dict("records"),
-        sort_action="native",
-        style_table={"overflowX": "auto"},
-        style_header={
-            "backgroundColor": "#f8f9fa", "fontWeight": "bold",
-            "border": "1px solid #dee2e6", "fontSize": "13px",
-        },
-        style_cell={
-            "textAlign": "left", "padding": "6px 10px",
-            "border": "1px solid #dee2e6", "fontSize": "13px",
-        },
-        style_data_conditional=[
-            {"if": {"row_index": "odd"}, "backgroundColor": "#f8f9fa"},
-        ],
+    return html.Div(
+        dash_table.DataTable(
+            columns=columns,
+            data=df[display_cols].to_dict("records"),
+            sort_action="native",
+            **table_styles(),
+        ),
+        className="table-wrap",
     )
 
 

@@ -6,6 +6,7 @@ from dash.dash_table.Format import Format, Scheme
 
 from db import league_query
 from filters import make_filter_bar, register_home_away_callback, register_season_callback, compute_deployment_metrics
+from table_style import table_styles
 from utils import seconds_to_mmss
 
 dash.register_page(__name__, path_template="/player/<player_id>", name="Player")
@@ -354,32 +355,27 @@ def update_player(date_start, date_end, home_away, pid, position, season):
         {"name": "Dep Score",  "id": "deployment_score", "type": "numeric"},
     ]
 
+    _styles = table_styles()
+    _styles["style_data_conditional"] = _styles["style_data_conditional"] + [
+        {"if": {"filter_query": '{result} = "W"', "column_id": "result"}, "color": "green"},
+        {"if": {"filter_query": '{result} = "OTL"', "column_id": "result"}, "color": "darkorange"},
+        {"if": {"filter_query": '{result} = "L"', "column_id": "result"}, "color": "crimson"},
+    ]
+
     return html.Div([
         summary_section,
         html.H4("Game Log", style={"marginBottom": "0.5rem"}),
-        dash_table.DataTable(
-            columns=columns,
-            data=rows,
-            markdown_options={"link_target": "_self"},
-            sort_action="native",
-            filter_action="native",
-            css=[{"selector": ".dash-filter--case", "rule": "display: none"}],
-            page_action="native",
-            page_size=50,
-            style_table={"overflowX": "auto"},
-            style_header={
-                "backgroundColor": "#f8f9fa", "fontWeight": "bold",
-                "border": "1px solid #dee2e6", "fontSize": "13px",
-            },
-            style_cell={
-                "textAlign": "left", "padding": "8px 12px",
-                "border": "1px solid #dee2e6", "fontSize": "14px",
-            },
-            style_data_conditional=[
-                {"if": {"row_index": "odd"}, "backgroundColor": "#f8f9fa"},
-                {"if": {"filter_query": '{result} = "W"', "column_id": "result"}, "color": "green"},
-                {"if": {"filter_query": '{result} = "OTL"', "column_id": "result"}, "color": "darkorange"},
-                {"if": {"filter_query": '{result} = "L"', "column_id": "result"}, "color": "crimson"},
-            ],
+        html.Div(
+            dash_table.DataTable(
+                columns=columns,
+                data=rows,
+                markdown_options={"link_target": "_self"},
+                sort_action="native",
+                filter_action="native",
+                page_action="native",
+                page_size=50,
+                **_styles,
+            ),
+            className="table-wrap",
         ),
     ])

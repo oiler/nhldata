@@ -10,6 +10,7 @@ from dash.dash_table.Format import Format, Scheme
 from db import league_query
 from filters import make_filter_bar, register_home_away_callback, register_season_callback, compute_deployment_metrics
 from runtime_paths import player_bursts_csv
+from table_style import table_styles
 from utils import seconds_to_mmss
 
 dash.register_page(__name__, path="/skaters", name="Skaters")
@@ -195,25 +196,16 @@ def update_skaters(date_start, date_end, home_away, season):
         "ppi", "ppi_plus", "wppi_plus", "bursts_per_60", "speed_max_mph", "avg_line", "dps_plus",
     ]
 
-    return dash_table.DataTable(
-        columns=columns,
-        data=df[display_cols].to_dict("records"),
-        markdown_options={"link_target": "_self"},
-        sort_action="native",
-        filter_action="native",
-        css=[{"selector": ".dash-filter--case", "rule": "display: none"}],
-        page_action="native",
-        page_size=50,
-        style_table={"overflowX": "auto"},
-        style_header={
-            "backgroundColor": "#f8f9fa", "fontWeight": "bold",
-            "border": "1px solid #dee2e6", "fontSize": "13px",
-        },
-        style_cell={
-            "textAlign": "left", "padding": "8px 12px",
-            "border": "1px solid #dee2e6", "fontSize": "14px",
-        },
-        style_data_conditional=[
-            {"if": {"row_index": "odd"}, "backgroundColor": "#f8f9fa"},
-        ],
+    return html.Div(
+        dash_table.DataTable(
+            columns=columns,
+            data=df[display_cols].to_dict("records"),
+            markdown_options={"link_target": "_self"},
+            sort_action="native",
+            filter_action="native",
+            page_action="native",
+            page_size=50,
+            **table_styles(),
+        ),
+        className="table-wrap",
     )
