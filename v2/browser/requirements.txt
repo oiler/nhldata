@@ -3,3 +3,10 @@ dash-bootstrap-components==2.0.4
 pandas==3.0.0
 gunicorn==23.0.0
 flask-talisman==1.1.0
+
+# Security floors for transitive deps (pulled via dash). Keep at/above patched
+# versions so a rebuild can't regress below them. CVE-2026-25645 (requests),
+# CVE-2026-44431/44432 (urllib3), idna advisory.
+requests>=2.34.2
+urllib3>=2.7.0
+idna>=3.15
