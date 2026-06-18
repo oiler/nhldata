@@ -7,7 +7,7 @@ from dash.dash_table.Format import Format, Scheme
 
 from db import league_query
 from filters import make_filter_bar, register_home_away_callback, register_season_callback, compute_deployment_metrics
-from metrics import carryover_per_player
+from metrics import carryover_per_player, events_per60
 from runtime_paths import player_bursts_csv
 from table_style import table_styles
 from utils import seconds_to_mmss
@@ -77,6 +77,8 @@ WHERE c.position IN ('F', 'D')
 
 _ALL_COMP_HA_HOME = " AND c.team = g.homeTeam_abbrev"
 _ALL_COMP_HA_AWAY = " AND c.team = g.awayTeam_abbrev"
+
+_EVENTS_SQL = "SELECT gameId, playerId, hits, blocks, takeaways, giveaways FROM events_5v5"
 
 
 def _load_bursts(season: str) -> pd.DataFrame:
@@ -187,6 +189,7 @@ def update_player(date_start, date_end, home_away, pid, position, season):
         elif home_away == "away":
             all_comp_sql += _ALL_COMP_HA_AWAY
         all_comp_df = league_query(all_comp_sql, params=(date_start, date_end), season=season)
+        events_df = league_query(_EVENTS_SQL, season=season)
 
         ppi_val = wppi_val = ppi_plus_val = wppi_plus_val = None
         if not ppi_df.empty:
@@ -261,6 +264,17 @@ def update_player(date_start, date_end, home_away, pid, position, season):
             bursts_df = _load_bursts(season)
             carry = carryover_per_player(league_comp_df, bursts_df)
             lg = lg.join(carry)
+
+            # Events per-60 (hits, blocks, takeaways, giveaways) — restrict to pool games
+            if not events_df.empty:
+                pool_games = league_comp_df[["gameId", "playerId", "toi_seconds"]]
+                pool_events = events_df.merge(
+                    league_comp_df[["gameId", "playerId"]].drop_duplicates(),
+                    on=["gameId", "playerId"],
+                    how="inner",
+                )
+                lg = lg.join(events_per60(pool_events, pool_games))
+
             if not lg_metrics.empty:
                 rate_col = "fwd_deployment_rate" if position == "F" else "deployment_rate"
                 if rate_col in lg_metrics.columns:
@@ -295,6 +309,10 @@ def update_player(date_start, date_end, home_away, pid, position, season):
                 "Max MPH":     _rank("speed_max_mph"),
                 "DPL":         _rank("avg_line", ascending=True),
                 "DPS+":        _rank("dps_plus"),
+                "Hits/60":     _rank("hits_per60"),
+                "Blocks/60":   _rank("blocks_per60"),
+                "TK/60":       _rank("tk_per60"),
+                "GV/60":       _rank("gv_per60"),
             }
 
             def _pool_val(col):
@@ -345,6 +363,10 @@ def update_player(date_start, date_end, home_away, pid, position, season):
                 stat_cell("Max MPH", _fmt(max_mph), ranks.get("Max MPH")),
                 stat_cell("DPL", _fmt(dpl_val), ranks.get("DPL")),
                 stat_cell("DPS+", _fmt(dps_val, 1), ranks.get("DPS+")),
+                stat_cell("Hits/60", _fmt(_pool_val("hits_per60")), ranks.get("Hits/60")),
+                stat_cell("Blocks/60", _fmt(_pool_val("blocks_per60")), ranks.get("Blocks/60")),
+                stat_cell("TK/60", _fmt(_pool_val("tk_per60")), ranks.get("TK/60")),
+                stat_cell("GV/60", _fmt(_pool_val("gv_per60")), ranks.get("GV/60")),
             ], style={
                 "display": "flex", "flexWrap": "wrap", "gap": "0.25rem",
                 "padding": "0.75rem", "backgroundColor": "#f8f9fa",
