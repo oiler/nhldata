@@ -116,3 +116,30 @@ def events_per60(events_df: pd.DataFrame, toi_df: pd.DataFrame) -> pd.DataFrame:
         "tk_per60":     out["takeaways"] * 3600 / denom,
         "gv_per60":     out["giveaways"] * 3600 / denom,
     })
+
+
+def corsi_per60(onice_df: pd.DataFrame, toi_df: pd.DataFrame) -> pd.DataFrame:
+    """Per-60 on-ice Corsi, with the TOI denominator restricted to games that have
+    on-ice rows (so missing-timeline games do not dilute the rate).
+
+    Args:
+        onice_df: per-(gameId, playerId) with cf, ca.
+        toi_df:   per-(gameId, playerId) with toi_seconds.
+
+    Returns:
+        Indexed by playerId: cf_per60, ca_per60, cf_pct.
+    """
+    if onice_df.empty:
+        return pd.DataFrame(columns=["cf_per60", "ca_per60", "cf_pct"])
+    covered = onice_df[["gameId", "playerId"]].drop_duplicates()
+    toi_cov = toi_df.merge(covered, on=["gameId", "playerId"], how="inner")
+    toi = toi_cov.groupby("playerId")["toi_seconds"].sum()
+    sums = onice_df.groupby("playerId")[["cf", "ca"]].sum()
+    out = sums.join(toi.rename("toi"))
+    denom = out["toi"].where(out["toi"] > 0)
+    total = (out["cf"] + out["ca"]).where((out["cf"] + out["ca"]) > 0)
+    return pd.DataFrame({
+        "cf_per60": out["cf"] * 3600 / denom,
+        "ca_per60": out["ca"] * 3600 / denom,
+        "cf_pct":   out["cf"] / total,
+    })

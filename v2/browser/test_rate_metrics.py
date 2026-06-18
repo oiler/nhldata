@@ -5,7 +5,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from metrics import carryover_per_player, events_per60
+from metrics import carryover_per_player, events_per60, corsi_per60
 from build_league_db import count_5v5_events, corsi_for_game
 
 
@@ -102,3 +102,18 @@ def test_events_per60_uses_full_toi_denominator():
     assert round(out.loc[7, "hits_per60"], 2) == 9.0      # 3 * 3600 / 1200
     assert round(out.loc[7, "gv_per60"], 2) == 6.0        # 2 * 3600 / 1200
     assert out.loc[7, "blocks_per60"] > 0
+
+
+def test_corsi_per60_restricts_denominator_to_covered_games():
+    onice = pd.DataFrame([
+        {"gameId": 1, "playerId": 5, "cf": 10, "ca": 5},
+    ])
+    # game 2 has no onice row (missing timeline) -> its TOI must NOT dilute the rate
+    toi = pd.DataFrame([
+        {"gameId": 1, "playerId": 5, "toi_seconds": 600},
+        {"gameId": 2, "playerId": 5, "toi_seconds": 600},
+    ])
+    out = corsi_per60(onice, toi)
+    assert round(out.loc[5, "cf_per60"], 1) == 60.0   # 10 * 3600 / 600 (game 1 only)
+    assert round(out.loc[5, "ca_per60"], 1) == 30.0   # 5  * 3600 / 600
+    assert round(out.loc[5, "cf_pct"], 3) == 0.667    # 10 / 15
