@@ -74,3 +74,72 @@ def compute_wppi_and_toi_share(eligible: pd.DataFrame, comp_df: pd.DataFrame) ->
         eligible["wppi_plus"] = 100.0
 
     return eligible
+
+
+def carryover_per_player(comp_df: pd.DataFrame, bursts_df: pd.DataFrame) -> pd.DataFrame:
+    """Per-player carry-over stats: mean line number joined with skating bursts.
+
+    Args:
+        comp_df:   competition rows with columns playerId, line_number.
+        bursts_df: indexed by playerId with bursts_per_60, speed_max_mph.
+
+    Returns:
+        DataFrame indexed by playerId with avg_line, bursts_per_60, speed_max_mph.
+        bursts columns are NaN for players absent from bursts_df.
+    """
+    out = (
+        comp_df.groupby("playerId")["line_number"]
+        .mean()
+        .rename("avg_line")
+        .to_frame()
+    )
+    return out.join(bursts_df[["bursts_per_60", "speed_max_mph"]])
+
+
+def events_per60(events_df: pd.DataFrame, toi_df: pd.DataFrame) -> pd.DataFrame:
+    """Per-60 individual-event rates over all of a player's 5v5 TOI.
+
+    Args:
+        events_df: per-(gameId, playerId) with hits, blocks, takeaways, giveaways.
+        toi_df:    per-(gameId, playerId) with toi_seconds (denominator = all filtered games).
+
+    Returns:
+        Indexed by playerId: hits_per60, blocks_per60, tk_per60, gv_per60.
+    """
+    toi = toi_df.groupby("playerId")["toi_seconds"].sum()
+    sums = events_df.groupby("playerId")[["hits", "blocks", "takeaways", "giveaways"]].sum()
+    out = sums.reindex(toi.index).fillna(0).join(toi.rename("toi"))
+    denom = out["toi"].where(out["toi"] > 0)
+    return pd.DataFrame({
+        "hits_per60":   out["hits"]   * 3600 / denom,
+        "blocks_per60": out["blocks"] * 3600 / denom,
+        "tk_per60":     out["takeaways"] * 3600 / denom,
+        "gv_per60":     out["giveaways"] * 3600 / denom,
+    })
+
+
+def corsi_per60(onice_df: pd.DataFrame, toi_df: pd.DataFrame) -> pd.DataFrame:
+    """Per-60 on-ice Corsi, with the TOI denominator restricted to games that have
+    on-ice rows (so missing-timeline games do not dilute the rate).
+
+    Args:
+        onice_df: per-(gameId, playerId) with cf, ca.
+        toi_df:   per-(gameId, playerId) with toi_seconds.
+
+    Returns:
+        Indexed by playerId: cf_per60, ca_per60, cf_pct.
+    """
+    if onice_df.empty:
+        return pd.DataFrame(columns=["cf_per60", "ca_per60", "cf_pct"])
+    covered = onice_df[["gameId", "playerId"]].drop_duplicates()
+    toi_cov = toi_df.merge(covered, on=["gameId", "playerId"], how="inner")
+    toi = toi_cov.groupby("playerId")["toi_seconds"].sum()
+    sums = onice_df.groupby("playerId")[["cf", "ca"]].sum()
+    out = sums.join(toi.rename("toi"))
+    denom = out["toi"].where(out["toi"] > 0)
+    total = (out["cf"] + out["ca"]).where((out["cf"] + out["ca"]) > 0)
+    return pd.DataFrame({
+        "cf_per60": out["cf"] * 3600 / denom,
+        "ca_per60": out["ca"] * 3600 / denom,
+        "cf_pct":   out["cf"] / total,
+    })

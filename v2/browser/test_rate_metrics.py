@@ -1,0 +1,119 @@
+import sys
+from pathlib import Path
+
+import pandas as pd
+
+sys.path.insert(0, str(Path(__file__).parent))
+
+from metrics import carryover_per_player, events_per60, corsi_per60
+from build_league_db import count_5v5_events, corsi_for_game
+
+
+_CORSI_COLS = {
+    "typeDescKey": None, "situationCode": None, "timeInPeriod": None,
+    "periodDescriptor.number": None, "details.shootingPlayerId": None,
+    "details.scoringPlayerId": None,
+}
+
+
+def _ev(**kw):
+    row = dict(_CORSI_COLS)
+    row.update(kw)
+    return row
+
+
+def test_corsi_for_game_credits_shooter_side_from_timeline():
+    # Home shooter 100 vs away on-ice {200,201,202,203,204}; home {100,101,102,103,104}
+    timeline = [{
+        "period": "1", "secondsIntoPeriod": "22", "situationCode": "1551",
+        "awaySkaters": "200|201|202|203|204",
+        "homeSkaters": "100|101|102|103|104",
+    }]
+    flat = pd.DataFrame([
+        # a blocked shot BY home player 100 (blocker is away 200) -> still CF for home
+        _ev(typeDescKey="blocked-shot", situationCode="1551", timeInPeriod="00:22",
+            **{"periodDescriptor.number": 1, "details.shootingPlayerId": 100}),
+    ])
+    out = corsi_for_game(flat, timeline, game_id=99).set_index("playerId")
+    assert out.loc[100, "cf"] == 1 and out.loc[100, "ca"] == 0   # shooter side = home
+    assert out.loc[200, "ca"] == 1 and out.loc[200, "cf"] == 0   # away side against
+    assert out["cf"].sum() == 5   # exactly the 5 home skaters credited CF
+    assert out["ca"].sum() == 5   # exactly the 5 away skaters credited CA
+
+
+def test_corsi_for_game_empty_timeline_returns_empty():
+    flat = pd.DataFrame([
+        _ev(typeDescKey="shot-on-goal", situationCode="1551", timeInPeriod="00:10",
+            **{"periodDescriptor.number": 1, "details.shootingPlayerId": 100}),
+    ])
+    assert corsi_for_game(flat, [], game_id=99).empty
+
+
+def test_count_5v5_events_credits_correct_fields_and_filters_strength():
+    df = pd.DataFrame([
+        {"typeDescKey": "hit",          "situationCode": "1551", "details.hittingPlayerId": 10, "details.blockingPlayerId": None, "details.playerId": None},
+        {"typeDescKey": "hit",          "situationCode": "1441", "details.hittingPlayerId": 10, "details.blockingPlayerId": None, "details.playerId": None},  # not 5v5
+        {"typeDescKey": "blocked-shot", "situationCode": "1551", "details.hittingPlayerId": None, "details.blockingPlayerId": 20, "details.playerId": None},
+        {"typeDescKey": "takeaway",     "situationCode": "1551", "details.hittingPlayerId": None, "details.blockingPlayerId": None, "details.playerId": 30},
+        {"typeDescKey": "giveaway",     "situationCode": "1551", "details.hittingPlayerId": None, "details.blockingPlayerId": None, "details.playerId": 30},
+    ])
+    out = count_5v5_events(df, game_id=2025020001).set_index("playerId")
+    assert out.loc[10, "hits"] == 1          # 1441 hit excluded
+    assert out.loc[20, "blocks"] == 1
+    assert out.loc[30, "takeaways"] == 1
+    assert out.loc[30, "giveaways"] == 1
+    assert (out["gameId"] == 2025020001).all()
+
+
+def test_carryover_per_player_aggregates_line_and_joins_bursts():
+    comp = pd.DataFrame({
+        "playerId": [1, 1, 2],
+        "line_number": [1, 3, 2],
+    })
+    bursts = pd.DataFrame(
+        {"bursts_per_60": [4.5, 1.2], "speed_max_mph": [22.1, 20.0]},
+        index=pd.Index([1, 2], name="playerId"),
+    )
+    out = carryover_per_player(comp, bursts)
+    assert out.loc[1, "avg_line"] == 2.0          # mean(1, 3)
+    assert out.loc[1, "bursts_per_60"] == 4.5
+    assert out.loc[2, "speed_max_mph"] == 20.0
+
+
+def test_carryover_per_player_missing_bursts_is_nan():
+    comp = pd.DataFrame({"playerId": [9], "line_number": [2]})
+    bursts = pd.DataFrame(columns=["bursts_per_60", "speed_max_mph"])
+    bursts.index.name = "playerId"
+    out = carryover_per_player(comp, bursts)
+    assert out.loc[9, "avg_line"] == 2.0
+    assert pd.isna(out.loc[9, "bursts_per_60"])
+
+
+def test_events_per60_uses_full_toi_denominator():
+    events = pd.DataFrame([
+        {"gameId": 1, "playerId": 7, "hits": 3, "blocks": 1, "takeaways": 0, "giveaways": 2},
+    ])
+    # player 7 played two games at 5v5: 1200s total -> 3 hits over 1200s = 9.0/60min
+    toi = pd.DataFrame([
+        {"gameId": 1, "playerId": 7, "toi_seconds": 600},
+        {"gameId": 2, "playerId": 7, "toi_seconds": 600},
+    ])
+    out = events_per60(events, toi)
+    assert round(out.loc[7, "hits_per60"], 2) == 9.0      # 3 * 3600 / 1200
+    assert round(out.loc[7, "gv_per60"], 2) == 6.0        # 2 * 3600 / 1200
+    assert out.loc[7, "blocks_per60"] > 0
+
+
+def test_corsi_per60_restricts_denominator_to_covered_games():
+    onice = pd.DataFrame([
+        {"gameId": 1, "playerId": 5, "cf": 10, "ca": 5},
+    ])
+    # game 2 has no onice row (missing timeline) -> its TOI must NOT dilute the rate
+    toi = pd.DataFrame([
+        {"gameId": 1, "playerId": 5, "toi_seconds": 600},
+        {"gameId": 2, "playerId": 5, "toi_seconds": 600},
+    ])
+    out = corsi_per60(onice, toi)
+    assert round(out.loc[5, "cf_per60"], 1) == 60.0   # 10 * 3600 / 600 (game 1 only)
+    assert round(out.loc[5, "ca_per60"], 1) == 30.0   # 5  * 3600 / 600
+    assert round(out.loc[5, "cf_pct"], 3) == 0.667    # 10 / 15
