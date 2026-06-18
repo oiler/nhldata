@@ -1,11 +1,14 @@
 # v2/browser/pages/player.py
 import dash
+import pandas as pd
 from dash import html, dash_table, callback, Input, Output, dcc
 from dash.dash_table import FormatTemplate
 from dash.dash_table.Format import Format, Scheme
 
 from db import league_query
 from filters import make_filter_bar, register_home_away_callback, register_season_callback, compute_deployment_metrics
+from metrics import carryover_per_player
+from runtime_paths import player_bursts_csv
 from table_style import table_styles
 from utils import seconds_to_mmss
 
@@ -63,7 +66,8 @@ _POINTS_SQL = "SELECT playerId, gameId, goals, assists, points FROM points_5v5"
 
 _ALL_COMP_SQL = """
 SELECT c.playerId, c.position, c.team, c.gameId, c.toi_seconds, c.total_toi_seconds,
-       c.pct_vs_top_fwd, c.pct_vs_top_def, c.comp_fwd, c.comp_def,
+       c.pct_vs_top_fwd, c.pct_vs_top_def, c.comp_fwd, c.comp_def, c.line_number,
+       c.deployment_score,
        g.homeTeam_abbrev, g.awayTeam_abbrev
 FROM competition c
 JOIN games g ON c.gameId = g.gameId
@@ -73,6 +77,16 @@ WHERE c.position IN ('F', 'D')
 
 _ALL_COMP_HA_HOME = " AND c.team = g.homeTeam_abbrev"
 _ALL_COMP_HA_AWAY = " AND c.team = g.awayTeam_abbrev"
+
+
+def _load_bursts(season: str) -> pd.DataFrame:
+    path = player_bursts_csv(season)
+    if not path.exists():
+        return pd.DataFrame(columns=["bursts_per_60", "speed_max_mph"]).set_index(
+            pd.Index([], name="playerId")
+        )
+    df = pd.read_csv(path)[["playerId", "bursts_per_60", "speed_max_mph"]]
+    return df.set_index("playerId")
 
 
 def layout(player_id=None):
@@ -203,6 +217,7 @@ def update_player(date_start, date_end, home_away, pid, position, season):
         league_comp_df = all_comp_df[all_comp_df["position"] == position]
 
         ranks = {}
+        sb_a60 = max_mph = dpl_val = dps_val = None
         if not league_comp_df.empty:
             lg = league_comp_df.groupby("playerId").agg(
                 games_played=("gameId", "nunique"),
@@ -242,6 +257,15 @@ def update_player(date_start, date_end, home_away, pid, position, season):
             if not lg_metrics.empty:
                 lg = lg.join(lg_metrics[["ppi", "ppi_plus", "wppi", "wppi_plus"]])
 
+            # Carry-over stats: avg line number, bursts, speed; and DPS+
+            bursts_df = _load_bursts(season)
+            carry = carryover_per_player(league_comp_df, bursts_df)
+            lg = lg.join(carry)
+            if not lg_metrics.empty:
+                rate_col = "fwd_deployment_rate" if position == "F" else "deployment_rate"
+                if rate_col in lg_metrics.columns:
+                    lg["dps_plus"] = lg_metrics[rate_col]
+
             pool = len(lg)
 
             # Rank helper: ascending=False means higher value = rank 1
@@ -267,7 +291,22 @@ def update_player(date_start, date_end, home_away, pid, position, season):
                 "PPI+":        _rank("ppi_plus"),
                 "wPPI":        _rank("wppi"),
                 "wPPI+":       _rank("wppi_plus"),
+                "SB/a60":      _rank("bursts_per_60"),
+                "Max MPH":     _rank("speed_max_mph"),
+                "DPL":         _rank("avg_line", ascending=True),
+                "DPS+":        _rank("dps_plus"),
             }
+
+            def _pool_val(col):
+                if pid in lg.index and col in lg.columns:
+                    v = lg.loc[pid, col]
+                    return None if pd.isna(v) else float(v)
+                return None
+
+            sb_a60  = _pool_val("bursts_per_60")
+            max_mph = _pool_val("speed_max_mph")
+            dpl_val = _pool_val("avg_line")
+            dps_val = _pool_val("dps_plus")
 
         def _fmt(val, decimals=2):
             return f"{val:.{decimals}f}" if val is not None else "\u2014"
@@ -302,6 +341,10 @@ def update_player(date_start, date_end, home_away, pid, position, season):
                 stat_cell("PPI+", _fmt(ppi_plus_val, 1), ranks.get("PPI+")),
                 stat_cell("wPPI", _fmt(wppi_val, 4), ranks.get("wPPI")),
                 stat_cell("wPPI+", _fmt(wppi_plus_val, 1), ranks.get("wPPI+")),
+                stat_cell("SB/a60", _fmt(sb_a60), ranks.get("SB/a60")),
+                stat_cell("Max MPH", _fmt(max_mph), ranks.get("Max MPH")),
+                stat_cell("DPL", _fmt(dpl_val), ranks.get("DPL")),
+                stat_cell("DPS+", _fmt(dps_val, 1), ranks.get("DPS+")),
             ], style={
                 "display": "flex", "flexWrap": "wrap", "gap": "0.25rem",
                 "padding": "0.75rem", "backgroundColor": "#f8f9fa",

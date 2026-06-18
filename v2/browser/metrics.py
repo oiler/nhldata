@@ -74,3 +74,23 @@ def compute_wppi_and_toi_share(eligible: pd.DataFrame, comp_df: pd.DataFrame) ->
         eligible["wppi_plus"] = 100.0
 
     return eligible
+
+
+def carryover_per_player(comp_df: pd.DataFrame, bursts_df: pd.DataFrame) -> pd.DataFrame:
+    """Per-player carry-over stats: mean line number joined with skating bursts.
+
+    Args:
+        comp_df:   competition rows with columns playerId, line_number.
+        bursts_df: indexed by playerId with bursts_per_60, speed_max_mph.
+
+    Returns:
+        DataFrame indexed by playerId with avg_line, bursts_per_60, speed_max_mph.
+        bursts columns are NaN for players absent from bursts_df.
+    """
+    out = (
+        comp_df.groupby("playerId")["line_number"]
+        .mean()
+        .rename("avg_line")
+        .to_frame()
+    )
+    return out.join(bursts_df[["bursts_per_60", "speed_max_mph"]])
