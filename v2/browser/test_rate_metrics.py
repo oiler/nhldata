@@ -5,7 +5,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from metrics import carryover_per_player
+from metrics import carryover_per_player, events_per60
 from build_league_db import count_5v5_events
 
 
@@ -47,3 +47,18 @@ def test_carryover_per_player_missing_bursts_is_nan():
     out = carryover_per_player(comp, bursts)
     assert out.loc[9, "avg_line"] == 2.0
     assert pd.isna(out.loc[9, "bursts_per_60"])
+
+
+def test_events_per60_uses_full_toi_denominator():
+    events = pd.DataFrame([
+        {"gameId": 1, "playerId": 7, "hits": 3, "blocks": 1, "takeaways": 0, "giveaways": 2},
+    ])
+    # player 7 played two games at 5v5: 1200s total -> 3 hits over 1200s = 9.0/60min
+    toi = pd.DataFrame([
+        {"gameId": 1, "playerId": 7, "toi_seconds": 600},
+        {"gameId": 2, "playerId": 7, "toi_seconds": 600},
+    ])
+    out = events_per60(events, toi)
+    assert round(out.loc[7, "hits_per60"], 2) == 9.0      # 3 * 3600 / 1200
+    assert round(out.loc[7, "gv_per60"], 2) == 6.0        # 2 * 3600 / 1200
+    assert out.loc[7, "blocks_per60"] > 0
