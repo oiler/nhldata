@@ -83,3 +83,9 @@ Raw data (boxscores, plays, meta, shifts) must already be downloaded.
 uv run python v2/browser/app.py
 ```
 
+### Fly
+```bash
+fly deploy --remote-only
+
+./tools/sync-runtime-data.sh 
+```
