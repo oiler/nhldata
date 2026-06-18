@@ -7,17 +7,15 @@ from dash import html, dash_table, callback, Input, Output
 from dash.dash_table import FormatTemplate
 from dash.dash_table.Format import Format, Scheme
 
+from burst_data import load_bursts
 from db import league_query
 from filters import make_filter_bar, register_home_away_callback, register_season_callback, compute_deployment_metrics
-from runtime_paths import player_bursts_csv
 from table_style import table_styles
 from utils import seconds_to_mmss
 
 dash.register_page(__name__, path="/skaters", name="Skaters")
 register_home_away_callback("skaters")
 register_season_callback("skaters")
-
-_BURSTS_CSV = player_bursts_csv("2025")
 
 # NHL convention: integer age as of Sept 15 of the season's start year.
 _AGE_CUTOFFS = {"2025": date(2025, 9, 15)}
@@ -33,13 +31,7 @@ def _age_on(birth_date_str, cutoff: date):
     return age
 
 
-def _load_bursts() -> pd.DataFrame:
-    if not _BURSTS_CSV.exists():
-        return pd.DataFrame(columns=["playerId", "bursts_per_60", "speed_max_mph", "birth_date"])
-    return pd.read_csv(_BURSTS_CSV)[["playerId", "bursts_per_60", "speed_max_mph", "birth_date"]]
-
-
-_BURSTS_DF = _load_bursts().set_index("playerId")
+_BURSTS_DF = load_bursts("2025").set_index("playerId")
 
 _COMP_SQL = """
 SELECT c.playerId,

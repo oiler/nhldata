@@ -22,6 +22,16 @@ def _runtime_mode() -> bool:
     return "DATA_DIR" in os.environ
 
 
+def is_runtime_mode() -> bool:
+    """Public alias for _runtime_mode().
+
+    True in the deployed image (DATA_DIR set), False in local dev. Used to
+    decide whether a missing data file is a fatal deploy error or a tolerable
+    local-dev gap.
+    """
+    return _runtime_mode()
+
+
 def data_root() -> Path:
     if _runtime_mode():
         return Path(os.environ["DATA_DIR"])

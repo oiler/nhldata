@@ -20,5 +20,19 @@ cp "$SRC/2025/generated/browser/league.db"        "$DST/2025/league.db"
 cp "$SRC/2025/generated/browser/edm.db"           "$DST/2025/edm.db"
 cp "$SRC/2025/generated/edge/player_bursts.csv"   "$DST/2025/player_bursts.csv"
 
+# Guard against shipping an image with missing/empty runtime files (the cause
+# of silently-blank skater columns). set -e aborts the deploy prep on failure.
+for f in "$DST/2024/league.db" "$DST/2025/league.db" "$DST/2025/edm.db" "$DST/2025/player_bursts.csv"; do
+    if [[ ! -s "$f" ]]; then
+        echo "ERROR: $f is missing or empty — refusing to ship." >&2
+        exit 1
+    fi
+done
+
+# Confirm the burst CSV actually covers this season's skaters (catches empty,
+# stale, or wrong-season files before Age/SB-a60/Max-MPH go blank in prod).
+python3 "$REPO_ROOT/v2/browser/verify_runtime_data.py" \
+    "$DST/2025/player_bursts.csv" "$DST/2025/league.db"
+
 echo "Synced runtime_data:"
 ls -lh "$DST/2024" "$DST/2025"

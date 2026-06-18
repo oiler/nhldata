@@ -34,6 +34,7 @@ v2/browser/tests/
 # Build scripts not used at runtime
 v2/browser/build_league_db.py
 v2/browser/build_edm_db.py
+v2/browser/verify_runtime_data.py
 
 # Top-level files the app doesn't need
 README.md
