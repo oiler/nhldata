@@ -259,6 +259,93 @@ def build_events_5v5_table(conn):
     print(f"  events_5v5: {len(out)} rows from {len(frames)} games")
 
 
+_CORSI_TYPES = {"shot-on-goal", "missed-shot", "blocked-shot", "goal"}
+
+
+def _mmss_to_secs(value):
+    mm, ss = str(value).split(":")
+    return int(mm) * 60 + int(ss)
+
+
+def corsi_for_game(flat_df, timeline_rows, game_id):
+    """Per-player on-ice 5v5 Corsi for/against for one game.
+
+    Shooter side is determined by which timeline skater list (home/away) contains the
+    shooter at the event's second. Returns empty if the timeline is missing.
+    """
+    if not timeline_rows:
+        return pd.DataFrame(columns=["gameId", "playerId", "cf", "ca"])
+
+    # (period, secondsIntoPeriod) -> (away_list, home_list)
+    onice = {}
+    for row in timeline_rows:
+        key = (int(row["period"]), int(row["secondsIntoPeriod"]))
+        away = [int(p) for p in row["awaySkaters"].split("|")] if row.get("awaySkaters") else []
+        home = [int(p) for p in row["homeSkaters"].split("|")] if row.get("homeSkaters") else []
+        onice[key] = (away, home)
+
+    counts = {}  # playerId -> {"cf": int, "ca": int}
+
+    def _bump(pid, key):
+        counts.setdefault(pid, {"cf": 0, "ca": 0})[key] += 1
+
+    corsi = flat_df[
+        flat_df["typeDescKey"].isin(_CORSI_TYPES)
+        & flat_df["situationCode"].astype(str).isin(FIVE_V_FIVE)
+    ]
+    for _, e in corsi.iterrows():
+        shooter = e.get("details.shootingPlayerId")
+        if pd.isna(shooter):
+            shooter = e.get("details.scoringPlayerId")
+        if pd.isna(shooter):
+            continue
+        shooter = int(shooter)
+        key = (int(e["periodDescriptor.number"]), _mmss_to_secs(e["timeInPeriod"]))
+        if key not in onice:
+            continue
+        away, home = onice[key]
+        if shooter in home:
+            for_side, against_side = home, away
+        elif shooter in away:
+            for_side, against_side = away, home
+        else:
+            continue  # shooter not on ice at that second; skip
+        for p in for_side:
+            _bump(p, "cf")
+        for p in against_side:
+            _bump(p, "ca")
+
+    records = [{"gameId": game_id, "playerId": pid, **v} for pid, v in counts.items()]
+    return pd.DataFrame(records, columns=["gameId", "playerId", "cf", "ca"])
+
+
+def build_onice_5v5_table(conn):
+    """Per-game on-ice 5v5 Corsi from flatplays joined to per-second timelines."""
+    timelines_dir = os.path.join(SEASON_DIR, "generated", "timelines", "csv")
+    frames = []
+    skipped = 0
+    for path in sorted(glob.glob(os.path.join(FLATPLAYS_DIR, "*.csv"))):
+        game_id = int(os.path.basename(path).replace(".csv", ""))
+        timeline_path = os.path.join(timelines_dir, f"{game_id}.csv")
+        if not os.path.exists(timeline_path):
+            skipped += 1
+            continue
+        with open(timeline_path, newline="") as f:
+            timeline_rows = list(csv.DictReader(f))
+        flat_df = pd.read_csv(path, low_memory=False)
+        game_df = corsi_for_game(flat_df, timeline_rows, game_id)
+        frames.append(game_df)
+    if not frames:
+        pd.DataFrame(columns=["gameId", "playerId", "cf", "ca"]).to_sql(
+            "onice_5v5", conn, if_exists="replace", index=False
+        )
+        print(f"  onice_5v5: 0 rows ({skipped} games skipped, no timeline)")
+        return
+    out = pd.concat(frames, ignore_index=True)
+    out.to_sql("onice_5v5", conn, if_exists="replace", index=False)
+    print(f"  onice_5v5: {len(out)} rows from {len(frames)} games ({skipped} skipped, no timeline)")
+
+
 def build_elite_forwards_table(conn):
     """League-wide elite forwards: production gate + 2-of-3 deployment, 80/20 blend.
 
@@ -916,6 +1003,7 @@ def main():
         build_games_table(conn)
         build_points_5v5_table(conn)
         build_events_5v5_table(conn)
+        build_onice_5v5_table(conn)
         build_elite_forwards_table(conn)
         recompute_pct_vs_elite_fwd(conn)
         build_elite_defensemen_table(conn)

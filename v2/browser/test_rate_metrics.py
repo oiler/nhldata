@@ -6,7 +6,47 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).parent))
 
 from metrics import carryover_per_player, events_per60
-from build_league_db import count_5v5_events
+from build_league_db import count_5v5_events, corsi_for_game
+
+
+_CORSI_COLS = {
+    "typeDescKey": None, "situationCode": None, "timeInPeriod": None,
+    "periodDescriptor.number": None, "details.shootingPlayerId": None,
+    "details.scoringPlayerId": None,
+}
+
+
+def _ev(**kw):
+    row = dict(_CORSI_COLS)
+    row.update(kw)
+    return row
+
+
+def test_corsi_for_game_credits_shooter_side_from_timeline():
+    # Home shooter 100 vs away on-ice {200,201,202,203,204}; home {100,101,102,103,104}
+    timeline = [{
+        "period": "1", "secondsIntoPeriod": "22", "situationCode": "1551",
+        "awaySkaters": "200|201|202|203|204",
+        "homeSkaters": "100|101|102|103|104",
+    }]
+    flat = pd.DataFrame([
+        # a blocked shot BY home player 100 (blocker is away 200) -> still CF for home
+        _ev(typeDescKey="blocked-shot", situationCode="1551", timeInPeriod="00:22",
+            **{"periodDescriptor.number": 1, "details.shootingPlayerId": 100}),
+    ])
+    out = corsi_for_game(flat, timeline, game_id=99).set_index("playerId")
+    assert out.loc[100, "cf"] == 1 and out.loc[100, "ca"] == 0   # shooter side = home
+    assert out.loc[200, "ca"] == 1 and out.loc[200, "cf"] == 0   # away side against
+    assert out["cf"].sum() == 5   # exactly the 5 home skaters credited CF
+    assert out["ca"].sum() == 5   # exactly the 5 away skaters credited CA
+
+
+def test_corsi_for_game_empty_timeline_returns_empty():
+    flat = pd.DataFrame([
+        _ev(typeDescKey="shot-on-goal", situationCode="1551", timeInPeriod="00:10",
+            **{"periodDescriptor.number": 1, "details.shootingPlayerId": 100}),
+    ])
+    assert corsi_for_game(flat, [], game_id=99).empty
 
 
 def test_count_5v5_events_credits_correct_fields_and_filters_strength():
