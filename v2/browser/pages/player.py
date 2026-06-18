@@ -193,16 +193,15 @@ def update_player(date_start, date_end, home_away, pid, position, season):
         events_df = league_query(_EVENTS_SQL, season=season)
         onice_df = league_query(_ONICE_SQL, season=season)
 
-        ppi_val = wppi_val = ppi_plus_val = wppi_plus_val = None
+        ppi_val = ppi_plus_val = wppi_plus_val = None
         if not ppi_df.empty:
             player_ppi = ppi_df[ppi_df["playerId"] == pid]
             if not player_ppi.empty:
                 ppi_val = round(float(player_ppi.iloc[0]["ppi"]), 2)
                 ppi_plus_val = round(float(player_ppi.iloc[0]["ppi_plus"]), 1)
-            # wPPI from full league data (not single-player comp_df)
+            # wPPI+ from full league data (not single-player comp_df)
             metrics = compute_deployment_metrics(all_comp_df, ppi_df)
             if not metrics.empty and pid in metrics.index:
-                wppi_val = round(float(metrics.loc[pid, "wppi"]), 4)
                 wppi_plus_val = round(float(metrics.loc[pid, "wppi_plus"]), 1)
 
         # Record (W-L-OTL)
@@ -258,10 +257,10 @@ def update_player(date_start, date_end, home_away, pid, position, season):
                 lg[c] = lg[c].fillna(0).astype(int) if c in lg.columns else 0
             lg["p_per_60"] = lg["total_points"] * 3600 / lg["total_toi"]
 
-            # PPI / wPPI from deployment metrics
+            # PPI / wPPI+ from deployment metrics
             lg_metrics = compute_deployment_metrics(league_comp_df, ppi_df)
             if not lg_metrics.empty:
-                lg = lg.join(lg_metrics[["ppi", "ppi_plus", "wppi", "wppi_plus"]])
+                lg = lg.join(lg_metrics[["ppi", "ppi_plus", "wppi_plus"]])
 
             # Carry-over stats: avg line number, bursts, speed; and DPS+
             bursts_df = _load_bursts(season)
@@ -316,7 +315,6 @@ def update_player(date_start, date_end, home_away, pid, position, season):
                 "iTOI%":       _rank("avg_itoi_pct"),
                 "PPI":         _rank("ppi"),
                 "PPI+":        _rank("ppi_plus"),
-                "wPPI":        _rank("wppi"),
                 "wPPI+":       _rank("wppi_plus"),
                 "SB/a60":      _rank("bursts_per_60"),
                 "Max MPH":     _rank("speed_max_mph"),
@@ -380,7 +378,6 @@ def update_player(date_start, date_end, home_away, pid, position, season):
                 stat_cell("iTOI%", _fmt(avg_itoi_pct * 100, 1) + "%", ranks.get("iTOI%")),
                 stat_cell("PPI", _fmt(ppi_val), ranks.get("PPI")),
                 stat_cell("PPI+", _fmt(ppi_plus_val, 1), ranks.get("PPI+")),
-                stat_cell("wPPI", _fmt(wppi_val, 4), ranks.get("wPPI")),
                 stat_cell("wPPI+", _fmt(wppi_plus_val, 1), ranks.get("wPPI+")),
                 stat_cell("SB/a60", _fmt(sb_a60), ranks.get("SB/a60")),
                 stat_cell("Max MPH", _fmt(max_mph), ranks.get("Max MPH")),
