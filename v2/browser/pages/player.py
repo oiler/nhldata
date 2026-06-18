@@ -7,7 +7,7 @@ from dash.dash_table.Format import Format, Scheme
 
 from db import league_query
 from filters import make_filter_bar, register_home_away_callback, register_season_callback, compute_deployment_metrics
-from metrics import carryover_per_player, events_per60
+from metrics import carryover_per_player, events_per60, corsi_per60
 from runtime_paths import player_bursts_csv
 from table_style import table_styles
 from utils import seconds_to_mmss
@@ -79,6 +79,7 @@ _ALL_COMP_HA_HOME = " AND c.team = g.homeTeam_abbrev"
 _ALL_COMP_HA_AWAY = " AND c.team = g.awayTeam_abbrev"
 
 _EVENTS_SQL = "SELECT gameId, playerId, hits, blocks, takeaways, giveaways FROM events_5v5"
+_ONICE_SQL = "SELECT gameId, playerId, cf, ca FROM onice_5v5"
 
 
 def _load_bursts(season: str) -> pd.DataFrame:
@@ -190,6 +191,7 @@ def update_player(date_start, date_end, home_away, pid, position, season):
             all_comp_sql += _ALL_COMP_HA_AWAY
         all_comp_df = league_query(all_comp_sql, params=(date_start, date_end), season=season)
         events_df = league_query(_EVENTS_SQL, season=season)
+        onice_df = league_query(_ONICE_SQL, season=season)
 
         ppi_val = wppi_val = ppi_plus_val = wppi_plus_val = None
         if not ppi_df.empty:
@@ -221,6 +223,7 @@ def update_player(date_start, date_end, home_away, pid, position, season):
 
         ranks = {}
         sb_a60 = max_mph = dpl_val = dps_val = None
+        hits60 = blocks60 = tk60 = gv60 = cf60 = ca60 = cf_pct_val = None
         if not league_comp_df.empty:
             lg = league_comp_df.groupby("playerId").agg(
                 games_played=("gameId", "nunique"),
@@ -265,15 +268,25 @@ def update_player(date_start, date_end, home_away, pid, position, season):
             carry = carryover_per_player(league_comp_df, bursts_df)
             lg = lg.join(carry)
 
+            pool_games = league_comp_df[["gameId", "playerId", "toi_seconds"]]  # per-(game,player) 5v5 TOI; per-60 denominator
+
             # Events per-60 (hits, blocks, takeaways, giveaways) — restrict to pool games
             if not events_df.empty:
-                pool_games = league_comp_df[["gameId", "playerId", "toi_seconds"]]
                 pool_events = events_df.merge(
                     league_comp_df[["gameId", "playerId"]].drop_duplicates(),
                     on=["gameId", "playerId"],
                     how="inner",
                 )
                 lg = lg.join(events_per60(pool_events, pool_games))
+
+            # Corsi per-60 (CF/60, CA/60, CF%) — restrict to pool games
+            if not onice_df.empty:
+                pool_onice = onice_df.merge(
+                    league_comp_df[["gameId", "playerId"]].drop_duplicates(),
+                    on=["gameId", "playerId"],
+                    how="inner",
+                )
+                lg = lg.join(corsi_per60(pool_onice, pool_games))
 
             if not lg_metrics.empty:
                 rate_col = "fwd_deployment_rate" if position == "F" else "deployment_rate"
@@ -313,6 +326,9 @@ def update_player(date_start, date_end, home_away, pid, position, season):
                 "Blocks/60":   _rank("blocks_per60"),
                 "TK/60":       _rank("tk_per60"),
                 "GV/60":       _rank("gv_per60"),
+                "CF/60":       _rank("cf_per60"),
+                "CA/60":       _rank("ca_per60", ascending=True),
+                "CF%":         _rank("cf_pct"),
             }
 
             def _pool_val(col):
@@ -325,6 +341,13 @@ def update_player(date_start, date_end, home_away, pid, position, season):
             max_mph = _pool_val("speed_max_mph")
             dpl_val = _pool_val("avg_line")
             dps_val = _pool_val("dps_plus")
+            hits60      = _pool_val("hits_per60")
+            blocks60    = _pool_val("blocks_per60")
+            tk60        = _pool_val("tk_per60")
+            gv60        = _pool_val("gv_per60")
+            cf60        = _pool_val("cf_per60")
+            ca60        = _pool_val("ca_per60")
+            cf_pct_val  = _pool_val("cf_pct")
 
         def _fmt(val, decimals=2):
             return f"{val:.{decimals}f}" if val is not None else "\u2014"
@@ -363,10 +386,13 @@ def update_player(date_start, date_end, home_away, pid, position, season):
                 stat_cell("Max MPH", _fmt(max_mph), ranks.get("Max MPH")),
                 stat_cell("DPL", _fmt(dpl_val), ranks.get("DPL")),
                 stat_cell("DPS+", _fmt(dps_val, 1), ranks.get("DPS+")),
-                stat_cell("Hits/60", _fmt(_pool_val("hits_per60")), ranks.get("Hits/60")),
-                stat_cell("Blocks/60", _fmt(_pool_val("blocks_per60")), ranks.get("Blocks/60")),
-                stat_cell("TK/60", _fmt(_pool_val("tk_per60")), ranks.get("TK/60")),
-                stat_cell("GV/60", _fmt(_pool_val("gv_per60")), ranks.get("GV/60")),
+                stat_cell("Hits/60", _fmt(hits60), ranks.get("Hits/60")),
+                stat_cell("Blocks/60", _fmt(blocks60), ranks.get("Blocks/60")),
+                stat_cell("TK/60", _fmt(tk60), ranks.get("TK/60")),
+                stat_cell("GV/60", _fmt(gv60), ranks.get("GV/60")),
+                stat_cell("CF/60", _fmt(cf60, 1), ranks.get("CF/60")),
+                stat_cell("CA/60", _fmt(ca60, 1), ranks.get("CA/60")),
+                stat_cell("CF%", _fmt((cf_pct_val or 0) * 100, 1) + "%" if cf_pct_val is not None else "—", ranks.get("CF%")),
             ], style={
                 "display": "flex", "flexWrap": "wrap", "gap": "0.25rem",
                 "padding": "0.75rem", "backgroundColor": "#f8f9fa",
