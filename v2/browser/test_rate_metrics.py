@@ -6,6 +6,23 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).parent))
 
 from metrics import carryover_per_player
+from build_league_db import count_5v5_events
+
+
+def test_count_5v5_events_credits_correct_fields_and_filters_strength():
+    df = pd.DataFrame([
+        {"typeDescKey": "hit",          "situationCode": "1551", "details.hittingPlayerId": 10, "details.blockingPlayerId": None, "details.playerId": None},
+        {"typeDescKey": "hit",          "situationCode": "1441", "details.hittingPlayerId": 10, "details.blockingPlayerId": None, "details.playerId": None},  # not 5v5
+        {"typeDescKey": "blocked-shot", "situationCode": "1551", "details.hittingPlayerId": None, "details.blockingPlayerId": 20, "details.playerId": None},
+        {"typeDescKey": "takeaway",     "situationCode": "1551", "details.hittingPlayerId": None, "details.blockingPlayerId": None, "details.playerId": 30},
+        {"typeDescKey": "giveaway",     "situationCode": "1551", "details.hittingPlayerId": None, "details.blockingPlayerId": None, "details.playerId": 30},
+    ])
+    out = count_5v5_events(df, game_id=2025020001).set_index("playerId")
+    assert out.loc[10, "hits"] == 1          # 1441 hit excluded
+    assert out.loc[20, "blocks"] == 1
+    assert out.loc[30, "takeaways"] == 1
+    assert out.loc[30, "giveaways"] == 1
+    assert (out["gameId"] == 2025020001).all()
 
 
 def test_carryover_per_player_aggregates_line_and_joins_bursts():

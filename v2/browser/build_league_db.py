@@ -213,6 +213,52 @@ def build_points_5v5_table(conn):
     print(f"  points_5v5: {len(out)} rows from {len(frames)} games")
 
 
+def count_5v5_events(df, game_id):
+    """Count per-player 5v5 hits/blocks/takeaways/giveaways for one game's flatplays."""
+    five_v_five = df[df["situationCode"].astype(str).isin(FIVE_V_FIVE)]
+    counts = {}  # playerId -> dict
+
+    def _bump(pid_val, key):
+        if pd.notna(pid_val):
+            pid = int(pid_val)
+            row = counts.setdefault(pid, {"hits": 0, "blocks": 0, "takeaways": 0, "giveaways": 0})
+            row[key] += 1
+
+    for _, r in five_v_five.iterrows():
+        t = r["typeDescKey"]
+        if t == "hit":
+            _bump(r.get("details.hittingPlayerId"), "hits")
+        elif t == "blocked-shot":
+            _bump(r.get("details.blockingPlayerId"), "blocks")
+        elif t == "takeaway":
+            _bump(r.get("details.playerId"), "takeaways")
+        elif t == "giveaway":
+            _bump(r.get("details.playerId"), "giveaways")
+
+    records = [{"gameId": game_id, "playerId": pid, **vals} for pid, vals in counts.items()]
+    return pd.DataFrame(records, columns=["gameId", "playerId", "hits", "blocks", "takeaways", "giveaways"])
+
+
+def build_events_5v5_table(conn):
+    """Per-game 5v5 individual event counts from flattened plays."""
+    frames = []
+    for path in sorted(glob.glob(os.path.join(FLATPLAYS_DIR, "*.csv"))):
+        game_id = int(os.path.basename(path).replace(".csv", ""))
+        df = pd.read_csv(path, low_memory=False)
+        game_df = count_5v5_events(df, game_id)
+        if not game_df.empty:
+            frames.append(game_df)
+    if not frames:
+        pd.DataFrame(columns=["gameId", "playerId", "hits", "blocks", "takeaways", "giveaways"]).to_sql(
+            "events_5v5", conn, if_exists="replace", index=False
+        )
+        print("  events_5v5: 0 rows (no flatplays found)")
+        return
+    out = pd.concat(frames, ignore_index=True)
+    out.to_sql("events_5v5", conn, if_exists="replace", index=False)
+    print(f"  events_5v5: {len(out)} rows from {len(frames)} games")
+
+
 def build_elite_forwards_table(conn):
     """League-wide elite forwards: production gate + 2-of-3 deployment, 80/20 blend.
 
@@ -869,6 +915,7 @@ def main():
         _recover_missing_players(conn)
         build_games_table(conn)
         build_points_5v5_table(conn)
+        build_events_5v5_table(conn)
         build_elite_forwards_table(conn)
         recompute_pct_vs_elite_fwd(conn)
         build_elite_defensemen_table(conn)
