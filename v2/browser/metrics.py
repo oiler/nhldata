@@ -100,21 +100,22 @@ def events_per60(events_df: pd.DataFrame, toi_df: pd.DataFrame) -> pd.DataFrame:
     """Per-60 individual-event rates over all of a player's 5v5 TOI.
 
     Args:
-        events_df: per-(gameId, playerId) with hits, blocks, takeaways, giveaways.
+        events_df: per-(gameId, playerId) with hits, blocks, takeaways, giveaways, ishots.
         toi_df:    per-(gameId, playerId) with toi_seconds (denominator = all filtered games).
 
     Returns:
-        Indexed by playerId: hits_per60, blocks_per60, tk_per60, gv_per60.
+        Indexed by playerId: hits_per60, blocks_per60, tk_per60, gv_per60, ishots_per60.
     """
     toi = toi_df.groupby("playerId")["toi_seconds"].sum()
-    sums = events_df.groupby("playerId")[["hits", "blocks", "takeaways", "giveaways"]].sum()
+    sums = events_df.groupby("playerId")[["hits", "blocks", "takeaways", "giveaways", "ishots"]].sum()
     out = sums.reindex(toi.index).fillna(0).join(toi.rename("toi"))
     denom = out["toi"].where(out["toi"] > 0)
     return pd.DataFrame({
-        "hits_per60":   out["hits"]   * 3600 / denom,
-        "blocks_per60": out["blocks"] * 3600 / denom,
-        "tk_per60":     out["takeaways"] * 3600 / denom,
-        "gv_per60":     out["giveaways"] * 3600 / denom,
+        "hits_per60":    out["hits"]       * 3600 / denom,
+        "blocks_per60":  out["blocks"]     * 3600 / denom,
+        "tk_per60":      out["takeaways"]  * 3600 / denom,
+        "gv_per60":      out["giveaways"]  * 3600 / denom,
+        "ishots_per60":  out["ishots"]     * 3600 / denom,
     })
 
 
@@ -143,3 +144,30 @@ def corsi_per60(onice_df: pd.DataFrame, toi_df: pd.DataFrame) -> pd.DataFrame:
         "ca_per60": out["ca"] * 3600 / denom,
         "cf_pct":   out["cf"] / total,
     })
+
+
+def points_per100_shots(points_df: pd.DataFrame, ishots_df: pd.DataFrame, min_attempts: int = 50) -> pd.DataFrame:
+    """5v5 points per 100 individual shot attempts, with a min-attempts rank floor.
+
+    Args:
+        points_df: per-(gameId, playerId) with a points column (from points_5v5).
+        ishots_df: per-(gameId, playerId) with an ishots column (from events_5v5).
+        min_attempts: total-attempt floor below which p_per100_ranked is NaN.
+
+    Returns:
+        Indexed by playerId:
+          total_ishots    — summed individual shot attempts.
+          p_per100        — points * 100 / total_ishots (NaN when total_ishots == 0). Display value.
+          p_per100_ranked — p_per100 where total_ishots >= min_attempts, else NaN. Rank column.
+    """
+    pts = (points_df.groupby("playerId")["points"].sum()
+           if not points_df.empty else pd.Series(dtype=float))
+    ish = (ishots_df.groupby("playerId")["ishots"].sum()
+           if not ishots_df.empty else pd.Series(dtype=float))
+    out = pd.DataFrame({"total_ishots": ish, "points": pts})
+    out["total_ishots"] = out["total_ishots"].fillna(0)
+    out["points"] = out["points"].fillna(0)
+    denom = out["total_ishots"].where(out["total_ishots"] > 0)
+    out["p_per100"] = out["points"] * 100 / denom
+    out["p_per100_ranked"] = out["p_per100"].where(out["total_ishots"] >= min_attempts)
+    return out[["total_ishots", "p_per100", "p_per100_ranked"]]

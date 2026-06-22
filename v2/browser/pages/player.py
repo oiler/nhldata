@@ -7,7 +7,7 @@ from dash.dash_table.Format import Format, Scheme
 
 from db import league_query
 from filters import make_filter_bar, register_home_away_callback, register_season_callback, compute_deployment_metrics
-from metrics import carryover_per_player, events_per60, corsi_per60
+from metrics import carryover_per_player, events_per60, corsi_per60, points_per100_shots
 from runtime_paths import player_bursts_csv
 from table_style import table_styles
 from utils import seconds_to_mmss
@@ -78,8 +78,10 @@ WHERE c.position IN ('F', 'D')
 _ALL_COMP_HA_HOME = " AND c.team = g.homeTeam_abbrev"
 _ALL_COMP_HA_AWAY = " AND c.team = g.awayTeam_abbrev"
 
-_EVENTS_SQL = "SELECT gameId, playerId, hits, blocks, takeaways, giveaways FROM events_5v5"
+_EVENTS_SQL = "SELECT gameId, playerId, hits, blocks, takeaways, giveaways, ishots FROM events_5v5"
 _ONICE_SQL = "SELECT gameId, playerId, cf, ca FROM onice_5v5"
+
+ISA_RANK_MIN = 50  # min 5v5 individual shot attempts in window to qualify for the P/100iSA rank
 
 
 def _load_bursts(season: str) -> pd.DataFrame:
@@ -222,7 +224,7 @@ def update_player(date_start, date_end, home_away, pid, position, season):
 
         ranks = {}
         sb_a60 = max_mph = dpl_val = dps_val = None
-        hits60 = blocks60 = tk60 = gv60 = cf60 = ca60 = cf_pct_val = None
+        hits60 = blocks60 = tk60 = gv60 = cf60 = ca60 = cf_pct_val = isa60 = p100 = None
         if not league_comp_df.empty:
             lg = league_comp_df.groupby("playerId").agg(
                 games_played=("gameId", "nunique"),
@@ -278,6 +280,15 @@ def update_player(date_start, date_end, home_away, pid, position, season):
                 )
                 lg = lg.join(events_per60(pool_events, pool_games))
 
+                pool_points = (
+                    pts_df.merge(
+                        league_comp_df[["gameId", "playerId"]].drop_duplicates(),
+                        on=["gameId", "playerId"], how="inner",
+                    )
+                    if not pts_df.empty else pd.DataFrame(columns=["gameId", "playerId", "points"])
+                )
+                lg = lg.join(points_per100_shots(pool_points, pool_events, min_attempts=ISA_RANK_MIN))
+
             # Corsi per-60 (CF/60, CA/60, CF%) — restrict to pool games
             if not onice_df.empty:
                 pool_onice = onice_df.merge(
@@ -324,6 +335,8 @@ def update_player(date_start, date_end, home_away, pid, position, season):
                 "Blocks/60":   _rank("blocks_per60"),
                 "TK/60":       _rank("tk_per60"),
                 "GV/60":       _rank("gv_per60"),
+                "iSA/60":      _rank("ishots_per60"),
+                "P/100iSA":    _rank("p_per100_ranked"),
                 "CF/60":       _rank("cf_per60"),
                 "CA/60":       _rank("ca_per60", ascending=True),
                 "CF%":         _rank("cf_pct"),
@@ -346,6 +359,8 @@ def update_player(date_start, date_end, home_away, pid, position, season):
             cf60        = _pool_val("cf_per60")
             ca60        = _pool_val("ca_per60")
             cf_pct_val  = _pool_val("cf_pct")
+            isa60       = _pool_val("ishots_per60")
+            p100        = _pool_val("p_per100")
 
         def _fmt(val, decimals=2):
             return f"{val:.{decimals}f}" if val is not None else "\u2014"
@@ -387,6 +402,8 @@ def update_player(date_start, date_end, home_away, pid, position, season):
                 stat_cell("Blocks/60", _fmt(blocks60), ranks.get("Blocks/60")),
                 stat_cell("TK/60", _fmt(tk60), ranks.get("TK/60")),
                 stat_cell("GV/60", _fmt(gv60), ranks.get("GV/60")),
+                stat_cell("iSA/60", _fmt(isa60, 1), ranks.get("iSA/60")),
+                stat_cell("P/100iSA", _fmt(p100), ranks.get("P/100iSA")),
                 stat_cell("CF/60", _fmt(cf60, 1), ranks.get("CF/60")),
                 stat_cell("CA/60", _fmt(ca60, 1), ranks.get("CA/60")),
                 stat_cell("CF%", _fmt((cf_pct_val or 0) * 100, 1) + "%" if cf_pct_val is not None else "—", ranks.get("CF%")),

@@ -10,6 +10,7 @@ from dash.dash_table.Format import Format, Scheme
 from burst_data import load_bursts
 from db import league_query
 from filters import make_filter_bar, register_home_away_callback, register_season_callback, compute_deployment_metrics
+from metrics import events_per60, points_per100_shots
 from table_style import table_styles
 from utils import seconds_to_mmss
 
@@ -53,6 +54,9 @@ _HA_AWAY = " AND c.team = g.awayTeam_abbrev"
 _PPI_SQL = "SELECT playerId, ppi, ppi_plus, wppi, wppi_plus FROM player_metrics"
 
 _POINTS_SQL = "SELECT playerId, gameId, goals, assists, points FROM points_5v5"
+
+_EVENTS_SQL = "SELECT gameId, playerId, hits, blocks, takeaways, giveaways, ishots FROM events_5v5"
+ISA_RANK_MIN = 50  # min 5v5 individual shot attempts in window to show P/100iSA on the leaderboard
 
 
 def layout():
@@ -135,6 +139,24 @@ def update_skaters(date_start, date_end, home_away, season):
         grouped[c] = grouped[c].fillna(0).astype(int) if c in grouped.columns else 0
     grouped["p_per_60"] = grouped["total_points"] * 3600 / grouped["total_toi"].where(grouped["total_toi"] > 0)
 
+    # Individual shot attempts (iSA/60) and shot efficiency (P/100iSA), 5v5
+    events_df = league_query(_EVENTS_SQL, season=season)
+    valid_games = comp_df[["playerId", "gameId"]].drop_duplicates()
+    toi_frame = comp_df[["gameId", "playerId", "toi_seconds"]]
+    if not events_df.empty:
+        ev = events_df.merge(valid_games, on=["playerId", "gameId"], how="inner")
+        grouped = grouped.join(events_per60(ev, toi_frame)[["ishots_per60"]])
+        pts_for_eff = (
+            pts_df.merge(valid_games, on=["playerId", "gameId"], how="inner")
+            if not pts_df.empty else pd.DataFrame(columns=["gameId", "playerId", "points"])
+        )
+        grouped = grouped.join(
+            points_per100_shots(pts_for_eff, ev, min_attempts=ISA_RANK_MIN)[["p_per100_ranked"]]
+        )
+    for col in ["ishots_per60", "p_per100_ranked"]:
+        if col not in grouped.columns:
+            grouped[col] = None
+
     grouped = grouped.join(_BURSTS_DF)
     cutoff = _AGE_CUTOFFS.get(season)
     if cutoff is not None:
@@ -169,10 +191,11 @@ def update_skaters(date_start, date_end, home_away, season):
         {"name": "A",     "id": "total_assists",  "type": "numeric"},
         {"name": "P",     "id": "total_points",   "type": "numeric"},
         {"name": "P/60",  "id": "p_per_60",       "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed)},
+        {"name": "iSA/60", "id": "ishots_per60", "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
+        {"name": "P/100iSA", "id": "p_per100_ranked", "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed)},
         {"name": "5v5 TOI/GP",   "id": "toi_display",        "filter_options": _ci},
         {"name": "tTOI%",        "id": "avg_toi_share", "type": "numeric", "format": FormatTemplate.percentage(1)},
         {"name": "iTOI%",        "id": "avg_itoi_pct", "type": "numeric", "format": FormatTemplate.percentage(1)},
-        {"name": "PPI",   "id": "ppi",       "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed)},
         {"name": "PPI+",  "id": "ppi_plus",  "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
         {"name": "wPPI+", "id": "wppi_plus", "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
         {"name": "SB/a60", "id": "bursts_per_60", "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed)},
@@ -182,10 +205,10 @@ def update_skaters(date_start, date_end, home_away, season):
     ]
     display_cols = [
         "player_link", "team", "shoots", "position", "age", "games_played",
-        "total_goals", "total_assists", "total_points", "p_per_60",
+        "total_goals", "total_assists", "total_points", "p_per_60", "ishots_per60", "p_per100_ranked",
         "toi_display",
         "avg_toi_share", "avg_itoi_pct",
-        "ppi", "ppi_plus", "wppi_plus", "bursts_per_60", "speed_max_mph", "avg_line", "dps_plus",
+        "ppi_plus", "wppi_plus", "bursts_per_60", "speed_max_mph", "avg_line", "dps_plus",
     ]
 
     return html.Div(

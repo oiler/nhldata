@@ -214,14 +214,14 @@ def build_points_5v5_table(conn):
 
 
 def count_5v5_events(df, game_id):
-    """Count per-player 5v5 hits/blocks/takeaways/giveaways for one game's flatplays."""
+    """Count per-player 5v5 hits/blocks/takeaways/giveaways and individual shot attempts."""
     five_v_five = df[df["situationCode"].astype(str).isin(FIVE_V_FIVE)]
     counts = {}  # playerId -> dict
 
     def _bump(pid_val, key):
         if pd.notna(pid_val):
             pid = int(pid_val)
-            row = counts.setdefault(pid, {"hits": 0, "blocks": 0, "takeaways": 0, "giveaways": 0})
+            row = counts.setdefault(pid, {"hits": 0, "blocks": 0, "takeaways": 0, "giveaways": 0, "ishots": 0})
             row[key] += 1
 
     for _, r in five_v_five.iterrows():
@@ -230,13 +230,18 @@ def count_5v5_events(df, game_id):
             _bump(r.get("details.hittingPlayerId"), "hits")
         elif t == "blocked-shot":
             _bump(r.get("details.blockingPlayerId"), "blocks")
+            _bump(r.get("details.shootingPlayerId"), "ishots")
         elif t == "takeaway":
             _bump(r.get("details.playerId"), "takeaways")
         elif t == "giveaway":
             _bump(r.get("details.playerId"), "giveaways")
+        elif t in ("shot-on-goal", "missed-shot"):
+            _bump(r.get("details.shootingPlayerId"), "ishots")
+        elif t == "goal":
+            _bump(r.get("details.scoringPlayerId"), "ishots")
 
     records = [{"gameId": game_id, "playerId": pid, **vals} for pid, vals in counts.items()]
-    return pd.DataFrame(records, columns=["gameId", "playerId", "hits", "blocks", "takeaways", "giveaways"])
+    return pd.DataFrame(records, columns=["gameId", "playerId", "hits", "blocks", "takeaways", "giveaways", "ishots"])
 
 
 def build_events_5v5_table(conn):
@@ -249,7 +254,7 @@ def build_events_5v5_table(conn):
         if not game_df.empty:
             frames.append(game_df)
     if not frames:
-        pd.DataFrame(columns=["gameId", "playerId", "hits", "blocks", "takeaways", "giveaways"]).to_sql(
+        pd.DataFrame(columns=["gameId", "playerId", "hits", "blocks", "takeaways", "giveaways", "ishots"]).to_sql(
             "events_5v5", conn, if_exists="replace", index=False
         )
         print("  events_5v5: 0 rows (no flatplays found)")
