@@ -222,7 +222,7 @@ def update_player(date_start, date_end, home_away, pid, position, season):
 
         ranks = {}
         sb_a60 = max_mph = dpl_val = dps_val = None
-        hits60 = blocks60 = tk60 = gv60 = cf60 = ca60 = cf_pct_val = None
+        hits60 = blocks60 = tk60 = gv60 = cf60 = ca60 = cf_pct_val = isa60 = None
         if not league_comp_df.empty:
             lg = league_comp_df.groupby("playerId").agg(
                 games_played=("gameId", "nunique"),
@@ -324,6 +324,7 @@ def update_player(date_start, date_end, home_away, pid, position, season):
                 "Blocks/60":   _rank("blocks_per60"),
                 "TK/60":       _rank("tk_per60"),
                 "GV/60":       _rank("gv_per60"),
+                "iSA/60":      _rank("ishots_per60"),
                 "CF/60":       _rank("cf_per60"),
                 "CA/60":       _rank("ca_per60", ascending=True),
                 "CF%":         _rank("cf_pct"),
@@ -346,6 +347,7 @@ def update_player(date_start, date_end, home_away, pid, position, season):
             cf60        = _pool_val("cf_per60")
             ca60        = _pool_val("ca_per60")
             cf_pct_val  = _pool_val("cf_pct")
+            isa60       = _pool_val("ishots_per60")
 
         def _fmt(val, decimals=2):
             return f"{val:.{decimals}f}" if val is not None else "\u2014"
@@ -387,6 +389,7 @@ def update_player(date_start, date_end, home_away, pid, position, season):
                 stat_cell("Blocks/60", _fmt(blocks60), ranks.get("Blocks/60")),
                 stat_cell("TK/60", _fmt(tk60), ranks.get("TK/60")),
                 stat_cell("GV/60", _fmt(gv60), ranks.get("GV/60")),
+                stat_cell("iSA/60", _fmt(isa60, 1), ranks.get("iSA/60")),
                 stat_cell("CF/60", _fmt(cf60, 1), ranks.get("CF/60")),
                 stat_cell("CA/60", _fmt(ca60, 1), ranks.get("CA/60")),
                 stat_cell("CF%", _fmt((cf_pct_val or 0) * 100, 1) + "%" if cf_pct_val is not None else "—", ranks.get("CF%")),
