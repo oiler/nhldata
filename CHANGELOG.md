@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-06-22
+### Added
+- Two individual 5v5 shot stats on the player page (`/player/<id>`, each with a
+  league rank) and the `/skaters` leaderboard (sortable columns):
+  - **iSA/60** — individual shot attempts (Corsi, blocked attempts included) per 60
+    minutes of 5v5 ice time. Measures the shot volume a skater generates himself.
+  - **P/100iSA** — 5v5 points (G+A) per 100 individual shot attempts. Measures shot
+    efficiency; playmakers score high. Ranked/displayed only for skaters with ≥ 50
+    attempts in the window so small samples don't distort the leaderboard sort.
+- New `events_5v5.ishots` column (individual 5v5 shot attempts, credited to the
+  shooter; a blocked shot still credits the blocker's `blocks`). New
+  `points_per100_shots` helper and `events_per60` now emits `ishots_per60`.
+
+### Removed
+- `PPI` column from the `/skaters` leaderboard (its `PPI+`/`wPPI+` companions and the
+  player-page PPI cell remain).
+
 ## [2.2.0] - 2026-06-18
 ### Added
 - Individual player page (`/player/<id>`) now shows, each with a league rank:
