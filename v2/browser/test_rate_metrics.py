@@ -132,3 +132,24 @@ def test_count_5v5_events_counts_individual_shot_attempts():
     assert out.loc[50, "ishots"] == 4         # SOG + missed + blocked(as shooter) + goal; 1441 excluded
     assert out.loc[60, "blocks"] == 1         # blocker still credited a block
     assert out.loc[60, "ishots"] == 0         # blocker did not attempt the shot
+
+
+def test_points_per100_shots_ratio_and_floor():
+    from metrics import points_per100_shots
+
+    points = pd.DataFrame([
+        {"gameId": 1, "playerId": 1, "points": 10},
+        {"gameId": 1, "playerId": 2, "points": 3},
+        {"gameId": 1, "playerId": 3, "points": 2},
+    ])
+    ishots = pd.DataFrame([
+        {"gameId": 1, "playerId": 1, "ishots": 50},
+        {"gameId": 1, "playerId": 2, "ishots": 20},
+        {"gameId": 1, "playerId": 3, "ishots": 0},
+    ])
+    out = points_per100_shots(points, ishots, min_attempts=50)
+    assert round(out.loc[1, "p_per100"], 1) == 20.0          # 10 * 100 / 50
+    assert out.loc[1, "p_per100_ranked"] == 20.0             # 50 >= floor -> ranked
+    assert round(out.loc[2, "p_per100"], 1) == 15.0          # 3 * 100 / 20
+    assert pd.isna(out.loc[2, "p_per100_ranked"])            # 20 < 50 -> unranked
+    assert pd.isna(out.loc[3, "p_per100"])                   # 0 attempts -> NaN value
