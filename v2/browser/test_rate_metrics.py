@@ -91,7 +91,7 @@ def test_carryover_per_player_missing_bursts_is_nan():
 
 def test_events_per60_uses_full_toi_denominator():
     events = pd.DataFrame([
-        {"gameId": 1, "playerId": 7, "hits": 3, "blocks": 1, "takeaways": 0, "giveaways": 2},
+        {"gameId": 1, "playerId": 7, "hits": 3, "blocks": 1, "takeaways": 0, "giveaways": 2, "ishots": 4},
     ])
     # player 7 played two games at 5v5: 1200s total -> 3 hits over 1200s = 9.0/60min
     toi = pd.DataFrame([
@@ -99,9 +99,10 @@ def test_events_per60_uses_full_toi_denominator():
         {"gameId": 2, "playerId": 7, "toi_seconds": 600},
     ])
     out = events_per60(events, toi)
-    assert round(out.loc[7, "hits_per60"], 2) == 9.0      # 3 * 3600 / 1200
-    assert round(out.loc[7, "gv_per60"], 2) == 6.0        # 2 * 3600 / 1200
+    assert round(out.loc[7, "hits_per60"], 2) == 9.0       # 3 * 3600 / 1200
+    assert round(out.loc[7, "gv_per60"], 2) == 6.0         # 2 * 3600 / 1200
     assert out.loc[7, "blocks_per60"] > 0
+    assert round(out.loc[7, "ishots_per60"], 2) == 12.0    # 4 * 3600 / 1200
 
 
 def test_corsi_per60_restricts_denominator_to_covered_games():
@@ -117,3 +118,17 @@ def test_corsi_per60_restricts_denominator_to_covered_games():
     assert round(out.loc[5, "cf_per60"], 1) == 60.0   # 10 * 3600 / 600 (game 1 only)
     assert round(out.loc[5, "ca_per60"], 1) == 30.0   # 5  * 3600 / 600
     assert round(out.loc[5, "cf_pct"], 3) == 0.667    # 10 / 15
+
+
+def test_count_5v5_events_counts_individual_shot_attempts():
+    df = pd.DataFrame([
+        {"typeDescKey": "shot-on-goal", "situationCode": "1551", "details.shootingPlayerId": 50, "details.scoringPlayerId": None, "details.blockingPlayerId": None},
+        {"typeDescKey": "missed-shot",  "situationCode": "1551", "details.shootingPlayerId": 50, "details.scoringPlayerId": None, "details.blockingPlayerId": None},
+        {"typeDescKey": "blocked-shot", "situationCode": "1551", "details.shootingPlayerId": 50, "details.scoringPlayerId": None, "details.blockingPlayerId": 60},
+        {"typeDescKey": "goal",         "situationCode": "1551", "details.shootingPlayerId": None, "details.scoringPlayerId": 50, "details.blockingPlayerId": None},
+        {"typeDescKey": "shot-on-goal", "situationCode": "1441", "details.shootingPlayerId": 50, "details.scoringPlayerId": None, "details.blockingPlayerId": None},  # not 5v5
+    ])
+    out = count_5v5_events(df, game_id=2025020001).set_index("playerId")
+    assert out.loc[50, "ishots"] == 4         # SOG + missed + blocked(as shooter) + goal; 1441 excluded
+    assert out.loc[60, "blocks"] == 1         # blocker still credited a block
+    assert out.loc[60, "ishots"] == 0         # blocker did not attempt the shot

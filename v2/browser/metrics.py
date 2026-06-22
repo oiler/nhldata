@@ -100,21 +100,22 @@ def events_per60(events_df: pd.DataFrame, toi_df: pd.DataFrame) -> pd.DataFrame:
     """Per-60 individual-event rates over all of a player's 5v5 TOI.
 
     Args:
-        events_df: per-(gameId, playerId) with hits, blocks, takeaways, giveaways.
+        events_df: per-(gameId, playerId) with hits, blocks, takeaways, giveaways, ishots.
         toi_df:    per-(gameId, playerId) with toi_seconds (denominator = all filtered games).
 
     Returns:
-        Indexed by playerId: hits_per60, blocks_per60, tk_per60, gv_per60.
+        Indexed by playerId: hits_per60, blocks_per60, tk_per60, gv_per60, ishots_per60.
     """
     toi = toi_df.groupby("playerId")["toi_seconds"].sum()
-    sums = events_df.groupby("playerId")[["hits", "blocks", "takeaways", "giveaways"]].sum()
+    sums = events_df.groupby("playerId")[["hits", "blocks", "takeaways", "giveaways", "ishots"]].sum()
     out = sums.reindex(toi.index).fillna(0).join(toi.rename("toi"))
     denom = out["toi"].where(out["toi"] > 0)
     return pd.DataFrame({
-        "hits_per60":   out["hits"]   * 3600 / denom,
-        "blocks_per60": out["blocks"] * 3600 / denom,
-        "tk_per60":     out["takeaways"] * 3600 / denom,
-        "gv_per60":     out["giveaways"] * 3600 / denom,
+        "hits_per60":    out["hits"]       * 3600 / denom,
+        "blocks_per60":  out["blocks"]     * 3600 / denom,
+        "tk_per60":      out["takeaways"]  * 3600 / denom,
+        "gv_per60":      out["giveaways"]  * 3600 / denom,
+        "ishots_per60":  out["ishots"]     * 3600 / denom,
     })
 
 

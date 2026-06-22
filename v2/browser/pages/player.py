@@ -78,7 +78,7 @@ WHERE c.position IN ('F', 'D')
 _ALL_COMP_HA_HOME = " AND c.team = g.homeTeam_abbrev"
 _ALL_COMP_HA_AWAY = " AND c.team = g.awayTeam_abbrev"
 
-_EVENTS_SQL = "SELECT gameId, playerId, hits, blocks, takeaways, giveaways FROM events_5v5"
+_EVENTS_SQL = "SELECT gameId, playerId, hits, blocks, takeaways, giveaways, ishots FROM events_5v5"
 _ONICE_SQL = "SELECT gameId, playerId, cf, ca FROM onice_5v5"
 
 
