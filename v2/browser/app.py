@@ -144,6 +144,19 @@ app.layout = html.Div([
                 "A single peak value across all 2025-26 regular-season ice time. "
                 "League average ≈ 22.2; McDavid leads at 24.6."
             ),
+            html.Dt("iSA/60"),
+            html.Dd(
+                "Individual shot attempts per 60 minutes of 5v5 ice time — shots on goal, "
+                "missed shots, and the player's own attempts that were blocked, plus goals. "
+                "Measures how much shot volume a skater generates himself."
+            ),
+            html.Dt("P/100iSA"),
+            html.Dd(
+                "5v5 points (goals + assists) per 100 individual shot attempts. Measures how "
+                "productive each attempt is; playmakers score high. On the leaderboard, shown "
+                "only for skaters with at least 50 attempts in the window so small samples "
+                "don't distort the sort."
+            ),
             html.Dt("tTOI%"),
             html.Dd(
                 "Share of the team's 5v5 ice time played by this skater per game. "
