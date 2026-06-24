@@ -57,6 +57,27 @@ def _make_test_db(tmp_path: Path) -> Path:
     return db_path
 
 
+def test_season_year_defaults_to_2025(monkeypatch):
+    from v2.edge.compute_burst_rates import season_year
+
+    monkeypatch.delenv("NHL_SEASON", raising=False)
+    assert season_year() == "2025"
+
+
+def test_season_year_honors_env(monkeypatch):
+    from v2.edge.compute_burst_rates import season_year
+
+    monkeypatch.setenv("NHL_SEASON", "2024")
+    assert season_year() == "2024"
+
+
+def test_edge_season_derives_8digit_from_year():
+    from v2.edge.compute_burst_rates import edge_season
+
+    assert edge_season("2024") == "20242025"
+    assert edge_season("2025") == "20252026"
+
+
 def test_list_skater_ids_returns_distinct_skaters(tmp_path):
     from v2.edge.compute_burst_rates import list_skater_ids
 

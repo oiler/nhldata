@@ -1,16 +1,30 @@
 """Compute per-player bursts-over-20mph per 60 minutes of all-strengths TOI.
 
 Inputs: cached EDGE skater-detail JSONs + league.db competition table.
-Output: data/2025/generated/edge/player_bursts.csv
+Output: data/<season>/generated/edge/player_bursts.csv
+
+Season is the 4-digit start year from NHL_SEASON (default 2025).
 """
 
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 from pathlib import Path
 
 import pandas as pd
+
+
+def season_year(default: str = "2025") -> str:
+    """4-digit start year of the active season, e.g. '2024'. Honors NHL_SEASON."""
+    return os.environ.get("NHL_SEASON", default)
+
+
+def edge_season(year: str | None = None) -> str:
+    """8-digit EDGE season string from a 4-digit start year, e.g. '2024' -> '20242025'."""
+    y = int(year or season_year())
+    return f"{y}{y + 1}"
 
 
 def list_skater_ids(db_path: Path) -> list[int]:
@@ -118,9 +132,10 @@ def build_burst_table(db_path: Path, edge_dir: Path) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-DB_PATH        = Path("data/2025/generated/browser/league.db")
-EDGE_DIR       = Path("data/2025/edge/skater_detail")
-OUTPUT_DIR     = Path("data/2025/generated/edge")
+_YEAR          = season_year()
+DB_PATH        = Path(f"data/{_YEAR}/generated/browser/league.db")
+EDGE_DIR       = Path(f"data/{_YEAR}/edge/skater_detail")
+OUTPUT_DIR     = Path(f"data/{_YEAR}/generated/edge")
 OUTPUT_CSV     = OUTPUT_DIR / "player_bursts.csv"
 
 

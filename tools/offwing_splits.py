@@ -20,11 +20,14 @@ from __future__ import annotations
 
 import json
 import math
+import os
 from pathlib import Path
 
 import pandas as pd
 
-DATA_DIR = Path(__file__).resolve().parents[1] / "data" / "2025"
+# Season is the 4-digit start year from NHL_SEASON (default 2025).
+_SEASON = os.environ.get("NHL_SEASON", "2025")
+DATA_DIR = Path(__file__).resolve().parents[1] / "data" / _SEASON
 OUT_DIR = DATA_DIR / "generated" / "offwing"
 
 NET_X = 89.0

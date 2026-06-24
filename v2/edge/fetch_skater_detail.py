@@ -1,8 +1,9 @@
-"""Fetch and cache NHL EDGE skater-detail JSON for every active 2025-26 skater.
+"""Fetch and cache NHL EDGE skater-detail JSON for every active skater.
 
-Reads player IDs from data/2025/generated/browser/league.db (competition table).
-Writes one JSON per player to data/2025/edge/skater_detail/{playerId}.json.
+Reads player IDs from data/<season>/generated/browser/league.db (competition table).
+Writes one JSON per player to data/<season>/edge/skater_detail/{playerId}.json.
 
+Season is the 4-digit start year from NHL_SEASON (default 2025).
 Re-runs are safe: existing files are skipped (resume-on-rerun).
 """
 
@@ -15,22 +16,23 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-from v2.edge.compute_burst_rates import list_skater_ids
+from v2.edge.compute_burst_rates import edge_season, list_skater_ids, season_year
 
 USER_AGENT = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
     "AppleWebKit/537.36 (KHTML, like Gecko) "
     "Chrome/120.0.0.0 Safari/537.36"
 )
-SEASON      = "20252026"
+SEASON      = edge_season()
 GAME_TYPE   = 2
 SLEEP_SEC   = 0.3       # ~3.3 req/s — empirically clean
 MAX_RETRIES = 3
 RETRY_BACKOFF_SEC = 5
 HTTP_TIMEOUT_SEC  = 15
 
-DB_PATH    = Path("data/2025/generated/browser/league.db")
-OUTPUT_DIR = Path("data/2025/edge/skater_detail")
+_YEAR      = season_year()
+DB_PATH    = Path(f"data/{_YEAR}/generated/browser/league.db")
+OUTPUT_DIR = Path(f"data/{_YEAR}/edge/skater_detail")
 
 
 def build_url(player_id: int, season: str = SEASON, game_type: int = GAME_TYPE) -> str:
