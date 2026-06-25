@@ -35,6 +35,7 @@ Output:
 """
 
 import sys
+import os
 import json
 import time
 import re
@@ -52,12 +53,12 @@ except ImportError:
 # ============================================================================
 # CONFIGURATION - Edit these values as needed
 # ============================================================================
-SEASON = "2025"  # Current season year
+SEASON = os.environ.get("NHL_SEASON", "2025")  # 4-digit start year; override via NHL_SEASON
 GAME_TYPE = "02"  # 01=Preseason, 02=Regular Season, 03=Playoffs, 04=All-Star
 RATE_LIMIT_SECONDS = 9  # Delay between API requests
 
 # HTML Shifts Configuration
-SHIFT_RATE_LIMIT_SECONDS = 5  # Delay between HTML shift requests
+SHIFT_RATE_LIMIT_SECONDS = int(os.environ.get("NHL_SHIFT_DELAY", "5"))  # Delay between HTML shift requests; override via NHL_SHIFT_DELAY
 SHIFT_RETRY_ATTEMPTS = 5  # Number of retry attempts for shift fetches
 SHIFT_RETRY_DELAY_SECONDS = 10  # Delay between retries
 
