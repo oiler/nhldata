@@ -40,6 +40,34 @@ def year_pair_r(a: pd.DataFrame, b: pd.DataFrame, col: str,
     return r, len(merged)
 
 
+def common_population_r(terms_a: pd.DataFrame, terms_b: pd.DataFrame,
+                         gsax_a: pd.DataFrame, gsax_b: pd.DataFrame,
+                         min_shots: int = 1000) -> tuple[float, float, int]:
+    """Goal-layer term_indep r and GSAx r over the SAME goalie population.
+
+    Population = goalies present in both seasons' goalie_terms (goal layer)
+    and both seasons' gsax tables, with >= min_shots unblocked shots (gsax
+    'shots' column) in both seasons. Using gsax shots (not the goal layer's
+    on-net n_shots) for the qualifying threshold keeps the two correlations
+    comparable on a common footing.
+    """
+    ga = gsax_a[gsax_a["shots"] >= min_shots][["goalie_id", "shots", "gsax_per100"]]
+    gb = gsax_b[gsax_b["shots"] >= min_shots][["goalie_id", "shots", "gsax_per100"]]
+    g_merged = ga.merge(gb, on="goalie_id", suffixes=("_a", "_b"))
+
+    ta = terms_a[["goalie_id", "term_indep"]]
+    tb = terms_b[["goalie_id", "term_indep"]]
+    t_merged = ta.merge(tb, on="goalie_id", suffixes=("_a", "_b"))
+
+    common = g_merged.merge(t_merged, on="goalie_id")
+    n = len(common)
+    if n < 3:
+        return float("nan"), float("nan"), n
+    r_goal = float(np.corrcoef(common["term_indep_a"], common["term_indep_b"])[0, 1])
+    r_gsax = float(np.corrcoef(common["gsax_per100_a"], common["gsax_per100_b"])[0, 1])
+    return r_goal, r_gsax, n
+
+
 def main() -> None:
     lines = []
     terms = {s: pd.read_csv(GEN / f"goalie_terms_{s}.csv") for s in SEASONS}
@@ -67,6 +95,14 @@ def main() -> None:
         rs.append(f"{s1}->{s2}: r={r:.3f} (n={n})")
     lines.append("GSAx baseline: " + "  ".join(rs))
 
+    lines.append("\n=== 2b. Common-population goal-layer vs GSAx "
+                 "(>=1000 unblocked shots, same goalies both metrics) ===")
+    for s1, s2 in zip(SEASONS, SEASONS[1:]):
+        ta = terms[s1][terms[s1]["layer"] == "goal"]
+        tb = terms[s2][terms[s2]["layer"] == "goal"]
+        r_goal, r_gsax, n = common_population_r(ta, tb, gsax[s1], gsax[s2])
+        lines.append(f"{s1}->{s2}: goal r={r_goal:.3f}  gsax r={r_gsax:.3f}  (n={n})")
+
     lines.append("\n=== 3. Split-half (2023, even/odd game_id) ===")
     df23 = pd.read_csv(GEN / "shots_2023.csv")
     for layer in ("goal", "freeze"):
@@ -90,6 +126,17 @@ def main() -> None:
     lines.append("\n=== 5. Gate anchors (spec) ===")
     lines.append("freeze year-pair expected ~0.5+; GSAx-style stopping ~0.12.")
     lines.append("Gate question: does goal-layer signal_share / year-pair r beat GSAx?")
+    lines.append("")
+    lines.append(
+        "CAVEAT - signal_share on shrunken terms is a one-sided test with a "
+        "high zero-threshold: with shrinkage weight w = I/(I+lambda), "
+        "observed variance compresses ~w^2 while mean(se^2) compresses ~w, "
+        "so signal_share reads 0.000 whenever true skill variance is below "
+        "((1-w)/w)*noise - a metric with true reliability ~0.5 can report "
+        "0.000 at w=0.5. Read 0.000 as 'not detectably above heavy-shrinkage "
+        "noise', NOT 'no skill exists'. Weight the year-pair and split-half "
+        "correlations more heavily."
+    )
 
     report = "\n".join(lines)
     print(report)
