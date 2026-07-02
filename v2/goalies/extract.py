@@ -25,12 +25,19 @@ def _event_stream(plays):
 
 
 def extract_goalie_shots(game: dict) -> list[dict]:
+    """Extract every unblocked shot faced by a goalie in one game.
+
+    Prior-event fields (`dt_prev`, `prev_type`, `prev_same_team`,
+    `prev_x_norm`/`prev_y_norm`) reference the nearest preceding
+    COORDINATE-BEARING play in the same period -- events without
+    coordinates (e.g. most stoppages) are skipped when looking back.
+    """
     home_id = game["homeTeam"]["id"]
     positions = {rs["playerId"]: rs["positionCode"] for rs in game["rosterSpots"]}
     stream = _event_stream(game["plays"])
     rows = []
     away_score = home_score = 0
-    prev_event = None  # (time_s, type, owner, period)
+    prev_event = None  # (time_s, type, owner, period, x, y)
     stream_idx = 0
 
     for play in game["plays"]:

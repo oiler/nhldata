@@ -7,7 +7,6 @@ This is the load-bearing correction for every downstream repeatability claim.
 Usage: python3 v2/goalies/rink_adjust.py
 """
 
-import sys
 from pathlib import Path
 
 import numpy as np
@@ -25,7 +24,14 @@ def fit_quantile_map(arena_distances: np.ndarray, reference_distances: np.ndarra
 
 
 def apply_quantile_map(distances: np.ndarray, qmap: np.ndarray) -> np.ndarray:
-    return np.interp(distances, qmap[:, 0], qmap[:, 1])
+    a_q, r_q = qmap[:, 0], qmap[:, 1]
+    out = np.interp(distances, a_q, r_q)
+    # np.interp clamps out-of-range inputs to the endpoint VALUE, collapsing
+    # everything below q01 (the closest, most dangerous shots) to a constant.
+    # Extend by the endpoint DELTA instead so ordering/spacing is preserved.
+    out = np.where(distances < a_q[0], distances + (r_q[0] - a_q[0]), out)
+    out = np.where(distances > a_q[-1], distances + (r_q[-1] - a_q[-1]), out)
+    return out
 
 
 def fit_all_arenas(df: pd.DataFrame) -> dict[str, np.ndarray]:
