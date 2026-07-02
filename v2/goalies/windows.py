@@ -1,6 +1,17 @@
-"""Post-save event windows: freeze (Cane 2s stoppage) and rebound generation (3s)."""
+"""Post-save event windows: freeze (era-robust 5s stoppage) and rebound generation (3s).
 
-FREEZE_WINDOW_S = 2
+FREEZE_WINDOW_S is an era-robust widening of Cane's original 2s window. NHL event
+timestamps shifted ~1-2s later starting in 2023 (the "tracking era"): the save-to-
+stoppage dt distribution moved right across seasons, even though the underlying share
+of saves whose next event is a stoppage stayed stable (~0.36-0.38) across the same
+seasons. A fixed 2s window therefore under-detects freezes in 2023+ relative to
+2021-22, producing a spurious downward trend in freeze% that is a measurement
+artifact of timestamping, not a change in on-ice behavior. Widening to 5s captures
+~86% of save-adjacent stoppages on both sides of the era boundary, restoring
+cross-season comparability.
+"""
+
+FREEZE_WINDOW_S = 5
 REBOUND_WINDOW_S = 3
 CORSI_EVENTS = {"goal", "shot-on-goal", "missed-shot", "blocked-shot"}
 STOP_EVENTS = {"stoppage", "period-end", "game-end"}

@@ -1,13 +1,23 @@
 from v2.goalies.windows import detect_freeze, detect_rebound
 
 
-def test_freeze_stoppage_within_2s():
+def test_freeze_stoppage_within_window():
     events = [(101, "stoppage", None, 1)]
     assert detect_freeze(events, save_time_s=100, period=1) is True
 
 
 def test_no_freeze_when_stoppage_late():
-    events = [(103, "stoppage", None, 1)]
+    events = [(106, "stoppage", None, 1)]
+    assert detect_freeze(events, save_time_s=100, period=1) is False
+
+
+def test_freeze_stoppage_at_window_boundary():
+    events = [(105, "stoppage", None, 1)]
+    assert detect_freeze(events, save_time_s=100, period=1) is True
+
+
+def test_no_freeze_just_past_window_boundary():
+    events = [(106, "stoppage", None, 1)]
     assert detect_freeze(events, save_time_s=100, period=1) is False
 
 
