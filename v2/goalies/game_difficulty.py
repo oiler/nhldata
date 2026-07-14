@@ -15,13 +15,11 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT))
+from v2.goalies.features import CORSI_PREV  # noqa: E402
 from v2.goalies.gsax_baseline import blind_shot_xg  # noqa: E402
 
 GEN = ROOT / "data" / "generated" / "goalies"
 SEASONS = ("2021", "2022", "2023", "2024", "2025")
-
-# Same-team prior CORSI event (features.py:17); is_rebound is dt_prev <= 3 (features.py:46).
-CORSI_PREV = {"goal", "shot-on-goal", "missed-shot", "blocked-shot"}
 
 
 def game_rows(shots: pd.DataFrame, xg: np.ndarray, toi: pd.DataFrame) -> pd.DataFrame:
