@@ -27,6 +27,7 @@ Examples:
 """
 
 import sys
+import os
 import json
 import csv
 import time
@@ -386,6 +387,21 @@ def find_missing_player_ids(season: str) -> List[int]:
     return missing
 
 
+def freeze_marker_path(players_dir: Path) -> Path:
+    """Sentinel marking a season's player snapshot as frozen (point-in-time, do not overwrite)."""
+    return players_dir / ".snapshot_frozen"
+
+
+def is_snapshot_frozen(players_dir: Path) -> bool:
+    return freeze_marker_path(players_dir).exists()
+
+
+def should_block_overwrite(mode: str, frozen: bool, force: bool) -> bool:
+    """`all`/`targeted` runs overwrite raw player files with *current* bio; block them for a
+    frozen (completed) season unless forced. `backfill` is additive and always allowed."""
+    return mode in ("all", "targeted") and frozen and not force
+
+
 def main():
     """Main entry point."""
     if len(sys.argv) == 2:
@@ -402,6 +418,15 @@ def main():
 
     season_id = get_season_id(season)
     paths = setup_directories(season)
+
+    force = os.environ.get("NHL_FORCE_REFETCH") == "1"
+    if should_block_overwrite(mode, is_snapshot_frozen(paths["raw"]), force):
+        print(f"\n[frozen] Season {season}'s player snapshot is frozen — point-in-time height/weight preserved.")
+        print(f"  Marker: {freeze_marker_path(paths['raw'])}")
+        print(f"  Skipping full/targeted refetch so it isn't overwritten with current bio data.")
+        print(f"  Use `backfill {season}` to add missing players, or set NHL_FORCE_REFETCH=1 to override.")
+        sys.exit(0)
+
     team_map = build_team_abbrev_to_id_map(season)
 
     # Resolve player IDs
