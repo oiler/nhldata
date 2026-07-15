@@ -7,9 +7,9 @@ Usage: python3 v2/goalies/leverage.py
 """
 
 import json
-import sys
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent.parent
@@ -44,6 +44,35 @@ def leverage_weight(row, table: pd.DataFrame) -> float:
     if before is None or after is None:
         return 0.0
     return before - after
+
+
+def _wp_lut(wp: pd.DataFrame) -> dict:
+    """(score_diff_c, period_c, time_bucket) -> wp, or NaN if n < MIN_CELL."""
+    return {(int(r.score_diff_c), int(r.period_c), int(r.time_bucket)):
+            (float(r.wp) if r.n >= MIN_CELL else np.nan)
+            for r in wp.itertuples()}
+
+
+def leverage_weight_vectorized(shots: pd.DataFrame, wp: pd.DataFrame) -> np.ndarray:
+    """Vectorized equivalent of leverage_weight applied per-row.
+
+    The naive per-row loop calls `_cell`, which filters the whole wp_table
+    on every invocation — O(shots * wp_table) and far too slow across
+    ~560k shots. This builds the (score_diff_c, period_c, time_bucket) -> wp
+    lookup once and vectorizes the same clip/bucket logic, including the
+    n < MIN_CELL guard and the max(-3, sd - 1) clip for the "after" cell.
+    Missing keys map to NaN just like sub-threshold cells (pd.Series.map
+    default), so both cases fall through to the same 0.0 guard.
+    """
+    lut = _wp_lut(wp)
+    sd = shots["score_diff"].clip(-3, 3).astype(int)
+    p = shots["period"].clip(1, 4).astype(int)
+    tb = (shots["time_s"] // 300).astype(int)
+    sd_after = (sd - 1).clip(lower=-3)
+
+    before = pd.Series(list(zip(sd, p, tb)), index=shots.index).map(lut)
+    after = pd.Series(list(zip(sd_after, p, tb)), index=shots.index).map(lut)
+    return (before - after).fillna(0.0).to_numpy()
 
 
 def game_winners(season: str) -> pd.DataFrame:

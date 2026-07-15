@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from v2.goalies.leverage import leverage_weight, wp_table
+from v2.goalies.leverage import leverage_weight, leverage_weight_vectorized, wp_table
 
 
 def _states():
@@ -39,3 +39,17 @@ def test_leverage_weight_is_wp_drop_of_a_goal_against():
 def test_leverage_weight_missing_cell_returns_zero():
     t = wp_table(_states())
     assert leverage_weight({"score_diff": -2, "period": 1, "time_s": 0}, t) == 0.0
+
+
+def test_leverage_weight_vectorized_matches_row_loop():
+    t = wp_table(_states())
+    grid = pd.DataFrame([
+        {"score_diff": 0, "period": 3, "time_s": 900},   # in-range, tied
+        {"score_diff": 1, "period": 3, "time_s": 900},   # in-range, up 1
+        {"score_diff": -5, "period": 3, "time_s": 900},  # out-of-range score_diff
+        {"score_diff": 0, "period": 6, "time_s": 900},   # out-of-range period
+        {"score_diff": -2, "period": 1, "time_s": 0},    # sub-MIN_CELL / missing cell
+    ])
+    expected = grid.apply(lambda row: leverage_weight(row, t), axis=1).to_numpy()
+    actual = leverage_weight_vectorized(grid, t)
+    assert actual == pytest.approx(expected)

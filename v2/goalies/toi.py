@@ -4,7 +4,6 @@ Usage: python3 v2/goalies/toi.py
 """
 
 import json
-import sys
 from pathlib import Path
 
 import pandas as pd

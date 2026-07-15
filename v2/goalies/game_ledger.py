@@ -16,7 +16,7 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT))
 from v2.goalies.gsax_baseline import blind_shot_xg  # noqa: E402
-from v2.goalies.leverage import MIN_CELL  # noqa: E402
+from v2.goalies.leverage import leverage_weight_vectorized  # noqa: E402
 
 GEN = ROOT / "data" / "generated" / "goalies"
 SEASONS = ("2021", "2022", "2023", "2024", "2025")
@@ -33,35 +33,6 @@ def ledger_rows(shots: pd.DataFrame, xg: np.ndarray, lev: np.ndarray) -> pd.Data
     g["gsax_game"] = g["xga"] - g["ga"]
     g["perf_z"] = np.where(g["var_sum"] > 0, g["gsax_game"] / np.sqrt(g["var_sum"]), np.nan)
     return g.drop(columns=["var_sum"])
-
-
-def _wp_lut(wp: pd.DataFrame) -> dict:
-    """(score_diff_c, period_c, time_bucket) -> wp, or NaN if n < MIN_CELL."""
-    return {(int(r.score_diff_c), int(r.period_c), int(r.time_bucket)):
-            (float(r.wp) if r.n >= MIN_CELL else np.nan)
-            for r in wp.itertuples()}
-
-
-def leverage_weight_vectorized(shots: pd.DataFrame, wp: pd.DataFrame) -> np.ndarray:
-    """Vectorized equivalent of leverage.leverage_weight applied per-row.
-
-    The naive per-row loop calls `_cell`, which filters the whole wp_table
-    on every invocation — O(shots * wp_table) and far too slow across
-    ~560k shots. This builds the (score_diff_c, period_c, time_bucket) -> wp
-    lookup once and vectorizes the same clip/bucket logic, including the
-    n < MIN_CELL guard and the max(-3, sd - 1) clip for the "after" cell.
-    Missing keys map to NaN just like sub-threshold cells (pd.Series.map
-    default), so both cases fall through to the same 0.0 guard.
-    """
-    lut = _wp_lut(wp)
-    sd = shots["score_diff"].clip(-3, 3).astype(int)
-    p = shots["period"].clip(1, 4).astype(int)
-    tb = (shots["time_s"] // 300).astype(int)
-    sd_after = (sd - 1).clip(lower=-3)
-
-    before = pd.Series(list(zip(sd, p, tb)), index=shots.index).map(lut)
-    after = pd.Series(list(zip(sd_after, p, tb)), index=shots.index).map(lut)
-    return (before - after).fillna(0.0).to_numpy()
 
 
 def main() -> None:
