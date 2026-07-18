@@ -104,6 +104,17 @@ def test_paired_bootstrap_recovers_sign():
     assert r["lo90"] > 0                            # CI excludes zero
 
 
+def test_paired_bootstrap_degenerate_resamples_return_nan_bounds():
+    cand = np.array([1.0, 2.0])
+    base = np.array([1.0, 2.0])
+    y = np.array([0.0, 0.0])
+    w = np.array([1.0, 1.0])
+    r = paired_bootstrap_dr(cand, base, y, w, n_boot=100)
+    assert np.isnan(r["lo90"])
+    assert np.isnan(r["hi90"])
+    assert r["n_cases"] == 2
+
+
 def test_incremental_beta_zero_when_candidate_is_noise():
     rng = np.random.default_rng(2)
     y = rng.normal(size=500)
