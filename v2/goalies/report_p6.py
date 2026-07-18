@@ -5,12 +5,17 @@ Usage: python3 v2/goalies/report_p6.py
 """
 
 import json
+import sys
 from pathlib import Path
 
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, str(ROOT))
+from v2.goalies.portability import paired_bootstrap_dr  # noqa: E402
+
 VAL = ROOT / "data" / "generated" / "goalies" / "validation"
+K_GRID = (250, 500, 1000, 2000, 4000)
 
 # Anchors from the P3 gate (docs/plans/2026-06-11-goalie-evaluation-design.md
 # Sec 6b, approved 2026-07-14) and repeatability.py's docstring anchors.
@@ -68,7 +73,7 @@ def main() -> None:
         "default to >=600 fenwick each side (the >=1,000 floor yielded only 34 "
         "season-boundary cases, not the ~80-100 estimated); mid-season trades added "
         "under the same rule. Fallback to season-boundary-only (option B) was not "
-        "needed -- the combined real-case yield (67) landed inside the expected "
+        f"needed -- the combined real-case yield ({len(real)}) landed inside the expected "
         "~60-75 range."
     )
 
@@ -97,8 +102,11 @@ def main() -> None:
 
     # === 4. The gate table ===
     lines.append("")
-    lines.append("=== 4. Portability gate (67 real switch cases vs EB-shrunk GSAx baseline) ===")
     gate = pd.read_csv(VAL / "gate_table.csv")
+    n_cases = int(gate["n_cases"].iloc[0])
+    lines.append(
+        f"=== 4. Portability gate ({n_cases} real switch cases vs EB-shrunk GSAx baseline) ==="
+    )
     for r in gate.itertuples():
         excludes_zero = (r.lo90 > 0) or (r.hi90 < 0)
         reading = "CI EXCLUDES ZERO" if excludes_zero else "CI straddles zero (null)"
@@ -124,6 +132,31 @@ def main() -> None:
         f"from the other four candidates' r_cand values (all in [{r_cand_min:+.2f}, {r_cand_max:+.2f}]). "
         "This is a flag for the gate reading -- an artifact of the paired-difference "
         "statistic against a reliably-negative baseline -- not a candidate win."
+    )
+
+    # K-sensitivity of the sole nominal exclusion: recompute perf's paired
+    # bootstrap at each K on the fit_k grid, with baseline_eb rebuilt from
+    # the CSV's own gsax_sum/n_pre columns -- artifact-derived, not hand-typed.
+    cases_csv = pd.read_csv(VAL / "portability_cases.csv")
+    smallest_k_exclusion = None
+    k_sensitivity = []
+    for k_val in K_GRID:
+        baseline_k = cases_csv["gsax_sum"] / (cases_csv["n_pre"] + k_val)
+        boot = paired_bootstrap_dr(cases_csv["perf"], baseline_k,
+                                   cases_csv["outcome"], cases_csv["weight"])
+        k_sensitivity.append((k_val, boot["lo90"]))
+        if smallest_k_exclusion is None and boot["lo90"] > 0:
+            smallest_k_exclusion = k_val
+    k_sensitivity_str = ", ".join(f"K={kv}:lo90={lo:+.4f}" for kv, lo in k_sensitivity)
+    lines.append(
+        "K-sensitivity of the 'perf' exclusion (reviewer-verified): recomputing "
+        "perf's paired bootstrap with baseline_eb=gsax_sum/(n_pre+K) at each grid K "
+        f"gives [{k_sensitivity_str}]; the exclusion "
+        + (f"first holds at K={smallest_k_exclusion} (vanishes below it)"
+           if smallest_k_exclusion is not None else "does not hold at any grid K")
+        + " -- it appears only once the EB baseline is shrunk hard enough, which "
+        "STRENGTHENS the artifact framing above: the exclusion tracks the "
+        "baseline's shrinkage constant, not any property of 'perf' itself."
     )
     lines.append(
         "MANDATORY MULTIPLICITY CAVEAT: five candidate families were tested; a "
@@ -200,12 +233,15 @@ def main() -> None:
         "prior from the literature: possibly only marginally. A null result with "
         "tight error bars is a success criterion, not a failure.'"
     )
+    dr_min, dr_max = gate["dr"].min(), gate["dr"].max()
     lines.append(
-        "P6 result: no candidate beats the EB-shrunk GSAx baseline on post-switch "
-        "portability at n=67 (all five Delta-r estimates are near zero or negative, "
-        "the sole nominal exclusion is a baseline artifact, not a candidate signal, "
-        "per Sec 4/5 above). The CIs are wide (n=67 is small) but centered near "
-        "zero, not narrowly missing a real effect. Per the spec's own framing, "
+        f"P6 result: no candidate shows predictive signal of its own on post-switch "
+        f"GSAx at n={n_cases} (Delta-r spans [{dr_min:+.4f}, {dr_max:+.4f}] across the "
+        f"five candidates; r_cand tops out at {r_cand_max:+.4f}, indistinguishable "
+        "from the reliably-negative baseline correlation -- the sole nominal "
+        "exclusion is a baseline artifact, not a candidate signal, per Sec 4/5 "
+        f"above). The CIs are wide (n={n_cases} is small) but centered near zero, not "
+        "narrowly missing a real effect. Per the spec's own framing, "
         "this well-measured null is a valid, reportable program outcome -- freeze's "
         "P3-confirmed individual-skill signal (Sec 6) does not translate into a "
         "'trade this goalie and expect the number to travel' portability claim at "

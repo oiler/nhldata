@@ -36,6 +36,50 @@ def test_case_outcome_post_stint_only():
     assert r["outcome"] == pytest.approx((0.2 - 0.0) / 2)
 
 
+def test_case_estimates_nonswitch_outcome_restricted_but_real_case_untouched():
+    # Registered pseudo-case post window = first_post_season only
+    # (switch_registry.nonswitch_pseudo_cases); a goalie who stays on the
+    # same team into season t+2 must not have those shots leak into the
+    # outcome. Real cases (offseason/midseason) keep the full post-stint
+    # window with no season cap -- same goalie/team shape, both seasons used.
+    cases = pd.DataFrame([
+        {"case_id": "N1-2023-06-01", "goalie_id": 1, "switch_type": "nonswitch",
+         "switch_date": "2023-06-01", "pre_team": "TOR", "post_team": "TOR",
+         "last_pre_season": 2022, "first_post_season": 2023},
+        {"case_id": "S2-2023-06-01", "goalie_id": 2, "switch_type": "offseason",
+         "switch_date": "2023-06-01", "pre_team": "VAN", "post_team": "TOR",
+         "last_pre_season": 2022, "first_post_season": 2023},
+    ])
+    shots_xg = pd.DataFrame([
+        {"season": 2023, "game_id": 200, "goalie_id": 1, "game_date": "2023-10-15",
+         "fenwick_flag": True, "xg": 0.10, "is_goal": False},
+        {"season": 2024, "game_id": 300, "goalie_id": 1, "game_date": "2024-10-15",
+         "fenwick_flag": True, "xg": 0.10, "is_goal": True},
+        {"season": 2023, "game_id": 400, "goalie_id": 2, "game_date": "2023-10-15",
+         "fenwick_flag": True, "xg": 0.10, "is_goal": False},
+        {"season": 2024, "game_id": 500, "goalie_id": 2, "game_date": "2024-10-15",
+         "fenwick_flag": True, "xg": 0.10, "is_goal": True},
+    ])
+    gg = pd.DataFrame({
+        "season": [2023, 2024, 2023, 2024], "game_id": [200, 300, 400, 500],
+        "goalie_id": [1, 1, 2, 2], "team_abbrev": ["TOR", "TOR", "TOR", "TOR"],
+        "game_date": ["2023-10-15", "2024-10-15", "2023-10-15", "2024-10-15"],
+    })
+    ledger_dated = pd.DataFrame(columns=["goalie_id", "game_date", "perf_z"])
+    refits = pd.DataFrame(columns=["case_id", "layer", "term"])
+
+    out = case_estimates(cases, shots_xg, gg, terms={}, ledger_dated=ledger_dated,
+                         normalize=set(), refits=refits, k=None)
+    nonswitch_row = out[out["case_id"] == "N1-2023-06-01"].iloc[0]
+    real_row = out[out["case_id"] == "S2-2023-06-01"].iloc[0]
+
+    assert nonswitch_row["n_post"] == 1
+    assert nonswitch_row["outcome"] == pytest.approx(0.10)
+    # Real case's post window is untouched -- spans both seasons.
+    assert real_row["n_post"] == 2
+    assert real_row["outcome"] == pytest.approx((0.20 - 1.0) / 2)
+
+
 def test_pre_gsax_and_naive():
     r = pre_gsax(_case(), _shots_xg())
     assert r["n_pre"] == 2
@@ -96,6 +140,38 @@ def test_midseason_refit_substitution_respects_normalize():
     # goal/freeze are not in `normalize`: substitution keeps the raw refit term.
     assert row["stopping"] == pytest.approx(-1.0 * 0.3)
     assert row["freeze"] == pytest.approx(1.0 * -0.4)
+    # rebound_control_indep is never refit mid-season (only the chained
+    # `term` gets a midseason refit above); the full-season term_indep would
+    # leak the goalie's post-trade shots. Must be NaN even though the season
+    # frame above has a valid term_indep for this goalie.
+    assert np.isnan(row["rebound_control_indep"])
+
+
+def test_offseason_case_rebound_indep_still_populated():
+    # Sanity check on the gate above: the NaN-out only applies to midseason
+    # cases -- offseason cases keep the real term_indep lookup.
+    case = {"case_id": "S2-2023-06-01", "goalie_id": 1, "switch_type": "offseason",
+            "switch_date": "2023-06-01", "pre_team": "TOR", "post_team": "VAN",
+            "last_pre_season": 2022, "first_post_season": 2023}
+    cases = pd.DataFrame([case])
+    shots_xg = pd.DataFrame([
+        {"season": 2023, "game_id": 100, "goalie_id": 1, "game_date": "2023-10-20",
+         "fenwick_flag": True, "xg": 0.10, "is_goal": False},
+    ])
+    gg = pd.DataFrame({
+        "season": [2023], "game_id": [100], "goalie_id": [1],
+        "team_abbrev": ["VAN"], "game_date": ["2023-10-20"],
+    })
+    terms = {2022: pd.DataFrame({
+        "goalie_id": [1, 2, 3], "layer": ["rebound"] * 3,
+        "term": [0.2, 0.0, -0.2], "term_indep": [0.2, 0.0, -0.2],
+    })}
+    refits = pd.DataFrame(columns=["case_id", "layer", "term"])
+    ledger_dated = pd.DataFrame(columns=["goalie_id", "game_date", "perf_z"])
+
+    out = case_estimates(cases, shots_xg, gg, terms, ledger_dated,
+                         normalize=set(), refits=refits, k=None)
+    assert out.iloc[0]["rebound_control_indep"] == pytest.approx(-1.0 * 0.2)
 
 
 def test_pre_perf_uses_dated_games():

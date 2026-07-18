@@ -28,10 +28,13 @@ ORIENT = {"goal": -1.0, "freeze": 1.0, "rebound": -1.0}
 CAND_NAME = {"goal": "stopping", "freeze": "freeze", "rebound": "rebound_control"}
 
 
-def case_outcome(case: dict, shots_xg: pd.DataFrame, gg: pd.DataFrame):
+def case_outcome(case: dict, shots_xg: pd.DataFrame, gg: pd.DataFrame,
+                 season_only: int | None = None):
     post_games = gg[(gg["goalie_id"] == case["goalie_id"])
                     & (gg["game_date"] >= case["switch_date"])
                     & (gg["team_abbrev"] == case["post_team"])]
+    if season_only is not None:
+        post_games = post_games[post_games["season"] == season_only]
     keys = set(zip(post_games["season"], post_games["game_id"]))
     s = shots_xg[(shots_xg["goalie_id"] == case["goalie_id"])
                  & shots_xg["fenwick_flag"]]
@@ -278,7 +281,15 @@ def case_estimates(cases: pd.DataFrame, shots_xg: pd.DataFrame, gg: pd.DataFrame
     rows = []
     for _, c in cases.iterrows():
         case = c.to_dict()
-        oc = case_outcome(case, shots_xg, gg)
+        # Pseudo (nonswitch) cases are registered with post = first_post_season
+        # only (switch_registry.nonswitch_pseudo_cases); case_outcome's default
+        # "all future games with post_team" would let the outcome span into
+        # first_post_season+1 for goalies who stay on the same team multiple
+        # years, contradicting the registered window. Real cases keep the
+        # full post-stint window (registry has no season cap for them).
+        season_only = (int(case["first_post_season"])
+                       if case["switch_type"] == "nonswitch" else None)
+        oc = case_outcome(case, shots_xg, gg, season_only=season_only)
         if oc is None:
             continue
         pg = pre_gsax(case, shots_xg)
@@ -305,8 +316,15 @@ def case_estimates(cases: pd.DataFrame, shots_xg: pd.DataFrame, gg: pd.DataFrame
                         sd = float(lf["term"].std(ddof=0)) or 1.0
                         refit_term = (refit_term - mean) / sd
                 cand[CAND_NAME[layer]] = float(ORIENT[layer] * refit_term)
+        # rebound_control_indep is never refit for midseason cases (only the
+        # chained `term` gets a midseason refit above) -- the full-season
+        # term_indep would leak the goalie's post-trade shots into the era-B
+        # sensitivity candidate. That path is dormant this run, so NaN here is
+        # cheap and honest; paired_bootstrap_dr/weighted_r drop NaN rows.
+        rebound_indep = (np.nan if case["switch_type"] == "midseason"
+                        else rebound_indep_lookup(case, terms, normalize))
         rows.append({**case, **oc, **pg, **cand,
-                     "rebound_control_indep": rebound_indep_lookup(case, terms, normalize),
+                     "rebound_control_indep": rebound_indep,
                      "perf": pre_perf(case, ledger_dated),
                      "baseline_naive": pg["naive_rate"],
                      **({"baseline_eb": eb_rate(pg["gsax_sum"], pg["n_pre"], k)}
