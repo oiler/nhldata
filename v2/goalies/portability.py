@@ -233,7 +233,8 @@ def run_midseason_refits(cases: pd.DataFrame, terms: dict[int, pd.DataFrame]) ->
     todo = cases[(cases["switch_type"] == "midseason") & ~cases["case_id"].isin(done)]
     for _, c in todo.iterrows():
         season = int(c["first_post_season"])
-        season_shots = pd.read_csv(GEN / f"shots_{season}.csv")
+        season_shots = pd.read_csv(GEN / f"shots_{season}.csv").astype(
+            {"season": "int64", "game_id": "int64"})
         prev = terms.get(season - 1)
         prior_terms = {}
         if prev is not None:
@@ -284,10 +285,26 @@ def case_estimates(cases: pd.DataFrame, shots_xg: pd.DataFrame, gg: pd.DataFrame
         cand = term_lookup(case, terms, normalize)
         if case["switch_type"] == "midseason":
             mine = refits[refits["case_id"] == case["case_id"]]
+            season_frame = terms.get(case["last_pre_season"])
             for layer in CAND_LAYERS:
                 row = mine[mine["layer"] == layer]
-                if len(row):
-                    cand[CAND_NAME[layer]] = float(ORIENT[layer] * row["term"].iloc[0])
+                if not len(row):
+                    continue
+                refit_term = float(row["term"].iloc[0])
+                # The refit is on the same raw scale as the season's term
+                # population (both come from fit_layer on that season's
+                # shots); a single goalie's excluded post shots move the
+                # population mean/std negligibly, so re-using the full
+                # season population transform is the consistent choice --
+                # it keeps midseason cases on the same z-scale as offseason
+                # cases for layers term_lookup normalizes.
+                if layer in normalize and season_frame is not None:
+                    lf = season_frame[season_frame["layer"] == layer]
+                    if len(lf) > 1:
+                        mean = float(lf["term"].mean())
+                        sd = float(lf["term"].std(ddof=0)) or 1.0
+                        refit_term = (refit_term - mean) / sd
+                cand[CAND_NAME[layer]] = float(ORIENT[layer] * refit_term)
         rows.append({**case, **oc, **pg, **cand,
                      "rebound_control_indep": rebound_indep_lookup(case, terms, normalize),
                      "perf": pre_perf(case, ledger_dated),

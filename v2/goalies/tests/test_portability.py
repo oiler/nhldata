@@ -2,8 +2,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from v2.goalies.portability import (case_outcome, eb_rate, pre_gsax, pre_perf,
-                                    term_lookup)
+from v2.goalies.portability import (case_estimates, case_outcome, eb_rate,
+                                    pre_gsax, pre_perf, term_lookup)
 
 
 def _case():
@@ -58,6 +58,44 @@ def test_term_lookup_signs_and_normalize():
     tz = term_lookup(_case(), terms, normalize={"goal"})
     assert tz["stopping"] == pytest.approx(-0.2 / np.std([0.2, 0.0, -0.2]))
     assert np.isnan(t["freeze"])                     # layer absent from frame
+
+
+def test_midseason_refit_substitution_respects_normalize():
+    case = {"case_id": "S1-2023-01-15", "goalie_id": 1, "switch_type": "midseason",
+            "switch_date": "2023-01-15", "pre_team": "TOR", "post_team": "VAN",
+            "last_pre_season": 2023, "first_post_season": 2023}
+    cases = pd.DataFrame([case])
+
+    shots_xg = pd.DataFrame([
+        {"season": 2023, "game_id": 100, "goalie_id": 1, "game_date": "2023-01-20",
+         "fenwick_flag": True, "xg": 0.10, "is_goal": False},
+    ])
+    gg = pd.DataFrame({
+        "season": [2023], "game_id": [100], "goalie_id": [1],
+        "team_abbrev": ["VAN"], "game_date": ["2023-01-20"],
+    })
+    terms = {2023: pd.DataFrame({
+        "goalie_id": [1, 2, 3], "layer": ["rebound"] * 3,
+        "term": [0.2, 0.0, -0.2], "term_indep": [0.2, 0.0, -0.2],
+    })}
+    refits = pd.DataFrame([
+        {"case_id": case["case_id"], "layer": "goal", "term": 0.3},
+        {"case_id": case["case_id"], "layer": "freeze", "term": -0.4},
+        {"case_id": case["case_id"], "layer": "rebound", "term": 0.1},
+    ])
+    ledger_dated = pd.DataFrame(columns=["goalie_id", "game_date", "perf_z"])
+
+    out = case_estimates(cases, shots_xg, gg, terms, ledger_dated,
+                         normalize={"rebound"}, refits=refits, k=None)
+    row = out.iloc[0]
+
+    pop_std = np.std([0.2, 0.0, -0.2])  # ddof=0
+    # rebound is normalized: refit term must go through the same season
+    # population z-transform term_lookup uses, not the raw refit scale.
+    assert row["rebound_control"] == pytest.approx(-(0.1 - 0.0) / pop_std, rel=1e-3)
+    # goal/freeze are not in `normalize`: substitution keeps the raw refit term.
+    assert row["stopping"] == pytest.approx(-1.0 * 0.3)
+    assert row["freeze"] == pytest.approx(1.0 * -0.4)
 
 
 def test_pre_perf_uses_dated_games():
