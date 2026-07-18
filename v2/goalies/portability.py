@@ -93,3 +93,105 @@ def pre_perf(case: dict, ledger_dated: pd.DataFrame) -> float:
                         & (ledger_dated["game_date"] < case["switch_date"])]
     vals = mine["perf_z"].dropna()
     return float(vals.mean()) if len(vals) else np.nan
+
+
+def _clean(x, y, w):
+    x, y, w = np.asarray(x, float), np.asarray(y, float), np.asarray(w, float)
+    m = ~(np.isnan(x) | np.isnan(y)) & (w > 0)
+    return x[m], y[m], w[m]
+
+
+def weighted_r(x, y, w) -> float:
+    x, y, w = _clean(x, y, w)
+    if len(x) < 3:
+        return float("nan")
+    mx, my = np.average(x, weights=w), np.average(y, weights=w)
+    cov = np.average((x - mx) * (y - my), weights=w)
+    vx = np.average((x - mx) ** 2, weights=w)
+    vy = np.average((y - my) ** 2, weights=w)
+    return float(cov / np.sqrt(vx * vy)) if vx > 0 and vy > 0 else float("nan")
+
+
+def _ranks(a):
+    order = np.argsort(a)
+    ranks = np.empty(len(a))
+    ranks[order] = np.arange(len(a), dtype=float)
+    for v in np.unique(a):                      # average ties
+        m = a == v
+        if m.sum() > 1:
+            ranks[m] = ranks[m].mean()
+    return ranks
+
+
+def weighted_spearman(x, y, w) -> float:
+    x, y, w = _clean(x, y, w)
+    if len(x) < 3:
+        return float("nan")
+    return weighted_r(_ranks(x), _ranks(y), w)
+
+
+def paired_bootstrap_dr(cand, base, y, w, n_boot: int = 10000, seed: int = 42) -> dict:
+    cand, base, y, w = (np.asarray(a, float) for a in (cand, base, y, w))
+    keep = ~(np.isnan(cand) | np.isnan(base) | np.isnan(y)) & (w > 0)
+    cand, base, y, w = cand[keep], base[keep], y[keep], w[keep]
+    point = weighted_r(cand, y, w) - weighted_r(base, y, w)
+    rng = np.random.default_rng(seed)
+    n = len(y)
+    drs = np.empty(n_boot)
+    for b in range(n_boot):
+        idx = rng.integers(0, n, n)
+        drs[b] = (weighted_r(cand[idx], y[idx], w[idx])
+                  - weighted_r(base[idx], y[idx], w[idx]))
+    drs = drs[~np.isnan(drs)]
+    return {"dr": float(point), "lo90": float(np.percentile(drs, 5)),
+            "hi90": float(np.percentile(drs, 95)), "n_cases": int(n)}
+
+
+def _standardize(a, w):
+    m = np.average(a, weights=w)
+    s = np.sqrt(np.average((a - m) ** 2, weights=w))
+    return (a - m) / (s or 1.0)
+
+
+def incremental_beta(cand, base, y, w) -> float:
+    cand, base, y, w = (np.asarray(a, float) for a in (cand, base, y, w))
+    keep = ~(np.isnan(cand) | np.isnan(base) | np.isnan(y)) & (w > 0)
+    cand, base, y, w = cand[keep], base[keep], y[keep], w[keep]
+    X = np.column_stack([np.ones(len(y)), _standardize(base, w),
+                         _standardize(cand, w)])
+    W = np.diag(w)
+    beta = np.linalg.solve(X.T @ W @ X, X.T @ W @ y)
+    return float(beta[2])
+
+
+def fit_k(pseudo: pd.DataFrame, grid=(250, 500, 1000, 2000, 4000)) -> int:
+    best_k, best_r = grid[0], -np.inf
+    for k in grid:
+        rate = pseudo["gsax_sum"] / (pseudo["n_pre"] + k)
+        r = weighted_r(rate, pseudo["outcome"], pseudo["weight"])
+        if not np.isnan(r) and r > best_r:
+            best_k, best_r = k, r
+    return int(best_k)
+
+
+def fit_composite(pseudo: pd.DataFrame,
+                  cols=("stopping", "freeze", "rebound_control", "perf"),
+                  lam: float = 1.0) -> dict:
+    d = pseudo.dropna(subset=list(cols) + ["outcome"])
+    w = d["weight"].to_numpy(dtype=float)
+    y = d["outcome"].to_numpy(dtype=float)
+    means = {c: float(np.average(d[c], weights=w)) for c in cols}
+    stds = {c: float(np.sqrt(np.average((d[c] - means[c]) ** 2, weights=w))) or 1.0
+            for c in cols}
+    X = np.column_stack([(d[c] - means[c]) / stds[c] for c in cols])
+    yc = y - np.average(y, weights=w)
+    W = np.diag(w / w.mean())
+    beta = np.linalg.solve(X.T @ W @ X + lam * np.eye(len(cols)), X.T @ W @ yc)
+    return {"means": means, "stds": stds,
+            "beta": {c: float(b) for c, b in zip(cols, beta)}}
+
+
+def apply_composite(row: dict, params: dict) -> float:
+    return float(sum(params["beta"][c]
+                     * (row[c] - params["means"][c]) / params["stds"][c]
+                     for c in params["beta"]))

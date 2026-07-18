@@ -66,3 +66,76 @@ def test_pre_perf_uses_dated_games():
         "perf_z": [1.0, 0.0, 5.0],
     })
     assert pre_perf(_case(), ledger) == pytest.approx(0.5)
+
+
+from v2.goalies.portability import (apply_composite, fit_composite, fit_k,
+                                    incremental_beta, paired_bootstrap_dr,
+                                    weighted_r, weighted_spearman)
+
+
+def test_weighted_r_matches_numpy_when_uniform():
+    rng = np.random.default_rng(0)
+    x, y = rng.normal(size=50), rng.normal(size=50)
+    w = np.ones(50)
+    assert weighted_r(x, y, w) == pytest.approx(np.corrcoef(x, y)[0, 1])
+
+
+def test_weighted_r_zero_weight_case_ignored():
+    x = np.array([1.0, 2.0, 3.0, 100.0])
+    y = np.array([1.0, 2.0, 3.0, -100.0])
+    w = np.array([1.0, 1.0, 1.0, 0.0])
+    assert weighted_r(x, y, w) == pytest.approx(1.0)
+
+
+def test_weighted_r_drops_nan_pairs():
+    x = np.array([1.0, 2.0, np.nan, 3.0])
+    y = np.array([1.0, 2.0, 5.0, 3.0])
+    w = np.ones(4)
+    assert weighted_r(x, y, w) == pytest.approx(1.0)
+
+
+def test_paired_bootstrap_recovers_sign():
+    rng = np.random.default_rng(1)
+    y = rng.normal(size=200)
+    cand = y + rng.normal(scale=0.5, size=200)      # r ~ 0.9
+    base = y + rng.normal(scale=2.0, size=200)      # r ~ 0.45
+    r = paired_bootstrap_dr(cand, base, y, np.ones(200), n_boot=2000)
+    assert r["dr"] > 0.2
+    assert r["lo90"] > 0                            # CI excludes zero
+
+
+def test_incremental_beta_zero_when_candidate_is_noise():
+    rng = np.random.default_rng(2)
+    y = rng.normal(size=500)
+    base = y + rng.normal(scale=0.5, size=500)
+    noise = rng.normal(size=500)
+    assert abs(incremental_beta(noise, base, y, np.ones(500))) < 0.1
+
+
+def test_fit_k_prefers_heavy_shrinkage_for_noisy_signal():
+    rng = np.random.default_rng(3)
+    n = np.concatenate([np.full(300, 500), np.full(300, 4000)])
+    true = rng.normal(scale=0.003, size=600)
+    pseudo = pd.DataFrame({
+        "n_pre": n,
+        "gsax_sum": true * n + rng.normal(scale=np.sqrt(0.06 * n)),
+        "outcome": true + rng.normal(scale=0.0055, size=600),
+        "weight": np.ones(600),
+    })
+    assert fit_k(pseudo) >= 1000
+
+
+def test_composite_recovers_dominant_column():
+    rng = np.random.default_rng(4)
+    n = 300
+    a, b = rng.normal(size=n), rng.normal(size=n)
+    pseudo = pd.DataFrame({
+        "stopping": a, "freeze": b, "rebound_control": rng.normal(size=n),
+        "perf": rng.normal(size=n),
+        "outcome": a * 0.01 + rng.normal(scale=0.001, size=n),
+        "weight": np.ones(n),
+    })
+    params = fit_composite(pseudo)
+    assert abs(params["beta"]["stopping"]) > 3 * abs(params["beta"]["freeze"])
+    row = {"stopping": 1.0, "freeze": 0.0, "rebound_control": 0.0, "perf": 0.0}
+    assert apply_composite(row, params) != 0.0
