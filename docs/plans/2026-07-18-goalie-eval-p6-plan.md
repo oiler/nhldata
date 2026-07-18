@@ -667,14 +667,17 @@ def test_incremental_beta_zero_when_candidate_is_noise():
 
 
 def test_fit_k_prefers_heavy_shrinkage_for_noisy_signal():
+    # k is identified only through HETEROGENEOUS n_pre: with constant n_pre,
+    # dividing by (n + k) is a pure rescale and correlation is k-invariant
+    # (plan defect caught at execution, 2026-07-18; fixture corrected).
     rng = np.random.default_rng(3)
-    n = 400
-    true = rng.normal(scale=0.001, size=n)          # tiny true spread
+    n = np.concatenate([np.full(300, 500), np.full(300, 4000)])
+    true = rng.normal(scale=0.003, size=600)
     pseudo = pd.DataFrame({
-        "n_pre": np.full(n, 1000),
-        "gsax_sum": true * 1000 + rng.normal(scale=8.0, size=n),
-        "outcome": true + rng.normal(scale=0.004, size=n),
-        "weight": np.ones(n),
+        "n_pre": n,
+        "gsax_sum": true * n + rng.normal(scale=np.sqrt(0.06 * n)),
+        "outcome": true + rng.normal(scale=0.0055, size=600),
+        "weight": np.ones(600),
     })
     assert fit_k(pseudo) >= 1000
 
