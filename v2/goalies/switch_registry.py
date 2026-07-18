@@ -10,7 +10,6 @@ composite weights before any real case is scored.
 Usage: python3 v2/goalies/switch_registry.py
 """
 
-import sys
 from pathlib import Path
 
 import pandas as pd
@@ -87,6 +86,7 @@ def nonswitch_pseudo_cases(stints: pd.DataFrame, gg: pd.DataFrame,
             pre = mine[mine["game_date"] < switch_date]
             if pre["fenwick"].sum() < FLOOR or post["fenwick"].sum() < FLOOR:
                 continue
+            last_pre_season = int(pre["season"].max())
             rows.append({
                 "case_id": f"N{st['goalie_id']}-{switch_date}",
                 "goalie_id": st["goalie_id"], "switch_type": "nonswitch",
@@ -95,7 +95,7 @@ def nonswitch_pseudo_cases(stints: pd.DataFrame, gg: pd.DataFrame,
                 "pre_fenwick": int(pre["fenwick"].sum()),
                 "post_fenwick": int(post["fenwick"].sum()),
                 "weight": int(min(pre["fenwick"].sum(), post["fenwick"].sum())),
-                "last_pre_season": t, "first_post_season": t + 1,
+                "last_pre_season": last_pre_season, "first_post_season": t + 1,
             })
     cols = ["case_id", "goalie_id", "switch_type", "switch_date", "pre_team",
             "post_team", "pre_fenwick", "post_fenwick", "weight",

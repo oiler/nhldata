@@ -1,5 +1,4 @@
 import pandas as pd
-import pytest
 
 from v2.goalies.switch_registry import (fenwick_by_game, nonswitch_pseudo_cases,
                                         stint_table, switch_cases)
@@ -60,6 +59,29 @@ def test_nonswitch_pseudo_cases():
     assert p["switch_type"] == "nonswitch" and p["switch_date"] == "2022-11-01"
     assert p["pre_team"] == "EDM" and p["post_team"] == "EDM"
     assert p["pre_fenwick"] == 800 and p["post_fenwick"] == 800
+
+
+def test_return_to_former_team_forms_new_stint():
+    rows = ([(2021, i, 6, "EDM", f"2021-11-{i:02d}") for i in range(1, 21)]
+            + [(2022, 100 + i, 6, "CGY", f"2022-11-{i:02d}") for i in range(1, 21)]
+            + [(2023, 200 + i, 6, "EDM", f"2023-11-{i:02d}") for i in range(1, 21)])
+    gg = _gg(rows)
+    cases = switch_cases(stint_table(gg, _fw(gg)))
+    assert len(cases) == 2
+    edm_return = cases[cases["post_team"] == "EDM"].iloc[0]
+    assert edm_return["pre_fenwick"] == 1600     # EDM 800 + CGY 800 pooled
+
+
+def test_pseudo_gap_year_labels_actual_last_played_season():
+    rows = ([(2021, i, 7, "EDM", f"2021-11-{i:02d}") for i in range(1, 21)]
+            + [(2023, 200 + i, 7, "EDM", f"2023-11-{i:02d}") for i in range(1, 21)])
+    gg = _gg(rows)
+    fw = _fw(gg)
+    pseudo = nonswitch_pseudo_cases(stint_table(gg, fw), gg, fw)
+    assert len(pseudo) == 1
+    p = pseudo.iloc[0]
+    assert p["last_pre_season"] == 2021           # actual last played, not the gap year
+    assert p["first_post_season"] == 2023
 
 
 def test_fenwick_by_game_excludes_blocked():
