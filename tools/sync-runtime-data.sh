@@ -18,6 +18,7 @@ mkdir -p "$DST/2024" "$DST/2025"
 cp "$SRC/2024/generated/browser/league.db"        "$DST/2024/league.db"
 cp "$SRC/2025/generated/browser/league.db"        "$DST/2025/league.db"
 cp "$SRC/2025/generated/browser/edm.db"           "$DST/2025/edm.db"
+cp "$SRC/generated/browser/goalies.db"            "$DST/goalies.db"
 cp "$SRC/2025/generated/edge/player_bursts.csv"   "$DST/2025/player_bursts.csv"
 
 # Guard against shipping an image with missing/empty runtime files (the cause

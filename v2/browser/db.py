@@ -2,7 +2,7 @@
 import sqlite3
 import pandas as pd
 
-from runtime_paths import league_db, edm_db
+from runtime_paths import league_db, edm_db, goalies_db
 
 
 def query(season: str, sql: str) -> pd.DataFrame:
@@ -49,3 +49,18 @@ def all_teams(season: str = "2025") -> list[str]:
     if df.empty:
         return []
     return df["team"].tolist()
+
+
+def goalies_query(sql: str, params=()) -> pd.DataFrame:
+    """Run parameterized sql against the cross-season goalies DB.
+
+    IMPORTANT: Only pass string literals as sql. Never interpolate user input.
+    """
+    db_path = goalies_db()
+    if not db_path.exists():
+        return pd.DataFrame()
+    conn = sqlite3.connect(str(db_path))
+    try:
+        return pd.read_sql_query(sql, conn, params=list(params))
+    finally:
+        conn.close()

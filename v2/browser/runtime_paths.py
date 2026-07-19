@@ -57,3 +57,10 @@ def player_bursts_csv(season: str) -> Path:
     if _runtime_mode():
         return data_root() / season / "player_bursts.csv"
     return data_root() / season / "generated" / "edge" / "player_bursts.csv"
+
+
+def goalies_db() -> Path:
+    """Cross-season goalie DB (single file, all seasons — not per-season)."""
+    if _runtime_mode():
+        return data_root() / "goalies.db"
+    return data_root() / "generated" / "browser" / "goalies.db"
