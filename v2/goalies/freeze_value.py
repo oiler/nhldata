@@ -83,3 +83,109 @@ def season_value(delta: float, rate_lo: float, rate_hi: float,
                  saves_per_season: int = SAVES_PER_SEASON) -> dict:
     return {"goals_low": delta * saves_per_season * rate_lo,
             "goals_high": delta * saves_per_season * rate_hi}
+
+
+def tandem_bound(rates: pd.DataFrame) -> dict:
+    pairs = []
+    for (_, _), grp in rates.groupby(["season", "team"]):
+        if len(grp) != 2:
+            continue
+        # label by workload, never by the outcome — sorting hi/lo on gsax_rate
+        # puts corr(max, min) ≈ 0.467 under full independence
+        starter, backup = grp.sort_values(
+            ["n", "goalie_id"], ascending=[False, True]).itertuples(index=False)
+        pairs.append({"starter": starter.gsax_rate, "backup": backup.gsax_rate,
+                      "w": min(starter.n, backup.n)})
+    p = pd.DataFrame(pairs)
+    partner_r = weighted_r(p["starter"], p["backup"], p["w"])
+    w = rates["n"].to_numpy(dtype=float)
+    x = rates["gsax_rate"].to_numpy(dtype=float)
+    mu = np.average(x, weights=w)
+    total_var = np.average((x - mu) ** 2, weights=w)
+    team_means = rates.groupby(["season", "team"]).apply(
+        lambda g: pd.Series({"m": np.average(g["gsax_rate"], weights=g["n"]),
+                             "w": g["n"].sum()}), include_groups=False)
+    between_var = np.average((team_means["m"] - mu) ** 2, weights=team_means["w"])
+    # subtract the sampling contribution a finite pair adds to between-var? No:
+    # report the RAW between share as an upper bound (spec: bound, not estimate)
+    between_share = float(between_var / total_var) if total_var > 0 else float("nan")
+    sd_rate = float(np.sqrt(total_var))
+    return {"partner_r": float(partner_r), "between_share": between_share,
+            "sd_rate": sd_rate, "bound_sv_pts": between_share * sd_rate,
+            "n_pairs": len(p)}
+
+
+def _load_saves_and_shots():
+    frames = []
+    for season in SEASONS:
+        shots = pd.read_csv(GEN / f"shots_{season}.csv")
+        shots["xg"] = blind_shot_xg(shots)
+        frames.append(shots)
+    return pd.concat(frames, ignore_index=True)
+
+
+def main() -> None:
+    VAL.mkdir(parents=True, exist_ok=True)
+    shots = _load_saves_and_shots()
+    saves = shots[shots["on_net"] & ~shots["is_goal"] & shots["froze"].notna()].copy()
+    lines = []
+
+    fits = {}
+    for w in WINDOWS:
+        y = window_xga(shots, saves, window_s=w)
+        fits[w] = freeze_effect(saves, y)
+        raw_gap = float(np.mean(y[saves["froze"] == 1]) - np.mean(y[saves["froze"] == 0]))
+        lines.append(f"window {w:>2}s: coef={fits[w]['coef']:+.5f} se={fits[w]['se']:.5f} "
+                     f"n={fits[w]['n']} raw_frozen_minus_inplay={raw_gap:+.5f}")
+
+    y30 = window_xga(shots, saves, window_s=30)
+    wg = freeze_effect(saves, y30, demean_by_goalie=True)
+    lines.append(f"within-goalie 30s: coef={wg['coef']:+.5f} se={wg['se']:.5f}")
+    for label, seasons in (("eraA", (2021, 2022)), ("eraB", (2023, 2024, 2025))):
+        m = saves["season"].isin(seasons).to_numpy()
+        e = freeze_effect(saves[m], y30[m])
+        lines.append(f"{label} 30s: coef={e['coef']:+.5f} se={e['se']:.5f} n={e['n']}")
+
+    primary = fits[30]
+    significant = (abs(primary["coef"]) >= 2 * primary["se"]
+                   and np.sign(fits[15]["coef"]) == np.sign(primary["coef"])
+                   and np.sign(fits[60]["coef"]) == np.sign(primary["coef"]))
+    per_goalie_rate = saves.groupby("goalie_id")["froze"].agg(["mean", "size"])
+    big = per_goalie_rate[per_goalie_rate["size"] >= 500]["mean"]
+    val = season_value(primary["coef"], float(big.quantile(0.1)), float(big.quantile(0.9)))
+    lines.append(f"significant per 6d rule: {significant}")
+    lines.append(f"freeze-rate spread (>=500 saves): p10={big.quantile(0.1):.3f} "
+                 f"p90={big.quantile(0.9):.3f}")
+    lines.append(f"season value at spread ends: {val['goals_low']:+.2f} to "
+                 f"{val['goals_high']:+.2f} goals/season (negative = suppression)")
+
+    fen = shots[shots["event"] != "blocked-shot"]
+    gg = pd.concat([pd.read_csv(GEN / f"goalie_games_{s}.csv") for s in SEASONS],
+                   ignore_index=True)
+    team_of = gg.groupby(["season", "goalie_id"])["team_abbrev"].agg(
+        lambda s: s.mode().iloc[0]).rename("team").reset_index()
+    per = fen.groupby(["season", "goalie_id"]).agg(
+        n=("xg", "size"), xga=("xg", "sum"), ga=("is_goal", "sum")).reset_index()
+    per["gsax_rate"] = (per["xga"] - per["ga"]) / per["n"]
+    per = per.merge(team_of, on=["season", "goalie_id"])
+    pairs = (per[per["n"] >= 600].sort_values("n", ascending=False)
+             .groupby(["season", "team"]).head(2))
+    counts = pairs.groupby(["season", "team"]).size()
+    pairs = pairs.set_index(["season", "team"]).loc[counts[counts == 2].index].reset_index()
+    tb = tandem_bound(pairs[["season", "team", "goalie_id", "gsax_rate", "n"]])
+    lines.append(f"\ntandem bound (workload-labeled starter/backup pairs, avoids "
+                 f"order-statistic artifact): partner_r={tb['partner_r']:+.3f} "
+                 f"between_share={tb['between_share']:.3f} sd_rate={tb['sd_rate']:.4f} "
+                 f"bound={tb['bound_sv_pts']:.4f} sv-pts/shot over {tb['n_pairs']} pairs "
+                 f"(JLikens anchor ~0.006)")
+
+    report = "\n".join(lines)
+    (VAL / "freeze_value_report.txt").write_text(report + "\n")
+    (VAL / "freeze_value.json").write_text(json.dumps({
+        "per_freeze_xga_delta": primary["coef"] if significant else None,
+        "window_s": 30, "significant": bool(significant)}, indent=2))
+    print(report)
+
+
+if __name__ == "__main__":
+    main()

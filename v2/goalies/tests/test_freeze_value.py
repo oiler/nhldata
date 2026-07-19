@@ -125,3 +125,26 @@ def test_season_value_scales_by_rate_spread():
     v = season_value(-0.001, rate_lo=0.27, rate_hi=0.35, saves_per_season=1000)
     assert v["goals_low"] == pytest.approx(-0.27)
     assert v["goals_high"] == pytest.approx(-0.35)
+
+
+from v2.goalies.freeze_value import tandem_bound
+
+
+def test_tandem_bound_team_driven_vs_independent():
+    # Pair labeling must be by workload (starter/backup), never by the outcome:
+    # sorting hi/lo on gsax_rate itself puts corr(max, min) ~= 0.467 under full
+    # independence (order-statistic floor), which would swamp any team signal.
+    rng = np.random.default_rng(7)
+    # team-driven: partners share a team effect -> high partner_r, high between_share
+    rows_team, rows_indep = [], []
+    for i in range(200):
+        team_eff = rng.normal(scale=0.01)
+        for g, n in ((i * 2, 1400), (i * 2 + 1, 900)):
+            base = {"season": 2023, "team": f"T{i}", "goalie_id": g, "n": n}
+            rows_team.append({**base, "gsax_rate": team_eff + rng.normal(scale=0.002)})
+            rows_indep.append({**base, "gsax_rate": rng.normal(scale=0.01)})
+    driven = tandem_bound(pd.DataFrame(rows_team))
+    indep = tandem_bound(pd.DataFrame(rows_indep))
+    assert driven["partner_r"] > 0.6 and abs(indep["partner_r"]) < 0.2
+    assert driven["between_share"] > indep["between_share"]
+    assert driven["n_pairs"] == 200
