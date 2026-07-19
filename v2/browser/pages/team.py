@@ -5,7 +5,7 @@ from dash import html, dash_table, callback, Input, Output, dcc
 from dash.dash_table import FormatTemplate
 from dash.dash_table.Format import Format, Scheme
 
-from db import league_query
+from db import league_query, goalies_query
 from filters import make_filter_bar, register_home_away_callback, register_season_callback, compute_deployment_metrics
 from table_style import table_styles
 from utils import seconds_to_mmss
@@ -70,6 +70,30 @@ GROUP BY gameId, team
 _PPI_SQL = "SELECT playerId, ppi, ppi_plus, wppi, wppi_plus FROM player_metrics"
 
 _POINTS_SQL = "SELECT playerId, gameId, goals, assists, points FROM points_5v5"
+
+_ENV_SQL = """
+SELECT mean_difficulty_pct, mean_xg_faced_per60, hd_share, crossice_per60, b2b_games
+FROM team_environment WHERE season = ? AND team_abbrev = ?
+"""
+
+
+def _goalie_environment_section(season, team):
+    env = goalies_query(_ENV_SQL, params=(int(season), team))
+    if env.empty:
+        return None
+    r = env.iloc[0]
+    return html.Div([
+        html.H3("Goalie environment"),
+        html.P("How hard this team makes its goalies' lives — workload served, "
+               "not goalie quality.", style={"fontSize": "0.85rem", "color": "#6c757d"}),
+        html.Ul([
+            html.Li(f"Difficulty served: p{r['mean_difficulty_pct']:.0f} league percentile"),
+            html.Li(f"xG faced/60: {r['mean_xg_faced_per60']:.2f}"),
+            html.Li(f"High-danger share: {r['hd_share']:.1%}"),
+            html.Li(f"Cross-ice/60: {r['crossice_per60']:.2f}"),
+            html.Li(f"Back-to-backs: {int(r['b2b_games'])}"),
+        ]),
+    ])
 
 
 def _make_position_table(df, pos="F"):
@@ -306,9 +330,14 @@ def update_team(date_start, date_end, home_away, abbrev, season):
         style={"width": "100%", "borderCollapse": "collapse"},
     )
 
-    return html.Div([
+    env_section = _goalie_environment_section(season, abbrev)
+
+    children = [
         html.H3("Players"),
         _make_player_tables(player_df) if not player_df.empty else html.Div("No player data."),
         html.H3("Game Log", style={"marginTop": "2rem"}),
         game_table if game_rows else html.P("No games found in this range."),
-    ])
+    ]
+    if env_section is not None:
+        children.append(html.Div(env_section, style={"marginTop": "2rem"}))
+    return html.Div(children)
