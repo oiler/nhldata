@@ -18,6 +18,7 @@ GOALIES = REPO / "data" / "generated" / "goalies"
 OUT = REPO / "data" / "generated" / "browser" / "goalies.db"
 SEASONS = ("2021", "2022", "2023", "2024", "2025")
 MIN_SAVES_FOR_PCT = 500
+_NAME_CACHE: dict[int, str] = {}
 
 
 def freeze_percentile(rates: pd.DataFrame, min_saves: int = MIN_SAVES_FOR_PCT) -> pd.Series:
@@ -25,6 +26,21 @@ def freeze_percentile(rates: pd.DataFrame, min_saves: int = MIN_SAVES_FOR_PCT) -
     eligible = rates["n_saves"] >= min_saves
     out[eligible] = rates.loc[eligible, "freeze_rate"].rank(pct=True) * 100
     return out
+
+
+def resolve_name(goalie_id: int, seasons: tuple[str, ...], root: Path) -> str:
+    """Resolve goalie name from players JSON across multiple seasons.
+
+    Tries each season in order until finding a players/<id>.json file.
+    Returns "Goalie <id>" if not found in any season.
+    Pure function — no caching.
+    """
+    for season in seasons:
+        f = root / season / "players" / f"{goalie_id}.json"
+        if f.exists():
+            j = json.loads(f.read_text())
+            return f"{j['firstName']['default']} {j['lastName']['default']}"
+    return f"Goalie {goalie_id}"
 
 
 def _teams_joined(team_series: pd.Series) -> str:
@@ -68,11 +84,12 @@ def build_goalie_seasons(gg, gsax, shots, terms, ledger) -> pd.DataFrame:
 
 
 def _name(season: str, goalie_id: int) -> str:
-    f = REPO / "data" / season / "players" / f"{goalie_id}.json"
-    if not f.exists():
-        return f"Goalie {goalie_id}"
-    j = json.loads(f.read_text())
-    return f"{j['firstName']['default']} {j['lastName']['default']}"
+    """Resolve goalie name with cross-season lookup and caching."""
+    if goalie_id not in _NAME_CACHE:
+        # Try the given season first, then other seasons in SEASONS order
+        search_order = (season,) + tuple(s for s in SEASONS if s != season)
+        _NAME_CACHE[goalie_id] = resolve_name(goalie_id, search_order, REPO / "data")
+    return _NAME_CACHE[goalie_id]
 
 
 def main() -> None:

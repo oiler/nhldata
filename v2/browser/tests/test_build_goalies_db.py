@@ -10,7 +10,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from build_goalies_db import build_goalie_seasons, freeze_percentile
+from build_goalies_db import build_goalie_seasons, freeze_percentile, resolve_name
 
 
 def _gg():
@@ -73,3 +73,25 @@ def test_freeze_percentile_floor_and_rank():
     assert pct[2] > pct[1] > pct[0]            # ordering among eligible goalies
     assert np.isnan(pct[3])                    # below the 500-save floor -> NaN
     assert pct[2] == pytest.approx(100.0)      # highest eligible rate -> top percentile
+
+
+def test_resolve_name_cross_season_fallback(tmp_path):
+    """Test resolve_name finds player JSON across multiple seasons."""
+    # Create 2022 players dir with goalie 77's data
+    players_2022 = tmp_path / "2022" / "players"
+    players_2022.mkdir(parents=True)
+    (players_2022 / "77.json").write_text(
+        '{"firstName":{"default":"Igor"},"lastName":{"default":"Shesterkin"}}'
+    )
+
+    # Create 2021 players dir but leave it empty (no 77 there)
+    players_2021 = tmp_path / "2021" / "players"
+    players_2021.mkdir(parents=True)
+
+    # Resolve with 2021 first in search order: should find it via 2022 fallback
+    name = resolve_name(77, ("2021", "2022"), tmp_path)
+    assert name == "Igor Shesterkin"
+
+    # Resolve nonexistent goalie: should fallback to generic
+    name = resolve_name(88, ("2021", "2022"), tmp_path)
+    assert name == "Goalie 88"
