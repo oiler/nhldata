@@ -58,7 +58,8 @@ def ridge_linear(X: np.ndarray, y: np.ndarray, penalty: np.ndarray):
     dof = max(len(y) - X.shape[1], 1)
     sigma2 = float(resid @ resid) / dof
     cov = sigma2 * (A_inv @ (X.T @ X) @ A_inv)
-    return beta, np.sqrt(np.diag(cov))
+    # Near-collinear/degenerate regressors under ridge can push a zero variance numerically negative — clip before sqrt.
+    return beta, np.sqrt(np.clip(np.diag(cov), 0.0, None))
 
 
 def freeze_effect(saves: pd.DataFrame, y: np.ndarray,

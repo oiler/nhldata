@@ -67,6 +67,16 @@ def test_ridge_linear_penalty_shrinks():
     assert abs(b_big[1]) < abs(b_small[1]) and abs(b_big[1]) < 0.01
 
 
+def test_ridge_linear_collinear_columns_no_warning():
+    import warnings
+    X = np.column_stack([np.ones(100), np.ones(100) * 3.0, np.arange(100.0)])
+    y = X[:, 2] * 0.5 + 1.0
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", RuntimeWarning)
+        beta, se = ridge_linear(X, y, np.array([1e-6, 1.0, 1e-6]))
+    assert np.all(np.isfinite(se))
+
+
 from v2.goalies.freeze_value import freeze_effect, season_value
 
 
