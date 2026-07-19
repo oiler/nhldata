@@ -1,6 +1,5 @@
 # v2/browser/pages/goalies.py
 import dash
-import pandas as pd
 from dash import html, dash_table, callback, Input, Output
 from dash.dash_table.Format import Format, Scheme
 
@@ -52,7 +51,7 @@ def update_goalies(season):
         {"name": "xGA", "id": "xga", "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
         {"name": "GSAx", "id": "gsax", "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
         {"name": "GSAx/100", "id": "gsax_per100", "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed)},
-        {"name": "Freeze%", "id": "freeze_rate", "type": "numeric", "format": Format(precision=3, scheme=Scheme.fixed)},
+        {"name": "Freeze rate", "id": "freeze_rate", "type": "numeric", "format": Format(precision=3, scheme=Scheme.fixed)},
         {"name": "Freeze pct", "id": "freeze_pct", "type": "numeric", "format": Format(precision=0, scheme=Scheme.fixed)},
         {"name": "Difficulty faced", "id": "mean_difficulty_pct", "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
         {"name": "Perf (season z̄)", "id": "mean_perf_z", "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed)},

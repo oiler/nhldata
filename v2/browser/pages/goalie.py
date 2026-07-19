@@ -28,6 +28,10 @@ _FREEZE_MEDIAN_SQL = """
 SELECT freeze_rate FROM goalie_seasons WHERE season = ? AND freeze_pct IS NOT NULL
 """
 
+# Typical starter workload ~= 1,550 saves/season; matches the freeze-value
+# study's conversion constant in v2/goalies/freeze_value.py (SAVES_PER_SEASON).
+STARTER_SEASON_SAVES = 1550
+
 
 def _season_card(r):
     # Each fragment guards only itself: the freeze fragment (rate + pct) renders
@@ -82,7 +86,7 @@ def layout(goalie_id=None):
             median_df = goalies_query(_FREEZE_MEDIAN_SQL, params=(int(latest["season"]),))
             if not median_df.empty:
                 median_rate = median_df["freeze_rate"].median()
-                goals_vs_median = -delta * 1550 * (float(latest["freeze_rate"]) - median_rate)
+                goals_vs_median = -delta * STARTER_SEASON_SAVES * (float(latest["freeze_rate"]) - median_rate)
                 children.append(html.P(
                     f"Freeze impact vs the league-median freeze rate: {goals_vs_median:+.1f} "
                     f"goals per starter season (this goalie: p{latest['freeze_pct']:.0f} freeze "
