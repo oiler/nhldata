@@ -123,6 +123,24 @@ Revisions to the remaining phases:
 - **Tandem comparisons (from §6's sketch) fold into the repeatability suite, minimally.** P3's artifact tests already did the heavy tandem lifting (freeze teammate r = 0.086 vs switcher 0.601). `repeatability.py` adds one table: same-team same-season goalie pairs, per-component gaps vs their term-estimate gaps, back-to-back burden noted — a sanity check on environment stripping, not a gate input. Anything deeper is post-gate work.
 - **Modules** (flat in `v2/goalies/`, P6 outputs under `data/generated/goalies/validation/`): `era_probe.py`, `switch_registry.py`, `portability.py`, `repeatability.py`, `report_p6.py`. Reuses `chain_seasons`, the P3 term stack, and `blind_shot_xg` unchanged.
 
+## 6d. P6 gate outcome and the post-P6 phase (addendum, 2026-07-18; approved by oiler)
+
+**P6 gate (accepted by oiler): null as the result.** No candidate beats the EB-shrunk GSAx baseline on portability, and no pre-switch metric — including GSAx itself — predicts post-switch performance at n=67 (all candidate r ∈ [−0.18, +0.01]; baseline r = −0.086, weakly anti-predictive; the sole nominal CI exclusion is baseline-driven, K-dependent, and 1-of-5 — a flag, not a win). Freeze repeats again (0.63–0.72) but does not port to goal-prevention. Era probe: `rebound_generated` coding shifted at 2023 (+0.305 logit, 26σ) — the is_rebound anomaly's mechanism. Statistical-power backfill (pre-2021 seasons) considered and declined. Approach B (personnel terms) remains deferred.
+
+**Post-P6 phase (two sub-projects, designed together, executed back-to-back):**
+
+**A — Freeze value-pathway study + tandem team-effect bound** (`v2/goalies/freeze_value.py`, report to `validation/freeze_value_report.txt`):
+- Branch pricing: for each on-net save, outcome = opponent xG (per `blind_shot_xg`) against the saving goalie's team over the next 30 game-clock seconds, truncated at period end; the freeze branch includes post-faceoff play (pricing the d-zone faceoff cost), the in-play branch includes rebound risk.
+- Estimator: ridge-penalized linear regression (closed-form, pure numpy), `window_xGA ~ froze + save structure features + strength/score state`. The froze coefficient = per-freeze marginal xGA. Robustness: 15s/60s windows; within-goalie demeaned fit; era split (2021–22 vs 2023–25).
+- Value conversion: per-freeze delta × freezes/season across the observed freeze-rate spread → goals/season range. Either sign is a finding; a null closes the talent layer's last open branch.
+- Machine-readable handoff to sub-project B: `validation/freeze_value.json` — `{"per_freeze_xga_delta": <float or null>, "window_s": 30, "significant": <bool>}`; null/non-significant means B's freeze-value UI line stays absent. Significance rule (pre-registered): |coefficient| ≥ 2× its ridge SE in the 30s primary fit AND same sign in both robustness windows.
+- Tandem bound (same report): weighted correlation of the 157 tandem partners' gsax rates + weighted between/within-team variance decomposition → team share of save-outcome variance in sv% points, vs the JLikens ±0.006 anchor.
+
+**B — Browser goalie surfaces** (design doc: `docs/plans/2026-07-18-goalie-browser-design.md`):
+- Cross-season `goalies.db` sidecar (edm.db precedent; per-season league.db would amputate multi-season views), built by `v2/browser/build_goalies_db.py` from the generated goalie CSVs + player-JSON names.
+- Pages: `goalies.py` index (season filter, default sort GSAx, uncertainty framing in header copy), `goalie.py` detail (`/goalie/<id>`: season summary + per-game ledger), environment section on the existing team page.
+- Guardrails as UI decisions: per-game `perf_z` never drives a cross-game leaderboard (sort-on-own-prediction artifact, §6c); GSAx presented with the repeatability caveat this program measured; freeze-value line contingent on A's result with graceful degradation.
+
 ## 7. Phase gates
 
 - **After P3:** do goalie terms separate from noise at all (posterior spread vs. shrinkage)? If not, that is itself a publishable finding — and the RB literature says it is a live possibility.
