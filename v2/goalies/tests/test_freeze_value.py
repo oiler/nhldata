@@ -69,11 +69,14 @@ def test_ridge_linear_penalty_shrinks():
 
 def test_ridge_linear_collinear_columns_no_warning():
     import warnings
-    X = np.column_stack([np.ones(100), np.ones(100) * 3.0, np.arange(100.0)])
-    y = X[:, 2] * 0.5 + 1.0
+    rng = np.random.default_rng(0)
+    X = np.column_stack([np.ones(100), np.full(100, 30.0), np.log1p(np.full(100, 30.0)),
+                         np.full(100, 20.0), np.ones(100), rng.random(100)])
+    y = 0.02 + rng.normal(scale=0.005, size=100)
+    penalty = np.array([1e-6, 1.0, 1.0, 1.0, 1.0, 1e-6])
     with warnings.catch_warnings():
         warnings.simplefilter("error", RuntimeWarning)
-        beta, se = ridge_linear(X, y, np.array([1e-6, 1.0, 1e-6]))
+        beta, se = ridge_linear(X, y, penalty)
     assert np.all(np.isfinite(se))
 
 
