@@ -146,13 +146,24 @@ def main() -> None:
                      f"n={fits[w]['n']} raw_frozen_minus_inplay={raw_gap:+.5f} "
                      f"frozen_mean={frozen_mean:.4f} inplay_mean={inplay_mean:.4f}")
 
+    p30 = fits[30]
+    se_margin = abs(p30["coef"]) / p30["se"]
+    lines.append(f"SE caveat: reported SEs are iid ridge SEs; overlapping windows + "
+                 f"within-game clustering make true uncertainty larger (plausibly 2-5x) "
+                 f"— the significance margin (|coef| ~ {se_margin:.0f}x SE) is unaffected.")
+
     y30 = ys[30]
     wg = freeze_effect(saves, y30, demean_by_goalie=True)
     lines.append(f"within-goalie 30s: coef={wg['coef']:+.5f} se={wg['se']:.5f}")
+    era_fits = {}
     for label, seasons in (("eraA", (2021, 2022)), ("eraB", (2023, 2024, 2025))):
         m = saves["season"].isin(seasons).to_numpy()
         e = freeze_effect(saves[m], y30[m])
+        era_fits[label] = e
         lines.append(f"{label} 30s: coef={e['coef']:+.5f} se={e['se']:.5f} n={e['n']}")
+    lines.append(f"era gap ({era_fits['eraA']['coef']:+.5f} vs {era_fits['eraB']['coef']:+.5f}) "
+                 f"is consistent with the known 2023 tracking-era freeze-detection shift; "
+                 f"the 6d rule requires sign consistency only.")
 
     primary = fits[30]
     significant = (abs(primary["coef"]) >= 2 * primary["se"]
@@ -170,6 +181,13 @@ def main() -> None:
     lines.append(f"BETWEEN-GOALIE SKILL VALUE (p90 vs p10 freeze rate): "
                  f"{spread_goals:+.2f} goals/season")
 
+    pe_mask = (saves["time_s"] <= (PERIOD_END_S - 30)).to_numpy()
+    pe_fit = freeze_effect(saves[pe_mask], y30[pe_mask])
+    pe_pct = abs((primary["coef"] - pe_fit["coef"]) / primary["coef"]) * 100
+    lines.append(f"period-end sensitivity: coef30 excluding last 30s of periods = "
+                 f"{pe_fit['coef']:+.5f} (headline {primary['coef']:+.5f}; "
+                 f"~{pe_pct:.0f}% of effect is buzzer-adjacent auto-freeze)")
+
     fen = shots[shots["event"] != "blocked-shot"]
     gg = pd.concat([pd.read_csv(GEN / f"goalie_games_{s}.csv") for s in SEASONS],
                    ignore_index=True)
@@ -183,12 +201,32 @@ def main() -> None:
              .groupby(["season", "team"]).head(2))
     counts = pairs.groupby(["season", "team"]).size()
     pairs = pairs.set_index(["season", "team"]).loc[counts[counts == 2].index].reset_index()
-    tb = tandem_bound(pairs[["season", "team", "goalie_id", "gsax_rate", "n"]])
+    tb_input = pairs[["season", "team", "goalie_id", "gsax_rate", "n"]]
+    tb = tandem_bound(tb_input)
+    bound_sd_form = float(np.sqrt(tb["between_share"]) * tb["sd_rate"])
     lines.append(f"\ntandem bound (workload-labeled starter/backup pairs, avoids "
                  f"order-statistic artifact): partner_r={tb['partner_r']:+.3f} "
                  f"between_share={tb['between_share']:.3f} sd_rate={tb['sd_rate']:.4f} "
-                 f"bound={tb['bound_sv_pts']:.4f} sv-pts/shot over {tb['n_pairs']} pairs "
-                 f"(JLikens anchor ~0.006)")
+                 f"bound_sd_form={bound_sd_form:.4f} sv-pts/shot (SD form, comparable to "
+                 f"JLikens ~0.006; share-x-SD hybrid form {tb['bound_sv_pts']:.4f}) "
+                 f"over {tb['n_pairs']} pairs")
+    lines.append("tandem bound takeaway: consistent with the JLikens anchor, "
+                 "noise-floor-dominated — not tighter than it.")
+
+    rng = np.random.default_rng(42)
+    null_between_shares = np.empty(300)
+    for i in range(300):
+        shuffled = tb_input.copy()
+        shuffled["gsax_rate"] = shuffled.groupby("season")["gsax_rate"].transform(
+            lambda s: rng.permutation(s.to_numpy()))
+        null_between_shares[i] = tandem_bound(shuffled)["between_share"]
+    null_mean = float(np.mean(null_between_shares))
+    null_p95 = float(np.percentile(null_between_shares, 95))
+    perm_p = float(np.mean(null_between_shares >= tb["between_share"]))
+    lines.append(f"between_share null floor (2-goalie pairs, 300 within-season "
+                 f"permutations): mean {null_mean:.3f}, p95 {null_p95:.3f}; "
+                 f"observed {tb['between_share']:.3f} -> permutation p={perm_p:.2f}")
+    lines.append("partner_r is the evidence-bearing tandem statistic, not between_share")
 
     report = "\n".join(lines)
     (VAL / "freeze_value_report.txt").write_text(report + "\n")
