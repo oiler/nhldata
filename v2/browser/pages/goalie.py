@@ -24,6 +24,10 @@ FROM goalie_games WHERE goalie_id = ? ORDER BY game_date DESC
 
 _FREEZE_SQL = "SELECT per_freeze_xga_delta FROM freeze_value"
 
+_FREEZE_MEDIAN_SQL = """
+SELECT freeze_rate FROM goalie_seasons WHERE season = ? AND freeze_pct IS NOT NULL
+"""
+
 
 def _season_card(r):
     # Each fragment guards only itself: the freeze fragment (rate + pct) renders
@@ -74,12 +78,16 @@ def layout(goalie_id=None):
     if not fv.empty:
         delta = float(fv.iloc[0]["per_freeze_xga_delta"])
         latest = seasons.iloc[0]
-        if pd.notna(latest["freeze_rate"]):
-            per_season = delta * 1550 * float(latest["freeze_rate"])
-            children.append(html.P(
-                f"Freeze skill at this rate is worth ≈ {-per_season:.1f} "
-                f"suppressed xGA per starter season (validated pathway estimate).",
-                style={"fontSize": "0.9rem", "color": "#495057"}))
+        if pd.notna(latest["freeze_rate"]) and pd.notna(latest["freeze_pct"]):
+            median_df = goalies_query(_FREEZE_MEDIAN_SQL, params=(int(latest["season"]),))
+            if not median_df.empty:
+                median_rate = median_df["freeze_rate"].median()
+                goals_vs_median = -delta * 1550 * (float(latest["freeze_rate"]) - median_rate)
+                children.append(html.P(
+                    f"Freeze impact vs the league-median freeze rate: {goals_vs_median:+.1f} "
+                    f"goals per starter season (this goalie: p{latest['freeze_pct']:.0f} freeze "
+                    f"rate; validated pathway estimate).",
+                    style={"fontSize": "0.9rem", "color": "#495057"}))
 
     columns = [
         {"name": "Date", "id": "game_date"},
