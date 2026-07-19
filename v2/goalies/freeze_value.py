@@ -59,3 +59,26 @@ def ridge_linear(X: np.ndarray, y: np.ndarray, penalty: np.ndarray):
     sigma2 = float(resid @ resid) / dof
     cov = sigma2 * (A_inv @ (X.T @ X) @ A_inv)
     return beta, np.sqrt(np.diag(cov))
+
+
+def freeze_effect(saves: pd.DataFrame, y: np.ndarray,
+                  demean_by_goalie: bool = False) -> dict:
+    froze = saves["froze"].to_numpy(dtype=float)
+    yy = np.asarray(y, dtype=float)
+    if demean_by_goalie:
+        g = saves["goalie_id"].to_numpy()
+        d = pd.DataFrame({"g": g, "y": yy, "f": froze})
+        yy = (d["y"] - d.groupby("g")["y"].transform("mean")).to_numpy()
+        froze = (d["f"] - d.groupby("g")["f"].transform("mean")).to_numpy()
+    X = np.hstack([build_features(saves).to_numpy(), froze[:, None]])
+    penalty = np.full(X.shape[1], 1.0)
+    penalty[STRUCTURE_COLS.index("intercept")] = 1e-6
+    penalty[-1] = 1e-6
+    beta, se = ridge_linear(X, yy, penalty)
+    return {"coef": float(beta[-1]), "se": float(se[-1]), "n": len(yy)}
+
+
+def season_value(delta: float, rate_lo: float, rate_hi: float,
+                 saves_per_season: int = SAVES_PER_SEASON) -> dict:
+    return {"goals_low": delta * saves_per_season * rate_lo,
+            "goals_high": delta * saves_per_season * rate_hi}
