@@ -5,6 +5,9 @@ as opponent xG in the next 30 game-clock seconds, truncated at period end.
 Estimator: closed-form generalized-ridge linear regression, froze effectively
 unpenalized. Either sign is a finding.
 
+The shot stream is fenwick-only by pipeline design: blocked shots are never extracted,
+so window xGA sums unblocked attempts only.
+
 Usage: python3 v2/goalies/freeze_value.py
 """
 
@@ -131,14 +134,19 @@ def main() -> None:
     lines = []
 
     fits = {}
+    ys = {}
     for w in WINDOWS:
         y = window_xga(shots, saves, window_s=w)
+        ys[w] = y
         fits[w] = freeze_effect(saves, y)
         raw_gap = float(np.mean(y[saves["froze"] == 1]) - np.mean(y[saves["froze"] == 0]))
+        frozen_mean = float(np.mean(y[saves["froze"] == 1]))
+        inplay_mean = float(np.mean(y[saves["froze"] == 0]))
         lines.append(f"window {w:>2}s: coef={fits[w]['coef']:+.5f} se={fits[w]['se']:.5f} "
-                     f"n={fits[w]['n']} raw_frozen_minus_inplay={raw_gap:+.5f}")
+                     f"n={fits[w]['n']} raw_frozen_minus_inplay={raw_gap:+.5f} "
+                     f"frozen_mean={frozen_mean:.4f} inplay_mean={inplay_mean:.4f}")
 
-    y30 = window_xga(shots, saves, window_s=30)
+    y30 = ys[30]
     wg = freeze_effect(saves, y30, demean_by_goalie=True)
     lines.append(f"within-goalie 30s: coef={wg['coef']:+.5f} se={wg['se']:.5f}")
     for label, seasons in (("eraA", (2021, 2022)), ("eraB", (2023, 2024, 2025))):
@@ -156,8 +164,11 @@ def main() -> None:
     lines.append(f"significant per 6d rule: {significant}")
     lines.append(f"freeze-rate spread (>=500 saves): p10={big.quantile(0.1):.3f} "
                  f"p90={big.quantile(0.9):.3f}")
-    lines.append(f"season value at spread ends: {val['goals_low']:+.2f} to "
-                 f"{val['goals_high']:+.2f} goals/season (negative = suppression)")
+    spread_goals = primary["coef"] * SAVES_PER_SEASON * (float(big.quantile(0.9)) - float(big.quantile(0.1)))
+    lines.append(f"absolute suppression vs a zero-freeze baseline: p10-rate goalie "
+                 f"{val['goals_low']:+.2f}, p90-rate goalie {val['goals_high']:+.2f} goals/season")
+    lines.append(f"BETWEEN-GOALIE SKILL VALUE (p90 vs p10 freeze rate): "
+                 f"{spread_goals:+.2f} goals/season")
 
     fen = shots[shots["event"] != "blocked-shot"]
     gg = pd.concat([pd.read_csv(GEN / f"goalie_games_{s}.csv") for s in SEASONS],
