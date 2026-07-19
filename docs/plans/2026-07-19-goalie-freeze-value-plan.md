@@ -293,20 +293,24 @@ from v2.goalies.freeze_value import tandem_bound
 
 
 def test_tandem_bound_team_driven_vs_independent():
+    # Partners are labeled starter/backup by WORKLOAD (n), which is exogenous to
+    # gsax_rate — labeling by the outcome (hi/lo rate) would inject the
+    # order-statistic floor corr(max, min) = 1/(pi-1) ~ 0.467 under independence
+    # (plan defect caught at execution 2026-07-19; method corrected).
     rng = np.random.default_rng(7)
-    # team-driven: partners share a team effect -> high partner_r, high between_share
     rows_team, rows_indep = [], []
-    for i in range(60):
+    for i in range(200):
         team_eff = rng.normal(scale=0.01)
         for j, g in enumerate((i * 2, i * 2 + 1)):
-            base = {"season": 2023, "team": f"T{i}", "goalie_id": g, "n": 1000}
+            base = {"season": 2023, "team": f"T{i}", "goalie_id": g,
+                    "n": 1400 if j == 0 else 900}
             rows_team.append({**base, "gsax_rate": team_eff + rng.normal(scale=0.002)})
             rows_indep.append({**base, "gsax_rate": rng.normal(scale=0.01)})
     driven = tandem_bound(pd.DataFrame(rows_team))
     indep = tandem_bound(pd.DataFrame(rows_indep))
-    assert driven["partner_r"] > 0.7 and abs(indep["partner_r"]) < 0.35
+    assert driven["partner_r"] > 0.6 and abs(indep["partner_r"]) < 0.2
     assert driven["between_share"] > indep["between_share"]
-    assert driven["n_pairs"] == 60
+    assert driven["n_pairs"] == 200
 ```
 
 - [ ] **Step 2: Run to verify failure** — `ImportError`.
@@ -321,11 +325,14 @@ def tandem_bound(rates: pd.DataFrame) -> dict:
     for (_, _), grp in rates.groupby(["season", "team"]):
         if len(grp) != 2:
             continue
-        hi, lo = grp.sort_values("gsax_rate", ascending=False).itertuples(index=False)
-        pairs.append({"hi": hi.gsax_rate, "lo": lo.gsax_rate,
-                      "w": min(hi.n, lo.n)})
+        # label by workload (exogenous), never by the outcome: sorting hi/lo on
+        # gsax_rate would put corr(max, min) ~ 0.467 under full independence
+        starter, backup = grp.sort_values(
+            ["n", "goalie_id"], ascending=[False, True]).itertuples(index=False)
+        pairs.append({"starter": starter.gsax_rate, "backup": backup.gsax_rate,
+                      "w": min(starter.n, backup.n)})
     p = pd.DataFrame(pairs)
-    partner_r = weighted_r(p["hi"], p["lo"], p["w"])
+    partner_r = weighted_r(p["starter"], p["backup"], p["w"])
     w = rates["n"].to_numpy(dtype=float)
     x = rates["gsax_rate"].to_numpy(dtype=float)
     mu = np.average(x, weights=w)
