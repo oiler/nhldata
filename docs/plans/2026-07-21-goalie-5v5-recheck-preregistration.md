@@ -1,6 +1,6 @@
 # Goalie 5v5 re-check — pre-registration addendum
 
-**Date:** 2026-07-21 (written before any 5v5 research output was computed)
+**Date:** 2026-07-21 (written before any pre-registered re-check output was computed; the descriptive 5v5 pipeline layer predates this addendum)
 **Parent spec:** docs/plans/2026-07-21-goalie-5v5-parallel-design.md §5
 
 ## Slice

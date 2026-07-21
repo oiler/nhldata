@@ -33,6 +33,11 @@ WHERE season = ? AND situation = ? AND freeze_pct IS NOT NULL
 # study's conversion constant in v2/goalies/freeze_value.py (SAVES_PER_SEASON).
 STARTER_SEASON_SAVES = 1550
 
+# 5v5 share of starter saves ~= 0.786 (league share of saves at situationCode
+# 1551, 2021-2025) -- the freeze-impact line must price per-cut saves, not
+# all-situation saves, or the 5v5 figure overstates by ~27%.
+STARTER_SEASON_SAVES_5V5 = 1220
+
 
 def _season_card(r, situation="all"):
     # Each fragment guards only itself: the freeze fragment (rate + pct) renders
@@ -107,7 +112,8 @@ def render_goalie(gid, situation):
                                       params=(int(latest["season"]), situation))
             if not median_df.empty:
                 median_rate = median_df["freeze_rate"].median()
-                goals_vs_median = -delta * STARTER_SEASON_SAVES * (float(latest["freeze_rate"]) - median_rate)
+                saves_base = STARTER_SEASON_SAVES_5V5 if situation == "5v5" else STARTER_SEASON_SAVES
+                goals_vs_median = -delta * saves_base * (float(latest["freeze_rate"]) - median_rate)
                 children.append(html.P(
                     f"Freeze impact vs the league-median freeze rate: {goals_vs_median:+.1f} "
                     f"goals per starter season (this goalie: p{latest['freeze_pct']:.0f} freeze "
