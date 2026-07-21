@@ -31,6 +31,10 @@ SEASONS = ("2021", "2022", "2023", "2024", "2025")
 PERIOD_END_S = 1200
 WINDOWS = (30, 15, 60)          # primary first, then robustness
 SAVES_PER_SEASON = 1550
+# 5v5 share of starter saves ~= 0.786 (situationCode 1551, 2021-2025); the 5v5
+# report must price per-cut saves or its goals/season prose overstates ~27%.
+# Matches STARTER_SEASON_SAVES_5V5 in v2/browser/pages/goalie.py.
+SAVES_PER_SEASON_5V5 = 1220
 
 
 def window_xga(shots: pd.DataFrame, saves: pd.DataFrame, window_s: int = 30) -> np.ndarray:
@@ -174,11 +178,13 @@ def main() -> None:
                    and np.sign(fits[60]["coef"]) == np.sign(primary["coef"]))
     per_goalie_rate = saves.groupby("goalie_id")["froze"].agg(["mean", "size"])
     big = per_goalie_rate[per_goalie_rate["size"] >= 500]["mean"]
-    sv = season_value(primary["coef"], float(big.quantile(0.1)), float(big.quantile(0.9)))
+    saves_base = SAVES_PER_SEASON_5V5 if situation == "5v5" else SAVES_PER_SEASON
+    sv = season_value(primary["coef"], float(big.quantile(0.1)), float(big.quantile(0.9)),
+                      saves_per_season=saves_base)
     lines.append(f"significant per 6d rule: {significant}")
     lines.append(f"freeze-rate spread (>=500 saves): p10={big.quantile(0.1):.3f} "
                  f"p90={big.quantile(0.9):.3f}")
-    spread_goals = primary["coef"] * SAVES_PER_SEASON * (float(big.quantile(0.9)) - float(big.quantile(0.1)))
+    spread_goals = primary["coef"] * saves_base * (float(big.quantile(0.9)) - float(big.quantile(0.1)))
     lines.append(f"absolute suppression vs a zero-freeze baseline: p10-rate goalie "
                  f"{sv['goals_low']:+.2f}, p90-rate goalie {sv['goals_high']:+.2f} goals/season")
     lines.append(f"BETWEEN-GOALIE SKILL VALUE (p90 vs p10 freeze rate): "
