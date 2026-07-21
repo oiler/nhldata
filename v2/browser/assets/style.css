@@ -247,6 +247,16 @@ body {
 }
 .app-footer .glossary-note code { color: var(--navy); }
 
+.app-footer .glossary-subheading {
+  margin: 1.5rem 0 0.4rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--text-3);
+}
+.app-footer .glossary-subheading:first-of-type { margin-top: 0.35rem; }
+
 .app-footer .glossary {
   display: grid;
   grid-template-columns: max-content 1fr;

@@ -120,6 +120,7 @@ app.layout = html.Div([
             ],
             className="glossary-note",
         ),
+        html.H6("Skaters", className="glossary-subheading"),
         html.Dl([
             html.Dt("Age"),
             html.Dd("Player's age in years as of Sept 15 of the season's start year (Sept 15, 2025 for the 2025-26 season)."),
@@ -174,6 +175,90 @@ app.layout = html.Div([
             html.Dd("Deployment Score Plus — a defenseman's raw deployment score indexed to the league average (100 = average). The raw score accumulates points each 5v5 second based on the opposing forward line faced (line 1 opponents score highest). DPS+ normalizes across the league so 110 means a defenseman faces 10% tougher forward deployment than average."),
             html.Dt("DPL"),
             html.Dd("Deployment Line — a forward's average line assignment (1–4) across games played, where line 1 is the top line. Lower values indicate higher deployment; 1.0 means exclusively used as a first-line forward, 4.0 exclusively as a fourth-liner."),
+        ], className="glossary"),
+        html.H6("Goalies", className="glossary-subheading"),
+        html.P(
+            [
+                "Goalie stats cover ",
+                html.B("all strength states"),
+                " (not 5v5-only), seasons 2021-22 through 2025-26. They are descriptive "
+                "measurements: our validation found goalie results are dominated by "
+                "environment and sample noise, so read them as what happened, not as "
+                "talent rankings.",
+            ],
+            className="glossary-note",
+        ),
+        html.Dl([
+            html.Dt("Shots"),
+            html.Dd("Unblocked shot attempts faced (shots on goal plus misses), all strength states."),
+            html.Dt("xGA"),
+            html.Dd(
+                "Expected goals against — the sum of each shot's goal probability from our "
+                "goalie-blind shot model (rink-adjusted location, shot type, strength, score "
+                "state, pre-shot context). What an average goalie would concede on the same shots."
+            ),
+            html.Dt("GSAx"),
+            html.Dd(
+                "Goals Saved Above Expected: xGA − GA. Positive means fewer goals conceded than "
+                "the shot mix predicted. Descriptive, not predictive — it is weakly repeatable "
+                "year over year (r ≈ 0.1) and did not predict goalies' post-trade results in our "
+                "validation."
+            ),
+            html.Dt("GSAx/100"),
+            html.Dd("GSAx per 100 unblocked shots faced — the workload-independent rate form."),
+            html.Dt("Freeze rate"),
+            html.Dd(
+                "Share of saves frozen for a stoppage within 5 seconds. The most repeatable goalie "
+                "skill in our data (year-over-year r ≈ 0.6–0.7) — it travels with the goalie, not "
+                "the team."
+            ),
+            html.Dt("Freeze pct"),
+            html.Dd("League percentile (0–100) of freeze rate within the season, among goalies with 500+ saves."),
+            html.Dt("Freeze impact"),
+            html.Dd(
+                "Goals per starter season attributable to freeze skill, relative to the "
+                "league-median freeze rate. From our pricing study: each freeze suppresses "
+                "≈ 0.02 expected goals over the next 30 seconds of play versus playing the puck on."
+            ),
+            html.Dt("Difficulty"),
+            html.Dd(
+                "Per-game workload percentile (0–100): the game's xG faced per 60 ranked against "
+                "all goalie-games of 20+ minutes league-wide. 90 means a harder night than 90% of "
+                "goalie starts."
+            ),
+            html.Dt("Difficulty faced"),
+            html.Dd("Season average of per-game Difficulty — how hard this goalie's slate of games actually was."),
+            html.Dt("Perf z"),
+            html.Dd(
+                "Difficulty-adjusted single-game score: (xGA − GA) scaled by the game's "
+                "shot-quality variance. 0 = as expected for that workload; +2 is an excellent "
+                "night. Noisy for short relief stints."
+            ),
+            html.Dt("Perf (season z̄)"),
+            html.Dd("Season mean of per-game Perf z. Compare goalies on this aggregate, not on single games."),
+            html.Dt("Leverage"),
+            html.Dd(
+                "Win-probability value added: each shot outcome weighted by how much win "
+                "probability a goal would have swung in that game state — a save in a tied third "
+                "period counts more than one up 5-0. Descriptive by design."
+            ),
+            html.Dt("Difficulty served"),
+            html.Dd(
+                "Team page — the average per-game Difficulty a team hands its own goalies, the "
+                "“o-line grade.” Measures workload served, not goalie quality."
+            ),
+            html.Dt("xG faced/60"),
+            html.Dd("Team page — expected goals against per 60 minutes served to the team's goalies."),
+            html.Dt("High-danger share"),
+            html.Dd("Team page — share of shots faced from inside 15 feet (rink-adjusted)."),
+            html.Dt("Cross-ice/60"),
+            html.Dd(
+                "Team page — cross-ice quick plays against per 60: shots within 3 seconds of a "
+                "same-team attempt from the other side of the ice, the highest-conversion pattern "
+                "we measure."
+            ),
+            html.Dt("Back-to-backs"),
+            html.Dd("Team page — games played on the second night of consecutive team game days."),
         ], className="glossary"),
         ], className="glossary-card"),
     ], id="glossary-footer", className="app-footer"),
