@@ -10,13 +10,17 @@ composite weights before any real case is scored.
 Usage: python3 v2/goalies/switch_registry.py
 """
 
+import argparse
+import sys
 from pathlib import Path
 
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, str(ROOT))
+from v2.goalies.cut import gen_dir, load_shots, parse_situation  # noqa: E402
+
 GEN = ROOT / "data" / "generated" / "goalies"
-VAL = GEN / "validation"
 SEASONS = ("2021", "2022", "2023", "2024", "2025")
 FLOOR = 600
 
@@ -53,13 +57,13 @@ def _case_row(prev_rows, cur, case_id, switch_type):
     }
 
 
-def switch_cases(stints: pd.DataFrame) -> pd.DataFrame:
+def switch_cases(stints: pd.DataFrame, floor: int = FLOOR) -> pd.DataFrame:
     rows = []
     for _, grp in stints.groupby("goalie_id"):
         grp = grp.reset_index(drop=True)
         for i in range(1, len(grp)):
             prev_rows, cur = grp.iloc[:i], grp.iloc[i]
-            if prev_rows["fenwick"].sum() < FLOOR or cur["fenwick"] < FLOOR:
+            if prev_rows["fenwick"].sum() < floor or cur["fenwick"] < floor:
                 continue
             switch_type = ("offseason"
                            if prev_rows.iloc[-1]["last_season"] != cur["first_season"]
@@ -70,7 +74,7 @@ def switch_cases(stints: pd.DataFrame) -> pd.DataFrame:
 
 
 def nonswitch_pseudo_cases(stints: pd.DataFrame, gg: pd.DataFrame,
-                           fenwick: pd.DataFrame) -> pd.DataFrame:
+                           fenwick: pd.DataFrame, floor: int = FLOOR) -> pd.DataFrame:
     """Same-team consecutive-season pseudo-cases, for frozen-param fitting only."""
     g = gg.merge(fenwick, on=["season", "game_id", "goalie_id"], how="left")
     g["fenwick"] = g["fenwick"].fillna(0)
@@ -84,7 +88,7 @@ def nonswitch_pseudo_cases(stints: pd.DataFrame, gg: pd.DataFrame,
                 continue
             switch_date = post["game_date"].min()
             pre = mine[mine["game_date"] < switch_date]
-            if pre["fenwick"].sum() < FLOOR or post["fenwick"].sum() < FLOOR:
+            if pre["fenwick"].sum() < floor or post["fenwick"].sum() < floor:
                 continue
             last_pre_season = int(pre["season"].max())
             rows.append({
@@ -104,21 +108,26 @@ def nonswitch_pseudo_cases(stints: pd.DataFrame, gg: pd.DataFrame,
 
 
 def main() -> None:
-    VAL.mkdir(parents=True, exist_ok=True)
+    situation = parse_situation()
+    p = argparse.ArgumentParser(add_help=False)
+    p.add_argument("--floor", type=int, default=FLOOR)
+    floor = p.parse_known_args()[0].floor
+    val = gen_dir(situation) / "validation"
+    val.mkdir(parents=True, exist_ok=True)
     gg = pd.concat([pd.read_csv(GEN / f"goalie_games_{s}.csv") for s in SEASONS],
                    ignore_index=True)
-    shots = pd.concat([pd.read_csv(GEN / f"shots_{s}.csv",
-                                   usecols=["season", "game_id", "goalie_id", "event"])
+    shots = pd.concat([load_shots(s, situation,
+                                  usecols=["season", "game_id", "goalie_id", "event"])
                        for s in SEASONS], ignore_index=True)
     fw = fenwick_by_game(shots)
     stints = stint_table(gg, fw)
-    real = switch_cases(stints)
-    pseudo = nonswitch_pseudo_cases(stints, gg, fw)
+    real = switch_cases(stints, floor=floor)
+    pseudo = nonswitch_pseudo_cases(stints, gg, fw, floor=floor)
     registry = pd.concat([real, pseudo], ignore_index=True)
-    registry.to_csv(VAL / "switch_registry.csv", index=False)
+    registry.to_csv(val / "switch_registry.csv", index=False)
     counts = real.groupby("switch_type").size().to_dict()
-    print(f"registry: {len(real)} real cases {counts}, {len(pseudo)} nonswitch pseudo; "
-          f"weights p10/p50/p90 = "
+    print(f"registry [{situation}, floor {floor}]: {len(real)} real cases {counts}, "
+          f"{len(pseudo)} nonswitch pseudo; weights p10/p50/p90 = "
           f"{real['weight'].quantile(.1):.0f}/{real['weight'].median():.0f}/"
           f"{real['weight'].quantile(.9):.0f}")
 

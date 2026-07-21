@@ -84,6 +84,18 @@ def test_pseudo_gap_year_labels_actual_last_played_season():
     assert p["first_post_season"] == 2023
 
 
+def test_switch_cases_floor_parameter():
+    # two stints of 550 fenwick each: below the 600 floor, above a 500 floor
+    stints = pd.DataFrame({
+        "goalie_id": [1, 1], "stint_id": [1, 2], "team": ["EDM", "CGY"],
+        "start": ["2023-10-01", "2024-10-01"], "end": ["2024-04-01", "2025-04-01"],
+        "first_season": [2023, 2024], "last_season": [2023, 2024],
+        "fenwick": [550, 550],
+    })
+    assert len(switch_cases(stints)) == 0                 # default 600 floor
+    assert len(switch_cases(stints, floor=500)) == 1
+
+
 def test_fenwick_by_game_excludes_blocked():
     shots = pd.DataFrame({
         "season": [2023] * 3, "game_id": [1] * 3, "goalie_id": [9] * 3,
