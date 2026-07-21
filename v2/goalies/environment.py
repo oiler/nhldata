@@ -11,6 +11,10 @@ from pathlib import Path
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent.parent
+import sys
+sys.path.insert(0, str(ROOT))
+from v2.goalies.cut import gen_dir, load_shots, parse_situation  # noqa: E402
+
 GEN = ROOT / "data" / "generated" / "goalies"
 SEASONS = ("2021", "2022", "2023", "2024", "2025")
 TIP_TYPES = {"tip-in", "deflected"}
@@ -62,13 +66,17 @@ def arena_freeze_offsets(shots: pd.DataFrame) -> pd.DataFrame:
 
 
 def main() -> None:
-    games = pd.read_csv(GEN / "game_difficulty.csv")
-    gg = pd.concat([pd.read_csv(GEN / f"goalie_games_{s}.csv") for s in SEASONS], ignore_index=True)
-    shots = pd.concat([pd.read_csv(GEN / f"shots_{s}.csv") for s in SEASONS], ignore_index=True)
+    situation = parse_situation()
+    out = gen_dir(situation)
+    out.mkdir(parents=True, exist_ok=True)
+    games = pd.read_csv(out / "game_difficulty.csv")
+    gg = pd.concat([pd.read_csv(GEN / f"goalie_games_{s}.csv") for s in SEASONS],
+                   ignore_index=True)
+    shots = pd.concat([load_shots(s, situation) for s in SEASONS], ignore_index=True)
     env = team_environment(games, gg, shots)
-    env.to_csv(GEN / "team_environment.csv", index=False)
+    env.to_csv(out / "team_environment.csv", index=False)
     offs = arena_freeze_offsets(shots)
-    offs.to_csv(GEN / "arena_freeze_offsets.csv", index=False)
+    offs.to_csv(out / "arena_freeze_offsets.csv", index=False)
     print(f"env rows: {len(env)}")
     print(f"b2b_games range: {env['b2b_games'].min()}-{env['b2b_games'].max()}")
     print(env.sort_values("mean_xg_faced_per60").tail(5).to_string(index=False))

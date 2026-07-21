@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT))
 from v2.goalies.features import CORSI_PREV  # noqa: E402
 from v2.goalies.gsax_baseline import blind_shot_xg  # noqa: E402
+from v2.goalies.cut import gen_dir, load_shots, parse_situation  # noqa: E402
 
 GEN = ROOT / "data" / "generated" / "goalies"
 SEASONS = ("2021", "2022", "2023", "2024", "2025")
@@ -58,13 +59,16 @@ def add_difficulty_pct(games: pd.DataFrame, min_toi_s: int = 1200) -> pd.DataFra
 
 
 def main() -> None:
+    situation = parse_situation()
+    out = gen_dir(situation)
+    out.mkdir(parents=True, exist_ok=True)
     frames = []
     for season in SEASONS:
-        shots = pd.read_csv(GEN / f"shots_{season}.csv")
-        toi = pd.read_csv(GEN / f"goalie_games_{season}.csv")
+        shots = load_shots(season, situation)
+        toi = pd.read_csv(GEN / f"goalie_games_{season}.csv")   # TOI: shared, all-situations
         frames.append(game_rows(shots, blind_shot_xg(shots), toi))
     games = add_difficulty_pct(pd.concat(frames, ignore_index=True))
-    games.to_csv(GEN / "game_difficulty.csv", index=False)
+    games.to_csv(out / "game_difficulty.csv", index=False)
     e = games[games["difficulty_pct"].notna()]
     print(f"{len(games)} goalie-games ({len(e)} eligible); "
           f"xg_per60 median {e['xg_per60'].median():.2f}, "

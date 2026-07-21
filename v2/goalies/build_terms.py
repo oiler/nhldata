@@ -15,6 +15,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 from v2.goalies.difficulty import LAYERS, fit_layer  # noqa: E402
+from v2.goalies.cut import gen_dir, load_shots, parse_situation  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 GEN = ROOT / "data" / "generated" / "goalies"
@@ -40,7 +41,10 @@ def chain_seasons(season_dfs: dict[str, pd.DataFrame], layer: str,
 
 
 def main() -> None:
-    season_dfs = {s: pd.read_csv(GEN / f"shots_{s}.csv") for s in SEASONS}
+    situation = parse_situation()
+    out = gen_dir(situation)
+    out.mkdir(parents=True, exist_ok=True)
+    season_dfs = {s: load_shots(s, situation) for s in SEASONS}
     per_season_terms = {s: [] for s in SEASONS}
     structure_rows = {s: [] for s in SEASONS}
 
@@ -57,9 +61,9 @@ def main() -> None:
     for season in SEASONS:
         pd.concat(per_season_terms[season], ignore_index=True)[
             ["goalie_id", "layer", "term", "se", "n_shots", "term_indep", "se_indep"]
-        ].to_csv(GEN / f"goalie_terms_{season}.csv", index=False)
+        ].to_csv(out / f"goalie_terms_{season}.csv", index=False)
         pd.DataFrame(structure_rows[season]).to_csv(
-            GEN / f"structure_coefs_{season}.csv", index=False)
+            out / f"structure_coefs_{season}.csv", index=False)
         print(f"{season}: terms + structure written")
 
 

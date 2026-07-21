@@ -15,6 +15,7 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 from v2.goalies.features import STRUCTURE_COLS, build_features  # noqa: E402
 from v2.goalies.irls import fit_penalized_logistic, predict_proba  # noqa: E402
+from v2.goalies.cut import gen_dir, load_shots, parse_situation  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 GEN = ROOT / "data" / "generated" / "goalies"
@@ -41,10 +42,13 @@ def gsax_table(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def main() -> None:
+    situation = parse_situation()
+    out = gen_dir(situation)
+    out.mkdir(parents=True, exist_ok=True)
     for season in SEASONS:
-        df = pd.read_csv(GEN / f"shots_{season}.csv")
+        df = load_shots(season, situation)
         table = gsax_table(df)
-        table.to_csv(GEN / f"gsax_{season}.csv", index=False)
+        table.to_csv(out / f"gsax_{season}.csv", index=False)
         print(f"{season}: gsax for {len(table)} goalies "
               f"(league xga {table['xga'].sum():.0f} vs ga {table['ga'].sum()})")
 

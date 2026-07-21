@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT))
 from v2.goalies.gsax_baseline import blind_shot_xg  # noqa: E402
 from v2.goalies.leverage import leverage_weight_vectorized  # noqa: E402
+from v2.goalies.cut import gen_dir, load_shots, parse_situation  # noqa: E402
 
 GEN = ROOT / "data" / "generated" / "goalies"
 SEASONS = ("2021", "2022", "2023", "2024", "2025")
@@ -36,19 +37,22 @@ def ledger_rows(shots: pd.DataFrame, xg: np.ndarray, lev: np.ndarray) -> pd.Data
 
 
 def main() -> None:
-    wp = pd.read_csv(GEN / "wp_table.csv")
+    situation = parse_situation()
+    out = gen_dir(situation)
+    out.mkdir(parents=True, exist_ok=True)
+    wp = pd.read_csv(GEN / "wp_table.csv")   # WP is a game-state object: shared across cuts
     frames = []
     for season in SEASONS:
-        shots = pd.read_csv(GEN / f"shots_{season}.csv")
+        shots = load_shots(season, situation)
         xg = blind_shot_xg(shots)
         lev = leverage_weight_vectorized(shots, wp)
         frames.append(ledger_rows(shots, xg, lev))
     ledger = pd.concat(frames, ignore_index=True)
-    diff = pd.read_csv(GEN / "game_difficulty.csv")[
+    diff = pd.read_csv(out / "game_difficulty.csv")[
         ["season", "game_id", "goalie_id", "difficulty_pct", "xg_per60", "toi_s"]]
     ledger = ledger.merge(diff, on=["season", "game_id", "goalie_id"], how="left")
     ledger["gsax_per60"] = ledger["gsax_game"] * 3600 / ledger["toi_s"]
-    ledger.to_csv(GEN / "game_ledger.csv", index=False)
+    ledger.to_csv(out / "game_ledger.csv", index=False)
     print(f"{len(ledger)} goalie-games; mean perf_z {ledger['perf_z'].mean():+.3f} "
           f"(should be ~0); mean lev_value {ledger['lev_value'].mean():+.4f}")
 

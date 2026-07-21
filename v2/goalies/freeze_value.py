@@ -23,6 +23,7 @@ sys.path.insert(0, str(ROOT))
 from v2.goalies.features import STRUCTURE_COLS, build_features  # noqa: E402
 from v2.goalies.gsax_baseline import blind_shot_xg  # noqa: E402
 from v2.goalies.portability import weighted_r  # noqa: E402
+from v2.goalies.cut import gen_dir, load_shots, parse_situation  # noqa: E402
 
 GEN = ROOT / "data" / "generated" / "goalies"
 VAL = GEN / "validation"
@@ -118,18 +119,20 @@ def tandem_bound(rates: pd.DataFrame) -> dict:
             "n_pairs": len(p)}
 
 
-def _load_saves_and_shots():
+def _load_saves_and_shots(situation: str = "all"):
     frames = []
     for season in SEASONS:
-        shots = pd.read_csv(GEN / f"shots_{season}.csv")
+        shots = load_shots(season, situation)
         shots["xg"] = blind_shot_xg(shots)
         frames.append(shots)
     return pd.concat(frames, ignore_index=True)
 
 
 def main() -> None:
-    VAL.mkdir(parents=True, exist_ok=True)
-    shots = _load_saves_and_shots()
+    situation = parse_situation()
+    val = gen_dir(situation) / "validation"
+    val.mkdir(parents=True, exist_ok=True)
+    shots = _load_saves_and_shots(situation)
     saves = shots[shots["on_net"] & ~shots["is_goal"] & shots["froze"].notna()].copy()
     lines = []
 
@@ -171,13 +174,13 @@ def main() -> None:
                    and np.sign(fits[60]["coef"]) == np.sign(primary["coef"]))
     per_goalie_rate = saves.groupby("goalie_id")["froze"].agg(["mean", "size"])
     big = per_goalie_rate[per_goalie_rate["size"] >= 500]["mean"]
-    val = season_value(primary["coef"], float(big.quantile(0.1)), float(big.quantile(0.9)))
+    sv = season_value(primary["coef"], float(big.quantile(0.1)), float(big.quantile(0.9)))
     lines.append(f"significant per 6d rule: {significant}")
     lines.append(f"freeze-rate spread (>=500 saves): p10={big.quantile(0.1):.3f} "
                  f"p90={big.quantile(0.9):.3f}")
     spread_goals = primary["coef"] * SAVES_PER_SEASON * (float(big.quantile(0.9)) - float(big.quantile(0.1)))
     lines.append(f"absolute suppression vs a zero-freeze baseline: p10-rate goalie "
-                 f"{val['goals_low']:+.2f}, p90-rate goalie {val['goals_high']:+.2f} goals/season")
+                 f"{sv['goals_low']:+.2f}, p90-rate goalie {sv['goals_high']:+.2f} goals/season")
     lines.append(f"BETWEEN-GOALIE SKILL VALUE (p90 vs p10 freeze rate): "
                  f"{spread_goals:+.2f} goals/season")
 
@@ -229,8 +232,8 @@ def main() -> None:
     lines.append("partner_r is the evidence-bearing tandem statistic, not between_share")
 
     report = "\n".join(lines)
-    (VAL / "freeze_value_report.txt").write_text(report + "\n")
-    (VAL / "freeze_value.json").write_text(json.dumps({
+    (val / "freeze_value_report.txt").write_text(report + "\n")
+    (val / "freeze_value.json").write_text(json.dumps({
         "per_freeze_xga_delta": primary["coef"] if significant else None,
         "window_s": 30, "significant": bool(significant)}, indent=2))
     print(report)
