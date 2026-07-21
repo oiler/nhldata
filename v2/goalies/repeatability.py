@@ -87,15 +87,18 @@ def tandem_table(gg: pd.DataFrame, shots_xg: pd.DataFrame,
 
 
 def main() -> None:
+    from v2.goalies.cut import gen_dir, parse_situation
     from v2.goalies.portability import build_shots_xg, load_terms
-    VAL.mkdir(parents=True, exist_ok=True)
-    terms = load_terms()
+    situation = parse_situation()
+    val = gen_dir(situation) / "validation"
+    val.mkdir(parents=True, exist_ok=True)
+    terms = load_terms(situation)
     rep = component_repeatability(terms)
-    rep.to_csv(VAL / "repeatability.csv", index=False)
+    rep.to_csv(val / "repeatability.csv", index=False)
     gg = pd.concat([pd.read_csv(GEN / f"goalie_games_{s}.csv") for s in SEASONS],
                    ignore_index=True)
-    tandem = tandem_table(gg, build_shots_xg(), terms)
-    tandem.to_csv(VAL / "tandem_table.csv", index=False)
+    tandem = tandem_table(gg, build_shots_xg(situation), terms)
+    tandem.to_csv(val / "tandem_table.csv", index=False)
     print(rep.to_string(index=False))
     print(f"\ntandem pairs: {len(tandem)}; "
           f"corr(gsax_gap, term_gap) = "
