@@ -98,6 +98,23 @@ app.layout = html.Div([
         ], style={"display": "flex", "alignItems": "center"}),
     ], className="filter-bar", style={"display": "none"}),
 
+    # Goalie situation filter — visible only on goalie-bearing pages (toggled
+    # below). Session-persisted so the choice follows the user across views.
+    html.Div([
+        html.Div([
+            html.Label("Situations"),
+            dcc.Dropdown(
+                id="goalie-situation",
+                options=[{"label": "All situations", "value": "all"},
+                         {"label": "5v5 (1551)", "value": "5v5"}],
+                value="all", clearable=False, searchable=False,
+                persistence=True, persistence_type="session",
+                style={"width": "200px"},
+            ),
+        ], style={"display": "flex", "alignItems": "center", "gap": "8px"}),
+    ], id="goalie-situation-bar", className="filter-bar",
+       style={"display": "none"}),
+
     # Page content
     html.Div(dash.page_container, className="page-content"),
 
@@ -277,6 +294,11 @@ def toggle_glossary_footer(pathname):
     return {"display": "none"} if pathname == "/" else {}
 
 
+@callback(Output("goalie-situation-bar", "style"), Input("url", "pathname"))
+def toggle_goalie_situation_bar(pathname):
+    p = pathname or ""
+    show = p == "/goalies" or p.startswith("/goalie/") or p.startswith("/team/")
+    return {} if show else {"display": "none"}
 
 
 if __name__ == "__main__":

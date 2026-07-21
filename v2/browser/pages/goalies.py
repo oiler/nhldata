@@ -16,8 +16,11 @@ _CAVEAT = ("GSAx describes results; it is weakly repeatable year-to-year (r ≈ 
 _SQL = """
 SELECT goalie_id, name, teams, gp, toi_s, shots_faced, ga, xga, gsax, gsax_per100,
        freeze_rate, freeze_pct, mean_difficulty_pct, mean_perf_z
-FROM goalie_seasons WHERE season = ? ORDER BY gsax DESC
+FROM goalie_seasons WHERE season = ? AND situation = ? ORDER BY gsax DESC
 """
+
+_CUT_NOTE = ("Strict 5v5 (situationCode 1551): shot metrics count 5v5 play only. "
+             "GP and TOI/GP remain all-situations.")
 
 
 def layout():
@@ -32,20 +35,23 @@ def layout():
 @callback(
     Output("goalies-content", "children"),
     Input("store-season", "data"),
+    Input("goalie-situation", "value"),
 )
-def update_goalies(season):
+def update_goalies(season, situation):
     season = season or "2025"
-    df = goalies_query(_SQL, params=(int(season),))
+    situation = situation if situation in ("all", "5v5") else "all"
+    df = goalies_query(_SQL, params=(int(season), situation))
     if df.empty:
         return html.P("No goalie data for this season.")
     df["goalie_link"] = df.apply(lambda r: f"[{r['name']}](/goalie/{r['goalie_id']})", axis=1)
     df["toi_display"] = (df["toi_s"] / df["gp"].where(df["gp"] > 0)).apply(seconds_to_mmss)
     _ci = {"case": "insensitive"}
+    toi_name = "TOI/GP (all sit)" if situation == "5v5" else "TOI/GP"
     columns = [
         {"name": "Goalie", "id": "goalie_link", "presentation": "markdown", "filter_options": _ci},
         {"name": "Team", "id": "teams", "filter_options": _ci},
         {"name": "GP", "id": "gp", "type": "numeric"},
-        {"name": "TOI/GP", "id": "toi_display", "filter_options": _ci},
+        {"name": toi_name, "id": "toi_display", "filter_options": _ci},
         {"name": "Shots", "id": "shots_faced", "type": "numeric"},
         {"name": "GA", "id": "ga", "type": "numeric"},
         {"name": "xGA", "id": "xga", "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
@@ -57,7 +63,9 @@ def update_goalies(season):
         {"name": "Perf (season z̄)", "id": "mean_perf_z", "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed)},
     ]
     display = [c["id"] for c in columns]
-    return html.Div(
+    note = ([html.P(_CUT_NOTE, style={"fontSize": "0.8rem", "color": "#6c757d"})]
+            if situation == "5v5" else [])
+    return html.Div(note + [html.Div(
         dash_table.DataTable(
             columns=columns,
             data=df[display].to_dict("records"),
@@ -67,4 +75,4 @@ def update_goalies(season):
             **table_styles(),
         ),
         className="table-wrap",
-    )
+    )])
