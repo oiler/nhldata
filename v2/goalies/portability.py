@@ -17,6 +17,7 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT))
+from v2.goalies.cut import gen_dir, load_shots, parse_situation  # noqa: E402
 from v2.goalies.difficulty import fit_layer  # noqa: E402
 from v2.goalies.gsax_baseline import blind_shot_xg  # noqa: E402
 
@@ -205,13 +206,13 @@ def apply_composite(row: dict, params: dict) -> float:
                      for c in params["beta"]))
 
 
-def build_shots_xg() -> pd.DataFrame:
+def build_shots_xg(situation: str = "all") -> pd.DataFrame:
     frames = []
     for s in SEASONS:
         # dtype checkpoint: case_outcome's tuple-membership join on
         # (season, game_id) fails silently (drops the case) if dtypes
         # mismatch across frames -- cast explicitly here.
-        shots = pd.read_csv(GEN / f"shots_{s}.csv").astype(
+        shots = load_shots(s, situation).astype(
             {"season": "int64", "game_id": "int64"})
         xg = blind_shot_xg(shots)
         frames.append(pd.DataFrame({
@@ -223,12 +224,14 @@ def build_shots_xg() -> pd.DataFrame:
     return pd.concat(frames, ignore_index=True)
 
 
-def load_terms() -> dict[int, pd.DataFrame]:
-    return {int(s): pd.read_csv(GEN / f"goalie_terms_{s}.csv") for s in SEASONS}
+def load_terms(situation: str = "all") -> dict[int, pd.DataFrame]:
+    d = gen_dir(situation)
+    return {int(s): pd.read_csv(d / f"goalie_terms_{s}.csv") for s in SEASONS}
 
 
-def run_midseason_refits(cases: pd.DataFrame, terms: dict[int, pd.DataFrame]) -> pd.DataFrame:
-    cache_path = VAL / "midseason_refits.csv"
+def run_midseason_refits(cases: pd.DataFrame, terms: dict[int, pd.DataFrame],
+                         situation: str = "all") -> pd.DataFrame:
+    cache_path = gen_dir(situation) / "validation" / "midseason_refits.csv"
     cached = (pd.read_csv(cache_path) if cache_path.exists()
               else pd.DataFrame(columns=["case_id", "layer", "term"]))
     done = set(cached["case_id"])
@@ -236,7 +239,7 @@ def run_midseason_refits(cases: pd.DataFrame, terms: dict[int, pd.DataFrame]) ->
     todo = cases[(cases["switch_type"] == "midseason") & ~cases["case_id"].isin(done)]
     for _, c in todo.iterrows():
         season = int(c["first_post_season"])
-        season_shots = pd.read_csv(GEN / f"shots_{season}.csv").astype(
+        season_shots = load_shots(str(season), situation).astype(
             {"season": "int64", "game_id": "int64"})
         prev = terms.get(season - 1)
         prior_terms = {}
@@ -333,10 +336,14 @@ def case_estimates(cases: pd.DataFrame, shots_xg: pd.DataFrame, gg: pd.DataFrame
 
 
 def main() -> None:
-    VAL.mkdir(parents=True, exist_ok=True)
-    registry = pd.read_csv(VAL / "switch_registry.csv")
+    situation = parse_situation()
+    val = gen_dir(situation) / "validation"
+    val.mkdir(parents=True, exist_ok=True)
+    registry = pd.read_csv(val / "switch_registry.csv")
     real = registry[registry["switch_type"] != "nonswitch"].reset_index(drop=True)
     pseudo_reg = registry[registry["switch_type"] == "nonswitch"].reset_index(drop=True)
+    # era verdicts REUSED from the pooled run (pre-registration addendum:
+    # tracking-era coding shifts are dataset-wide, not strength-specific)
     verdicts = json.loads((VAL / "era_probe_verdict.json").read_text())
     normalize = set()
     if verdicts["froze"] == "normalize":
@@ -344,17 +351,17 @@ def main() -> None:
     if verdicts["rebound_generated"] == "normalize":
         normalize.add("rebound")
 
-    shots_xg = build_shots_xg()
+    shots_xg = build_shots_xg(situation)
     # dtype checkpoint: cast season/game_id explicitly so the case_outcome
     # tuple-membership join can't fail silently on a dtype mismatch.
     gg = pd.concat([pd.read_csv(GEN / f"goalie_games_{s}.csv") for s in SEASONS],
                    ignore_index=True).astype({"season": "int64", "game_id": "int64"})
-    terms = load_terms()
-    ledger_dated = pd.read_csv(GEN / "game_ledger.csv").astype(
+    terms = load_terms(situation)
+    ledger_dated = pd.read_csv(gen_dir(situation) / "game_ledger.csv").astype(
         {"season": "int64", "game_id": "int64"}).merge(
         gg[["season", "game_id", "goalie_id", "game_date"]],
         on=["season", "game_id", "goalie_id"], how="left")
-    refits = run_midseason_refits(real, terms)
+    refits = run_midseason_refits(real, terms, situation)
 
     # (4) frozen params from pseudo-cases ONLY, before any real case is scored
     pseudo = case_estimates(pseudo_reg, shots_xg, gg, terms, ledger_dated,
@@ -363,7 +370,7 @@ def main() -> None:
     pseudo["baseline_eb"] = pseudo.apply(
         lambda r: eb_rate(r["gsax_sum"], r["n_pre"], k), axis=1)
     comp = fit_composite(pseudo)
-    (VAL / "frozen_params.json").write_text(json.dumps(
+    (val / "frozen_params.json").write_text(json.dumps(
         {"k": k, "composite": comp, "normalize": sorted(normalize)}, indent=2))
 
     # (5) real cases
@@ -383,7 +390,7 @@ def main() -> None:
         lambda r: (apply_composite(r.to_dict(), comp)
                    if not any(np.isnan(r[c]) for c in comp["beta"]) else np.nan),
         axis=1)
-    cases.to_csv(VAL / "portability_cases.csv", index=False)
+    cases.to_csv(val / "portability_cases.csv", index=False)
 
     nan_counts = {c: int(cases[c].isna().sum())
                   for c in ("stopping", "freeze", "rebound_control", "composite")}
@@ -415,7 +422,7 @@ def main() -> None:
                      "spearman_cand": weighted_spearman(eb["rebound_control_indep"], eb["outcome"], eb["weight"]),
                      "incr_beta": np.nan})
     gate_df = pd.DataFrame(gate)
-    gate_df.to_csv(VAL / "gate_table.csv", index=False)
+    gate_df.to_csv(val / "gate_table.csv", index=False)
     print(f"K={k}, normalize={sorted(normalize)}, {len(cases)} real cases scored")
     print(gate_df.to_string(index=False))
 
