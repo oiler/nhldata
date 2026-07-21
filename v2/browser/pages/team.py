@@ -73,24 +73,26 @@ _POINTS_SQL = "SELECT playerId, gameId, goals, assists, points FROM points_5v5"
 
 _ENV_SQL = """
 SELECT mean_difficulty_pct, mean_xg_faced_per60, hd_share, crossice_per60, b2b_games
-FROM team_environment WHERE season = ? AND team_abbrev = ?
+FROM team_environment WHERE season = ? AND team_abbrev = ? AND situation = ?
 """
 
 
-def _goalie_environment_section(season, team):
-    env = goalies_query(_ENV_SQL, params=(int(season), team))
+def _goalie_environment_section(season, team, situation):
+    env = goalies_query(_ENV_SQL, params=(int(season), team, situation))
     if env.empty:
         return None
     r = env.iloc[0]
+    heading = "Goalie environment (5v5)" if situation == "5v5" else "Goalie environment"
+    per60_suffix = " (per 60 total TOI)" if situation == "5v5" else ""
     return html.Div([
-        html.H3("Goalie environment"),
+        html.H3(heading),
         html.P("How hard this team makes its goalies' lives — workload served, "
                "not goalie quality.", style={"fontSize": "0.85rem", "color": "#6c757d"}),
         html.Ul([
             html.Li(f"Difficulty served: p{r['mean_difficulty_pct']:.0f} league percentile"),
-            html.Li(f"xG faced/60: {r['mean_xg_faced_per60']:.2f}"),
+            html.Li(f"xG faced/60{per60_suffix}: {r['mean_xg_faced_per60']:.2f}"),
             html.Li(f"High-danger share: {r['hd_share']:.1%}"),
-            html.Li(f"Cross-ice/60: {r['crossice_per60']:.2f}"),
+            html.Li(f"Cross-ice/60{per60_suffix}: {r['crossice_per60']:.2f}"),
             html.Li(f"Back-to-backs: {int(r['b2b_games'])}"),
         ]),
     ])
@@ -174,8 +176,9 @@ def layout(abbrev=None):
     Input("team-home-away", "data"),
     Input("team-abbrev", "data"),
     Input("store-season", "data"),
+    Input("goalie-situation", "value"),
 )
-def update_team(date_start, date_end, home_away, abbrev, season):
+def update_team(date_start, date_end, home_away, abbrev, season, goalie_situation):
     season = season or "2025"
     if not date_start or not date_end or not abbrev:
         return html.P("Select a date range.")
@@ -330,7 +333,8 @@ def update_team(date_start, date_end, home_away, abbrev, season):
         style={"width": "100%", "borderCollapse": "collapse"},
     )
 
-    env_section = _goalie_environment_section(season, abbrev)
+    goalie_situation = goalie_situation if goalie_situation in ("all", "5v5") else "all"
+    env_section = _goalie_environment_section(season, abbrev, goalie_situation)
 
     children = [
         html.H3("Players"),

@@ -198,7 +198,12 @@ app.layout = html.Div([
             [
                 "Goalie stats cover ",
                 html.B("all strength states"),
-                " (not 5v5-only), seasons 2021-22 through 2025-26. They are descriptive "
+                " by default; the situation filter on goalie pages switches every "
+                "goalie stat to the strict ",
+                html.B("5v5"),
+                " cut (situationCode 1551 — both goalies in net, five skaters each; "
+                "4v4 and 3v3 excluded). GP and TOI always count all situations. "
+                "Seasons 2021-22 through 2025-26. These are descriptive "
                 "measurements: our validation found goalie results are dominated by "
                 "environment and sample noise, so read them as what happened, not as "
                 "talent rankings.",
@@ -241,7 +246,7 @@ app.layout = html.Div([
             html.Dd(
                 "Per-game workload percentile (0–100): the game's xG faced per 60 ranked against "
                 "all goalie-games of 20+ minutes league-wide. 90 means a harder night than 90% of "
-                "goalie starts."
+                "goalie starts. In 5v5 mode, the rate is 5v5 xG faced per 60 of total ice time."
             ),
             html.Dt("Difficulty faced"),
             html.Dd("Season average of per-game Difficulty — how hard this goalie's slate of games actually was."),
