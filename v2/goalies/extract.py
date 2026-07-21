@@ -85,6 +85,7 @@ def extract_goalie_shots(game: dict) -> list[dict]:
                     "is_goal": is_goal,
                     "on_net": on_net,
                     "strength": strength_for_goalie(code, goalie_is_home),
+                    "situation_code": code,
                     "score_diff": own - opp,
                     "period": period,
                     "time_s": t,

@@ -102,3 +102,12 @@ def test_shooter_position_and_pk_strength():
     ]))
     assert rows[0]["shooter_position"] == "D"
     assert rows[0]["strength"] == "PP"  # home goalie's team has 5 v 4
+
+
+def test_situation_code_carried_through():
+    rows = extract_goalie_shots(_game([
+        _play("shot-on-goal"),
+        _play("shot-on-goal", time="06:00", code="1451"),
+    ]))
+    assert rows[0]["situation_code"] == "1551"
+    assert rows[1]["situation_code"] == "1451"
