@@ -14,6 +14,12 @@ import numpy as np
 import pandas as pd
 
 REPO = Path(__file__).resolve().parents[2]
+
+import sys
+sys.path.insert(0, str(REPO))
+from v2.goalies.cut import load_shots  # noqa: E402
+
+SITUATIONS = ("all", "5v5")
 GOALIES = REPO / "data" / "generated" / "goalies"
 OUT = REPO / "data" / "generated" / "browser" / "goalies.db"
 SEASONS = ("2021", "2022", "2023", "2024", "2025")
@@ -94,23 +100,36 @@ def _name(season: str, goalie_id: int) -> str:
 
 def main() -> None:
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    ledger = pd.read_csv(GOALIES / "game_ledger.csv")
-    season_frames, game_frames = [], []
-    for season in SEASONS:
-        gg = pd.read_csv(GOALIES / f"goalie_games_{season}.csv")
-        gsax = pd.read_csv(GOALIES / f"gsax_{season}.csv")
-        shots = pd.read_csv(GOALIES / f"shots_{season}.csv",
-                            usecols=["season", "goalie_id", "on_net", "is_goal", "froze"])
-        terms = pd.read_csv(GOALIES / f"goalie_terms_{season}.csv")
-        led = ledger[ledger["season"] == int(season)]
-        gs = build_goalie_seasons(gg, gsax, shots, terms, led)
-        gs["name"] = [(_name(season, g)) for g in gs["goalie_id"]]
-        season_frames.append(gs)
+    season_frames, game_frames, env_frames, fv_frames = [], [], [], []
+    for situation in SITUATIONS:
+        src = GOALIES / "5v5" if situation == "5v5" else GOALIES
+        ledger = pd.read_csv(src / "game_ledger.csv")
+        for season in SEASONS:
+            # gp/toi/teams are all-situations by design (spec §2) — shared source
+            gg = pd.read_csv(GOALIES / f"goalie_games_{season}.csv")
+            gsax = pd.read_csv(src / f"gsax_{season}.csv")
+            shots = load_shots(season, situation,
+                               usecols=["season", "goalie_id", "on_net", "is_goal", "froze"])
+            terms = pd.read_csv(src / f"goalie_terms_{season}.csv")
+            led = ledger[ledger["season"] == int(season)]
+            gs = build_goalie_seasons(gg, gsax, shots, terms, led)
+            gs["name"] = [(_name(season, g)) for g in gs["goalie_id"]]
+            season_frames.append(gs.assign(situation=situation))
 
-        games = led.merge(
-            gg[["season", "game_id", "goalie_id", "game_date", "opp_abbrev"]],
-            on=["season", "game_id", "goalie_id"], how="left")
-        game_frames.append(games)
+            games = led.merge(
+                gg[["season", "game_id", "goalie_id", "game_date", "opp_abbrev"]],
+                on=["season", "game_id", "goalie_id"], how="left")
+            game_frames.append(games.assign(situation=situation))
+
+        env_frames.append(pd.read_csv(src / "team_environment.csv")
+                          .assign(situation=situation))
+        fv_path = src / "validation" / "freeze_value.json"
+        fv = json.loads(fv_path.read_text()) if fv_path.exists() else {"per_freeze_xga_delta": None}
+        rows = ([] if fv.get("per_freeze_xga_delta") is None
+                else [{"per_freeze_xga_delta": fv["per_freeze_xga_delta"],
+                       "window_s": fv.get("window_s", 30), "situation": situation}])
+        fv_frames.append(pd.DataFrame(
+            rows, columns=["per_freeze_xga_delta", "window_s", "situation"]))
 
     conn = sqlite3.connect(str(OUT))
     try:
@@ -118,19 +137,17 @@ def main() -> None:
             "goalie_seasons", conn, if_exists="replace", index=False)
         pd.concat(game_frames, ignore_index=True).to_sql(
             "goalie_games", conn, if_exists="replace", index=False)
-        pd.read_csv(GOALIES / "team_environment.csv").to_sql(
+        pd.concat(env_frames, ignore_index=True).to_sql(
             "team_environment", conn, if_exists="replace", index=False)
-        fv_path = GOALIES / "validation" / "freeze_value.json"
-        fv = json.loads(fv_path.read_text()) if fv_path.exists() else {"per_freeze_xga_delta": None}
-        rows = ([] if fv.get("per_freeze_xga_delta") is None
-                else [{"per_freeze_xga_delta": fv["per_freeze_xga_delta"],
-                       "window_s": fv.get("window_s", 30)}])
-        pd.DataFrame(rows, columns=["per_freeze_xga_delta", "window_s"]).to_sql(
+        pd.concat(fv_frames, ignore_index=True).to_sql(
             "freeze_value", conn, if_exists="replace", index=False)
     finally:
         conn.close()
-    print(f"goalies.db: {sum(len(f) for f in season_frames)} goalie-seasons, "
-          f"{sum(len(f) for f in game_frames)} goalie-games, freeze_value rows={len(rows)}")
+    n_seasons = sum(len(f) for f in season_frames)
+    n_games = sum(len(f) for f in game_frames)
+    print(f"goalies.db: {n_seasons} goalie-seasons, {n_games} goalie-games, "
+          f"freeze_value rows={sum(len(f) for f in fv_frames)} "
+          f"(situations: {', '.join(SITUATIONS)})")
 
 
 if __name__ == "__main__":

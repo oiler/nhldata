@@ -31,6 +31,18 @@ for f in "$DST/2024/league.db" "$DST/2025/league.db" "$DST/2025/edm.db" "$DST/go
     fi
 done
 
+# goalies.db must carry BOTH situation cuts — a stale single-cut db would
+# blank the 5v5 dropdown in prod while looking superficially healthy.
+python3 - "$DST/goalies.db" <<'EOF'
+import sqlite3, sys
+conn = sqlite3.connect(sys.argv[1])
+n = dict(conn.execute(
+    "SELECT situation, COUNT(*) FROM goalie_seasons GROUP BY situation"))
+assert set(n) == {"all", "5v5"} and min(n.values()) > 0, \
+    f"goalies.db situation coverage broken: {n}"
+print(f"goalies.db situation coverage OK: {n}")
+EOF
+
 # Confirm the burst CSV actually covers this season's skaters (catches empty,
 # stale, or wrong-season files before Age/SB-a60/Max-MPH go blank in prod).
 python3 "$REPO_ROOT/v2/browser/verify_runtime_data.py" \
