@@ -1,0 +1,39 @@
+# Runs the v2 test suite on every push to master and on PRs.
+#
+# This workflow deliberately does NOT deploy — see fly-deploy.yml for why a
+# runner can't build a shippable image.
+#
+# Tests marked `requires_data` are deselected: they read the gitignored data/
+# pipeline tree, which no checkout has. Run the full suite locally with
+# `python -m pytest v2/ -q` from the repo root.
+name: Tests
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 3.12 matches the python:3.12-slim base in the Dockerfile.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: v2/browser/requirements.txt
+
+      # anthropic is imported by v2/orchestrator/agent.py but isn't a runtime
+      # dep of the browser app, so it isn't in requirements.txt. numpy comes in
+      # transitively via pandas.
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r v2/browser/requirements.txt pytest anthropic
+
+      - name: Run tests
+        run: python -m pytest v2/ -q -m "not requires_data"

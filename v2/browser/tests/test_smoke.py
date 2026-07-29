@@ -1,6 +1,9 @@
 # v2/browser/tests/test_smoke.py
 import sys
 from pathlib import Path
+
+import pytest
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 
@@ -33,6 +36,7 @@ def test_pages_registered():
     assert "/games" in paths, "Games page not registered"
 
 
+@pytest.mark.requires_data
 def test_league_db_exists():
     """league.db has been built and contains the three expected tables."""
     from pathlib import Path

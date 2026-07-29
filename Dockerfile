@@ -34,6 +34,28 @@ WORKDIR /app
 # Only the browser subtree is needed at runtime
 COPY --chown=app:app v2/browser/ /app/
 
+# runtime_data/2024/ and /2025/ are gitignored — they're built locally and
+# baked in by tools/sync-runtime-data.sh. Any build from a bare git checkout
+# (a CI runner, a fresh clone) silently produces an image whose skaters page
+# raises at import, which crash-loops the machine on deploy. Fail the *build*
+# instead, before the image is ever pushed.
+RUN set -eu; \
+    fail=0; \
+    for f in runtime_data/2024/league.db \
+             runtime_data/2025/league.db \
+             runtime_data/2025/edm.db \
+             runtime_data/2025/player_bursts.csv \
+             runtime_data/goalies.db; do \
+        if [ ! -s "/app/$f" ]; then \
+            echo "ERROR: runtime data missing or empty: $f" >&2; \
+            fail=1; \
+        fi; \
+    done; \
+    if [ "$fail" -ne 0 ]; then \
+        echo "Run ./tools/sync-runtime-data.sh from the repo root, then deploy." >&2; \
+        exit 1; \
+    fi
+
 # The runtime DBs live alongside the app; DATA_DIR points the app at them
 ENV DATA_DIR=/app/runtime_data \
     DASH_ENABLE_SECURITY_HEADERS=1 \

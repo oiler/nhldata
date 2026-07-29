@@ -2,6 +2,9 @@
 import csv
 import sys
 from pathlib import Path
+
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from compute_competition import build_lookups
@@ -162,6 +165,7 @@ def test_score_game_skips_non_5v5():
 from compute_competition import run_game
 
 
+@pytest.mark.requires_data
 def test_run_game_produces_output():
     """Integration test using real 2025 game data.
 
@@ -353,6 +357,7 @@ def test_score_game_pct_skips_non_5v5():
 from compute_competition import load_player_physicals, compute_heaviness
 
 
+@pytest.mark.requires_data
 def test_load_player_physicals_returns_height_weight():
     """Load height/weight for a known player from real data files.
 

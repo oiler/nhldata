@@ -12,3 +12,8 @@ dependencies = [
 
 [tool.uv]
 dev-dependencies = []
+
+[tool.pytest.ini_options]
+markers = [
+    "requires_data: reads the local data/ pipeline tree, which is gitignored and absent from a bare checkout. Run from the repo root; CI deselects these with -m 'not requires_data'.",
+]

@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
+### Fixed
+- Production 502 on 2026-07-29. The `Deploy to Fly` Action deployed on every push
+  to master, but builds from a bare `git checkout` — which lacks the gitignored
+  `v2/browser/runtime_data/{2024,2025}/`. `pages/skaters.py` loads the burst CSV at
+  import, so the dataless image crash-looped gunicorn past Fly's restart cap.
+  - `Dockerfile` now fails the **build** when any of the five runtime files is
+    missing or empty, so a dataless image never reaches the registry.
+  - `fly-deploy.yml` is `workflow_dispatch`-only; deploys are local-only.
+
+### Added
+- `Tests` workflow — runs `pytest v2/` on push to master and on PRs. Tests that
+  read the gitignored `data/` tree are marked `requires_data` (registered in
+  `pyproject.toml`) and deselected in CI; 295 of 298 run there.
 
 ## [2.3.0] - 2026-06-22
 ### Added

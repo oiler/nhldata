@@ -1,14 +1,20 @@
+# Deploys are LOCAL-ONLY and this workflow cannot perform one.
+#
+# The app reads runtime_data/2024/ and /2025/, which are gitignored — they're
+# built from the data/ pipeline and baked into the image by
+# tools/sync-runtime-data.sh. A runner only ever has the git checkout, so any
+# deploy from here ships a data-less image; the Dockerfile guard now fails that
+# build. Deploying on push crash-looped production on 2026-07-29.
+#
+# To deploy, from the repo root:
+#   ./tools/sync-runtime-data.sh && flyctl deploy
+#
+# Kept (dispatch-only) so the job definition survives for whenever the runtime
+# data moves off the image — a Fly volume or object storage — at which point
+# the push trigger can come back.
 name: Deploy to Fly
 
 on:
-  push:
-    branches: [master]
-    paths:
-      - 'v2/browser/**'
-      - 'Dockerfile'
-      - 'fly.toml'
-      - '.dockerignore'
-      - '.github/workflows/fly-deploy.yml'
   workflow_dispatch:
 
 jobs:
