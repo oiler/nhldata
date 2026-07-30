@@ -228,6 +228,13 @@ app.layout = html.Div([
             ),
             html.Dt("GSAx/100"),
             html.Dd("GSAx per 100 unblocked shots faced — the workload-independent rate form."),
+            html.Dt("GSAx/60"),
+            html.Dd(
+                "GSAx per 60 minutes of ice time — the workload-dependent rate form. Read it "
+                "against GSAx/100: a goalie who rates well per shot but poorly per 60 faced a "
+                "light shot load, and one who rates well per 60 but poorly per shot was busy. "
+                "All-situations cut only; the 5v5 cut has no 5v5-only TOI to divide by."
+            ),
             html.Dt("Freeze rate"),
             html.Dd(
                 "Share of saves frozen for a stoppage within 5 seconds. The most repeatable goalie "

@@ -4,6 +4,7 @@ from dash import html, dash_table, callback, Input, Output
 from dash.dash_table.Format import Format, Scheme
 
 from db import goalies_query
+from metrics import gsax_per60
 from table_style import table_styles
 from utils import seconds_to_mmss
 
@@ -20,7 +21,9 @@ FROM goalie_seasons WHERE season = ? AND situation = ? ORDER BY gsax DESC
 """
 
 _CUT_NOTE = ("Strict 5v5 (situationCode 1551): shot metrics count 5v5 play only. "
-             "GP and TOI/GP remain all-situations.")
+             "GP and TOI/GP remain all-situations. GSAx/60 is hidden here — we "
+             "have no 5v5-only TOI, and dividing 5v5 GSAx by all-situations ice "
+             "time would understate it. Use GSAx/100, which is shots-based.")
 
 
 def layout():
@@ -45,6 +48,7 @@ def update_goalies(season, situation):
         return html.P("No goalie data for this season.")
     df["goalie_link"] = df.apply(lambda r: f"[{r['name']}](/goalie/{r['goalie_id']})", axis=1)
     df["toi_display"] = (df["toi_s"] / df["gp"].where(df["gp"] > 0)).apply(seconds_to_mmss)
+    df["gsax_per60"] = gsax_per60(df["gsax"], df["toi_s"], situation)
     _ci = {"case": "insensitive"}
     toi_name = "TOI/GP (all sit)" if situation == "5v5" else "TOI/GP"
     columns = [
@@ -62,6 +66,13 @@ def update_goalies(season, situation):
         {"name": "Difficulty faced", "id": "mean_difficulty_pct", "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
         {"name": "Perf (season z̄)", "id": "mean_perf_z", "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed)},
     ]
+    # Only on the all-situations cut — see gsax_per60() for why 5v5 has no
+    # honest denominator. Dropped rather than shown as a blank column.
+    if situation == "all":
+        gsax_idx = next(i for i, c in enumerate(columns) if c["id"] == "gsax_per100")
+        columns.insert(gsax_idx + 1, {
+            "name": "GSAx/60", "id": "gsax_per60", "type": "numeric",
+            "format": Format(precision=2, scheme=Scheme.fixed)})
     display = [c["id"] for c in columns]
     note = ([html.P(_CUT_NOTE, style={"fontSize": "0.8rem", "color": "#6c757d"})]
             if situation == "5v5" else [])

@@ -5,8 +5,26 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from metrics import carryover_per_player, events_per60, corsi_per60
+from metrics import carryover_per_player, events_per60, corsi_per60, gsax_per60
 from build_league_db import count_5v5_events, corsi_for_game
+
+
+def test_gsax_per60_all_situations():
+    # 6.0 GSAx over 7200s (2 h) of goaltending = 3.0 per 60.
+    out = gsax_per60(pd.Series([6.0, -3.0]), pd.Series([7200.0, 3600.0]), "all")
+    assert out.tolist() == [3.0, -3.0]
+
+
+def test_gsax_per60_blank_for_5v5_cut():
+    # goalie_seasons.toi_s is all-situations even on the 5v5 row, so a 5v5 rate
+    # off that denominator would understate by the non-5v5 share of ice time.
+    out = gsax_per60(pd.Series([6.0, -3.0]), pd.Series([7200.0, 3600.0]), "5v5")
+    assert out.isna().all()
+
+
+def test_gsax_per60_zero_toi_is_na_not_inf():
+    out = gsax_per60(pd.Series([6.0]), pd.Series([0.0]), "all")
+    assert out.isna().all()
 
 
 _CORSI_COLS = {

@@ -119,6 +119,26 @@ def events_per60(events_df: pd.DataFrame, toi_df: pd.DataFrame) -> pd.DataFrame:
     })
 
 
+def gsax_per60(gsax: pd.Series, toi_s: pd.Series, situation: str) -> pd.Series:
+    """GSAx per 60 minutes of goaltending, for the all-situations cut only.
+
+    Pairs with GSAx/100 (per 100 shots): the /100 rate asks how well a goalie
+    stopped the pucks he saw, the /60 rate asks how many goals he saved per unit
+    of ice time. A goalie behind a leaky team faces more shots per 60, so the two
+    can disagree — that gap is the point of showing both.
+
+    Returns all-NaN for any other cut. `goalie_seasons.toi_s` is all-situations
+    TOI on every row, including the 5v5 one: build_goalies_db reads
+    goalie_games_<season>.csv outside the situation branch, and there is no 5v5
+    variant of that file. Dividing 5v5-only GSAx by it would understate the rate
+    by whatever share of a goalie's ice time isn't 5v5.
+    """
+    if situation != "all":
+        return pd.Series(pd.NA, index=gsax.index, dtype="Float64")
+    denom = toi_s.where(toi_s > 0)
+    return gsax * 3600 / denom
+
+
 def corsi_per60(onice_df: pd.DataFrame, toi_df: pd.DataFrame) -> pd.DataFrame:
     """Per-60 on-ice Corsi, with the TOI denominator restricted to games that have
     on-ice rows (so missing-timeline games do not dilute the rate).
