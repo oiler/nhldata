@@ -83,16 +83,15 @@ def _goalie_environment_section(season, team, situation):
         return None
     r = env.iloc[0]
     heading = "Goalie environment (5v5)" if situation == "5v5" else "Goalie environment"
-    per60_suffix = " (per 60 total TOI)" if situation == "5v5" else ""
     return html.Div([
         html.H3(heading),
         html.P("How hard this team makes its goalies' lives — workload served, "
                "not goalie quality.", style={"fontSize": "0.85rem", "color": "#6c757d"}),
         html.Ul([
             html.Li(f"Difficulty served: p{r['mean_difficulty_pct']:.0f} league percentile"),
-            html.Li(f"xG faced/60{per60_suffix}: {r['mean_xg_faced_per60']:.2f}"),
+            html.Li(f"xG faced/60: {r['mean_xg_faced_per60']:.2f}"),
             html.Li(f"High-danger share: {r['hd_share']:.1%}"),
-            html.Li(f"Cross-ice/60{per60_suffix}: {r['crossice_per60']:.2f}"),
+            html.Li(f"Cross-ice/60: {r['crossice_per60']:.2f}"),
             html.Li(f"Back-to-backs: {int(r['b2b_games'])}"),
         ]),
     ])

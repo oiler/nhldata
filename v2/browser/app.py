@@ -202,7 +202,8 @@ app.layout = html.Div([
                 "goalie stat to the strict ",
                 html.B("5v5"),
                 " cut (situationCode 1551 — both goalies in net, five skaters each; "
-                "4v4 and 3v3 excluded). GP and TOI always count all situations. "
+                "4v4 and 3v3 excluded), including TOI and every per-60 rate. GP "
+                "counts appearances in all situations. "
                 "Seasons 2021-22 through 2025-26. These are descriptive "
                 "measurements: our validation found goalie results are dominated by "
                 "environment and sample noise, so read them as what happened, not as "
@@ -219,6 +220,11 @@ app.layout = html.Div([
                 "goalie-blind shot model (rink-adjusted location, shot type, strength, score "
                 "state, pre-shot context). What an average goalie would concede on the same shots."
             ),
+            html.Dt("xGA/60"),
+            html.Dd(
+                "Expected goals against per 60 minutes — how much danger the team in front "
+                "served up. This is the term that makes GSAx/100 and GSAx/60 disagree."
+            ),
             html.Dt("GSAx"),
             html.Dd(
                 "Goals Saved Above Expected: xGA − GA. Positive means fewer goals conceded than "
@@ -232,8 +238,7 @@ app.layout = html.Div([
             html.Dd(
                 "GSAx per 60 minutes of ice time — the workload-dependent rate form. Read it "
                 "against GSAx/100: a goalie who rates well per shot but poorly per 60 faced a "
-                "light shot load, and one who rates well per 60 but poorly per shot was busy. "
-                "All-situations cut only; the 5v5 cut has no 5v5-only TOI to divide by."
+                "light shot load, and one who rates well per 60 but poorly per shot was busy."
             ),
             html.Dt("Freeze rate"),
             html.Dd(

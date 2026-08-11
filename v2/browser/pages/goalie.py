@@ -39,7 +39,7 @@ STARTER_SEASON_SAVES = 1550
 STARTER_SEASON_SAVES_5V5 = 1220
 
 
-def _season_card(r, situation="all"):
+def _season_card(r):
     # Each fragment guards only itself: the freeze fragment (rate + pct) renders
     # when freeze_rate is present; the difficulty fragment appends independently
     # when mean_difficulty_pct is present. A NaN in one must not blank the other.
@@ -52,8 +52,7 @@ def _season_card(r, situation="all"):
     if pd.notna(r["mean_difficulty_pct"]):
         freeze_parts.append(f"Difficulty faced {r['mean_difficulty_pct']:.1f}")
 
-    toi_label = "TOI/GP (all sit)" if situation == "5v5" else "TOI/GP"
-    gp_line = f"GP {r['gp']} · {toi_label} {seconds_to_mmss(r['toi_s'] / max(r['gp'], 1))}"
+    gp_line = f"GP {r['gp']} · TOI/GP {seconds_to_mmss(r['toi_s'] / max(r['gp'], 1))}"
     # gsax/gsax_per100 are null for at least one edge-case single-game season
     # (no shots faced modeled); guard so that row doesn't crash the format spec.
     if pd.notna(r["gsax"]) and pd.notna(r["gsax_per100"]):
@@ -96,11 +95,11 @@ def render_goalie(gid, situation):
     games["toi_display"] = games["toi_s"].apply(seconds_to_mmss)
 
     children = [html.H2(seasons.iloc[0]["name"]),
-                html.Div([_season_card(r, situation) for _, r in seasons.iterrows()])]
+                html.Div([_season_card(r) for _, r in seasons.iterrows()])]
     if situation == "5v5":
         children.insert(1, html.P(
-            "Strict 5v5 (situationCode 1551). GP and TOI are all-situations; "
-            "shot metrics count 5v5 play only.",
+            "Strict 5v5 (situationCode 1551): shot metrics, TOI and every rate "
+            "count 5v5 play only. GP still counts appearances in all situations.",
             style={"fontSize": "0.8rem", "color": "#6c757d"}))
 
     fv = goalies_query(_FREEZE_SQL, params=(situation,))
@@ -120,11 +119,10 @@ def render_goalie(gid, situation):
                     f"rate; validated pathway estimate).",
                     style={"fontSize": "0.9rem", "color": "#495057"}))
 
-    toi_name = "TOI (all sit)" if situation == "5v5" else "TOI"
     columns = [
         {"name": "Date", "id": "game_date"},
         {"name": "Opp", "id": "opp_abbrev"},
-        {"name": toi_name, "id": "toi_display"},
+        {"name": "TOI", "id": "toi_display"},
         {"name": "GA", "id": "ga", "type": "numeric"},
         {"name": "xGA", "id": "xga", "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed)},
         {"name": "GSAx", "id": "gsax_game", "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed)},
