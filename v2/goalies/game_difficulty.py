@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT))
 from v2.goalies.features import CORSI_PREV  # noqa: E402
 from v2.goalies.gsax_baseline import blind_shot_xg  # noqa: E402
-from v2.goalies.cut import gen_dir, load_shots, parse_situation  # noqa: E402
+from v2.goalies.cut import gen_dir, load_shots, load_toi, parse_situation  # noqa: E402
 
 GEN = ROOT / "data" / "generated" / "goalies"
 SEASONS = ("2021", "2022", "2023", "2024", "2025")
@@ -65,7 +65,7 @@ def main() -> None:
     frames = []
     for season in SEASONS:
         shots = load_shots(season, situation)
-        toi = pd.read_csv(GEN / f"goalie_games_{season}.csv")   # TOI: shared, all-situations
+        toi = load_toi(season, situation)
         frames.append(game_rows(shots, blind_shot_xg(shots), toi))
     games = add_difficulty_pct(pd.concat(frames, ignore_index=True))
     games.to_csv(out / "game_difficulty.csv", index=False)

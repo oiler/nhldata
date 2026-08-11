@@ -58,3 +58,25 @@ def test_season_frame_raises_on_empty_timeline_dir(tmp_path):
     # whole season downstream while every stage still reported success.
     with pytest.raises(RuntimeError, match="no timelines"):
         season_frame("2021", tmp_path)
+
+
+@pytest.mark.requires_data
+def test_zero_5v5_toi_implies_no_5v5_shots():
+    """Licenses the unguarded /toi_s divisions in game_difficulty.py:49 and
+    game_ledger.py:54. If a goalie faced a 1551 shot he must have at least one
+    1551 second, or those stages divide by zero and emit inf."""
+    import pandas as pd
+
+    from v2.goalies.cut import GEN, load_shots
+
+    for season in ("2021", "2022", "2023", "2024", "2025"):
+        toi = pd.read_csv(GEN / "5v5" / f"goalie_toi_{season}.csv")
+        zero = toi[toi["toi_5v5_s"] == 0][["game_id", "goalie_id"]]
+        if zero.empty:
+            continue
+        shots = load_shots(season, "5v5", usecols=["game_id", "goalie_id"])
+        clash = zero.merge(shots.drop_duplicates(), on=["game_id", "goalie_id"])
+        assert clash.empty, (
+            f"{season}: {len(clash)} goalie-games have 0 5v5 seconds but faced "
+            f"5v5 shots — unguarded divisions would produce inf: "
+            f"{clash.head().to_dict('records')}")
