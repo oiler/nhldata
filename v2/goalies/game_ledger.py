@@ -51,7 +51,10 @@ def main() -> None:
     diff = pd.read_csv(out / "game_difficulty.csv")[
         ["season", "game_id", "goalie_id", "difficulty_pct", "xg_per60", "toi_s"]]
     ledger = ledger.merge(diff, on=["season", "game_id", "goalie_id"], how="left")
-    ledger["gsax_per60"] = ledger["gsax_game"] * 3600 / ledger["toi_s"]
+    # .where guard matches browser metrics.gsax_per60 semantics: zero/NaN TOI
+    # yields NaN, never inf. test_zero_5v5_toi_implies_no_5v5_shots proves the
+    # zero case can't occur here, but that test is requires_data (local-only).
+    ledger["gsax_per60"] = ledger["gsax_game"] * 3600 / ledger["toi_s"].where(ledger["toi_s"] > 0)
     ledger.to_csv(out / "game_ledger.csv", index=False)
     print(f"{len(ledger)} goalie-games; mean perf_z {ledger['perf_z'].mean():+.3f} "
           f"(should be ~0); mean lev_value {ledger['lev_value'].mean():+.4f}")

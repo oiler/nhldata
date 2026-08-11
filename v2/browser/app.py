@@ -213,7 +213,7 @@ app.layout = html.Div([
         ),
         html.Dl([
             html.Dt("Shots"),
-            html.Dd("Unblocked shot attempts faced (shots on goal plus misses), all strength states."),
+            html.Dd("Unblocked shot attempts faced (shots on goal plus misses), all strength states by default."),
             html.Dt("xGA"),
             html.Dd(
                 "Expected goals against — the sum of each shot's goal probability from our "
