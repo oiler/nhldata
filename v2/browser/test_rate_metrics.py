@@ -5,26 +5,39 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from metrics import carryover_per_player, events_per60, corsi_per60, gsax_per60
+from metrics import carryover_per_player, events_per60, corsi_per60, gsax_per60, xga_per60
 from build_league_db import count_5v5_events, corsi_for_game
 
 
 def test_gsax_per60_all_situations():
-    # 6.0 GSAx over 7200s (2 h) of goaltending = 3.0 per 60.
-    out = gsax_per60(pd.Series([6.0, -3.0]), pd.Series([7200.0, 3600.0]), "all")
+    out = gsax_per60(pd.Series([6.0, -3.0]), pd.Series([7200.0, 3600.0]))
     assert out.tolist() == [3.0, -3.0]
 
 
-def test_gsax_per60_blank_for_5v5_cut():
-    # goalie_seasons.toi_s is all-situations even on the 5v5 row, so a 5v5 rate
-    # off that denominator would understate by the non-5v5 share of ice time.
-    out = gsax_per60(pd.Series([6.0, -3.0]), pd.Series([7200.0, 3600.0]), "5v5")
-    assert out.isna().all()
+def test_gsax_per60_works_on_the_5v5_cut_now():
+    # Was all-NaN before 2026-07-30: goalie_seasons.toi_s is cut-aware now, so
+    # the caller passes 5v5 TOI and there is nothing left to guard against.
+    out = gsax_per60(pd.Series([6.0]), pd.Series([5760.0]))
+    assert out.tolist() == [3.75]
 
 
 def test_gsax_per60_zero_toi_is_na_not_inf():
-    out = gsax_per60(pd.Series([6.0]), pd.Series([0.0]), "all")
-    assert out.isna().all()
+    assert gsax_per60(pd.Series([6.0]), pd.Series([0.0])).isna().all()
+
+
+def test_gsax_per60_missing_toi_is_na():
+    # NaN toi_s means no timeline for that goalie-season.
+    assert gsax_per60(pd.Series([6.0]), pd.Series([float("nan")])).isna().all()
+
+
+def test_xga_per60_basic():
+    # 48 xGA over 2 h = 24 per 60.
+    out = xga_per60(pd.Series([48.0, 30.0]), pd.Series([7200.0, 3600.0]))
+    assert out.tolist() == [24.0, 30.0]
+
+
+def test_xga_per60_zero_toi_is_na_not_inf():
+    assert xga_per60(pd.Series([48.0]), pd.Series([0.0])).isna().all()
 
 
 _CORSI_COLS = {

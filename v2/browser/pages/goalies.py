@@ -48,7 +48,7 @@ def update_goalies(season, situation):
         return html.P("No goalie data for this season.")
     df["goalie_link"] = df.apply(lambda r: f"[{r['name']}](/goalie/{r['goalie_id']})", axis=1)
     df["toi_display"] = (df["toi_s"] / df["gp"].where(df["gp"] > 0)).apply(seconds_to_mmss)
-    df["gsax_per60"] = gsax_per60(df["gsax"], df["toi_s"], situation)
+    df["gsax_per60"] = gsax_per60(df["gsax"], df["toi_s"])
     _ci = {"case": "insensitive"}
     toi_name = "TOI/GP (all sit)" if situation == "5v5" else "TOI/GP"
     columns = [

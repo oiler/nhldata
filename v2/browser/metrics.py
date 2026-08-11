@@ -119,24 +119,29 @@ def events_per60(events_df: pd.DataFrame, toi_df: pd.DataFrame) -> pd.DataFrame:
     })
 
 
-def gsax_per60(gsax: pd.Series, toi_s: pd.Series, situation: str) -> pd.Series:
-    """GSAx per 60 minutes of goaltending, for the all-situations cut only.
+def gsax_per60(gsax: pd.Series, toi_s: pd.Series) -> pd.Series:
+    """GSAx per 60 minutes of goaltending, valid in either situation cut.
 
     Pairs with GSAx/100 (per 100 shots): the /100 rate asks how well a goalie
     stopped the pucks he saw, the /60 rate asks how many goals he saved per unit
     of ice time. A goalie behind a leaky team faces more shots per 60, so the two
     can disagree — that gap is the point of showing both.
 
-    Returns all-NaN for any other cut. `goalie_seasons.toi_s` is all-situations
-    TOI on every row, including the 5v5 one: build_goalies_db reads
-    goalie_games_<season>.csv outside the situation branch, and there is no 5v5
-    variant of that file. Dividing 5v5-only GSAx by it would understate the rate
-    by whatever share of a goalie's ice time isn't 5v5.
+    The caller passes the TOI for its own cut; goalie_seasons.toi_s has been
+    cut-aware since 2026-07-30. NaN TOI (no timeline) and zero TOI (played, saw
+    no 5v5) both yield NaN.
     """
-    if situation != "all":
-        return pd.Series(pd.NA, index=gsax.index, dtype="Float64")
-    denom = toi_s.where(toi_s > 0)
-    return gsax * 3600 / denom
+    return gsax * 3600 / toi_s.where(toi_s > 0)
+
+
+def xga_per60(xga: pd.Series, toi_s: pd.Series) -> pd.Series:
+    """Expected goals against per 60 minutes — the workload term.
+
+    Reads as how much danger the team in front served up, which is what makes
+    GSAx/100 and GSAx/60 disagree: two goalies with the same GSAx/100 diverge on
+    GSAx/60 exactly in proportion to this.
+    """
+    return xga * 3600 / toi_s.where(toi_s > 0)
 
 
 def corsi_per60(onice_df: pd.DataFrame, toi_df: pd.DataFrame) -> pd.DataFrame:
