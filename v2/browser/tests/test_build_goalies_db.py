@@ -61,6 +61,26 @@ def test_build_goalie_seasons_aggregates():
     assert row["gsax"] == pytest.approx(1.5)
 
 
+def test_season_toi_is_nan_when_no_game_has_a_timeline():
+    """A 5v5 TOI of NaN means "no timeline for this goalie-game", which is not
+    the same fact as the 0 toi_5v5.py writes for a goalie who played but saw no
+    5v5 ice. A plain sum() collapses the whole-season case to 0.0 and destroys
+    that distinction — see docs/plans/2026-07-30-goalie-5v5-toi-design.md."""
+    gg = _gg()
+    gg["toi_s"] = np.nan
+    row = build_goalie_seasons(gg, _gsax(), _shots(), _terms(), _ledger()).iloc[0]
+    assert row["gp"] == 3                      # he dressed and played regardless
+    assert pd.isna(row["toi_s"])               # ...but his exposure is unknown, not zero
+
+
+def test_season_toi_sums_the_games_that_do_have_a_timeline():
+    """A partial gap sums what is known rather than voiding the season."""
+    gg = _gg()
+    gg.loc[1, "toi_s"] = np.nan                # 3600 + gap + 3600
+    row = build_goalie_seasons(gg, _gsax(), _shots(), _terms(), _ledger()).iloc[0]
+    assert row["toi_s"] == pytest.approx(7200.0)
+
+
 def test_freeze_percentile_floor_and_rank():
     # freeze_percentile returns a Series indexed like `rates` (its default
     # RangeIndex here: 0->goalie1, 1->goalie2, 2->goalie3, 3->goalie4).
