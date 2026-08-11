@@ -56,3 +56,29 @@ Status: `features.py`'s `is_rebound` definition is unchanged (2026-07-14 pooled 
 Mechanism: `xga` is a noisy per-game sum over ~30–56 shots. Ranking games on that same noisy `xga` (via `xg_per60`) selects disproportionately for positive-error games into the high-difficulty bands and negative-error games into the low bands, and `gsax_game = xga − ga` mechanically inherits that same error. Any imperfect per-shot model produces this; it does not require a real shot-level calibration defect (shot-level reliability is near-diagonal, ~7% relative deviation at the extreme decile and non-monotone) or a goalie-quality confound (the correlation lives almost entirely within a goalie's own game log, not between goalies of differing quality).
 
 **Usage rule:** `perf_z`/`gsax` comparisons *across* difficulty bands are inflated by shared `xga` noise and should not be treated as difficulty-independent. Same-band comparisons (compare a goalie's `perf_z` only against same-decile peers) and season-aggregate comparisons are sound. Do not "correct" this via a GA~xGA recalibration curve — it would curve-fit the artifact itself and compress real within-goalie GSAx variance, which is exactly the quantity P3's repeatability analysis relies on.
+
+## 2021-22 HTML shift reports are source-defective for 7 games (5 have no timeline)
+
+Backfilling 2021-22 timelines yields **1307 of 1312**. Five games fail `validate_toi` (`v2/timelines/generate_timeline.py:448`) and no CSV is written: `2021020326`, `2021020416`, `2021020427`, `2021020452`, `2021021189`.
+
+The defect is in NHL's source data, not our pipeline. The validator compares our reconstructed timeline against the shift file's own printed `gameTotals`; our timeline reproduces the listed shift rows exactly, and the reports contradict themselves — shift *counts* agree while summed row durations do not match the printed TOI. Re-fetching `TV020326.HTM` from nhl.com returns byte-identical data, so **re-scraping cannot fix this**. Do not spend a cycle on it.
+
+Scope, measured across all five seasons (13,120 shift files, three comparisons):
+
+| Season | rows vs HTML totals | rows vs API boxscore | HTML totals vs API |
+|---|---|---|---|
+| 2021-22 | 7 games | 7 games | 0 |
+| 2022-23 | 0 | 1 game (1s) | 1 game (1s) |
+| 2023-24 | 0 | 0 | 0 |
+| 2024-25 | 0 | 0 | 0 |
+| 2025-26 | 0 | 0 | 0 |
+
+The HTML printed totals and the API boxscore agree on every player in every game except one second in one 2022-23 game, so the defect lives purely in the shift rows.
+
+**Only 5 of the 7 defective games fail validation, and the direction of the error decides which.** Where rows *exceed* totals (`2021020014`, 2567s on one player; `2021021028`, 227s) the timeline correctly collapses duplicated/overlapping seconds and the game passes. Validation success is therefore not evidence that the source was clean.
+
+Three of the five failures cluster: Gila River Arena on 2021-12-10, 12-11 and 12-15, each with exactly 7s of aggregate drift (±1s across 14–18 players), bracketed by clean ARI home games on 12-03 and 2022-01-04 — 3 of Arizona's 41 home games. The other two are isolated one-offs.
+
+Publicly corroborated by [Puck Over the Glass, "A Brief History of NHL Play-by-Play Data"](https://puckovertheglass.substack.com/p/a-brief-history-of-nhl-play-by-play) (Nov 2025), which runs the same check and attributes the residue to the NHL's 2019-20 rollout of automated player tracking for shift reports, reporting zero discrepancies "in both of the last two full seasons" — matching our 7 / 1 / 0 / 0 exactly. `nhlerrata.com/systemic/htmlreports` catalogs HTML report errors but not this one, and `hockey_scraper` does not check for it at all (`broken_shifts_games` fires only on an empty scrape; `html_shifts.py` performs no TOI reconciliation).
+
+**Decision (2026-08-11): accept the gap.** The five games have no timeline, so goalie-games in them carry `NaN` 5v5 TOI — distinct from the `0` written for a goalie who played but saw no 5v5. That affects 10 of 2818 2021 goalie-games (0.35%) across 8 goalies. One goalie, Keith Kinkaid (`8476234`), played exactly one 2021 game and it is `2021020452`, so his entire 2021 5v5 season is NULL; he falls below the 1200s eligibility gate regardless. NaN is the honest representation of ice time NHL does not have, and no tolerance was added to the validator.
