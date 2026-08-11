@@ -95,3 +95,31 @@ def test_resolve_name_cross_season_fallback(tmp_path):
     # Resolve nonexistent goalie: should fallback to generic
     name = resolve_name(88, ("2021", "2022"), tmp_path)
     assert name == "Goalie 88"
+
+
+@pytest.mark.requires_data
+def test_5v5_toi_is_strictly_less_than_all_situations_toi():
+    """A goalie who dressed for more than one game always plays some non-5v5
+    hockey, so the 5v5 denominator must be smaller. Equality means the
+    cut-aware read silently fell back to boxscore TOI — the exact regression
+    this change exists to prevent, and one that would show up on every row.
+
+    Single-appearance goalies are excluded because equality is legitimate for
+    them: an emergency backup's whole stint can fall inside 5v5 play. Three
+    such rows exist (Berlin 2022 146s, Alexander 2022 70s, 8482668 2024 283s),
+    each confirmed against goalie_toi_<season>.csv as timeline-derived rather
+    than fallen back.
+    """
+    import sqlite3
+    from pathlib import Path
+    db = Path(__file__).resolve().parents[3] / "data" / "generated" / "browser" / "goalies.db"
+    conn = sqlite3.connect(str(db))
+    bad = conn.execute("""
+        SELECT COUNT(*) FROM goalie_seasons a
+        JOIN goalie_seasons b
+          ON a.season = b.season AND a.goalie_id = b.goalie_id
+        WHERE a.situation = '5v5' AND b.situation = 'all'
+          AND b.gp > 1 AND a.toi_s >= b.toi_s
+    """).fetchone()[0]
+    conn.close()
+    assert bad == 0, f"{bad} goalie-seasons have 5v5 TOI >= all-situations TOI"

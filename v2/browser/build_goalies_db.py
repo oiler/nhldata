@@ -17,7 +17,7 @@ REPO = Path(__file__).resolve().parents[2]
 
 import sys
 sys.path.insert(0, str(REPO))
-from v2.goalies.cut import load_shots  # noqa: E402
+from v2.goalies.cut import load_shots, load_toi  # noqa: E402
 
 SITUATIONS = ("all", "5v5")
 GOALIES = REPO / "data" / "generated" / "goalies"
@@ -60,7 +60,11 @@ def _teams_joined(team_series: pd.Series) -> str:
 def build_goalie_seasons(gg, gsax, shots, terms, ledger) -> pd.DataFrame:
     base = gg.sort_values("game_date").groupby(["season", "goalie_id"]).agg(
         teams=("team_abbrev", _teams_joined),
-        gp=("game_id", "nunique"), toi_s=("toi_s", "sum")).reset_index()
+        gp=("game_id", "nunique"),
+        # min_count=1 keeps "no timeline for any game" as NaN. Plain sum() would
+        # report 0, which the design (§Edge cases) reserves for a goalie who
+        # played but saw no 5v5 ice — a measured zero, not a gap.
+        toi_s=("toi_s", lambda s: s.sum(min_count=1))).reset_index()
 
     saves = shots[shots["on_net"] & ~shots["is_goal"] & shots["froze"].notna()]
     fr = saves.groupby(["season", "goalie_id"])["froze"].agg(
@@ -105,8 +109,10 @@ def main() -> None:
         src = GOALIES / "5v5" if situation == "5v5" else GOALIES
         ledger = pd.read_csv(src / "game_ledger.csv")
         for season in SEASONS:
-            # gp/toi/teams are all-situations by design (spec §2) — shared source
-            gg = pd.read_csv(GOALIES / f"goalie_games_{season}.csv")
+            # gp/teams stay all-situations: a goalie who dressed and played is
+            # one appearance regardless of cut. TOI follows the cut as of
+            # 2026-07-30 — see docs/plans/2026-07-30-goalie-5v5-toi-design.md.
+            gg = load_toi(season, situation)
             gsax = pd.read_csv(src / f"gsax_{season}.csv")
             shots = load_shots(season, situation,
                                usecols=["season", "goalie_id", "on_net", "is_goal", "froze"])
