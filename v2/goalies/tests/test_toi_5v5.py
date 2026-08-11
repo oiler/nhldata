@@ -62,8 +62,8 @@ def test_season_frame_raises_on_empty_timeline_dir(tmp_path):
 
 @pytest.mark.requires_data
 def test_zero_5v5_toi_implies_no_5v5_shots():
-    """Licenses the unguarded /toi_s divisions in game_difficulty.py:49 and
-    game_ledger.py:54. If a goalie faced a 1551 shot he must have at least one
+    """Licenses the unguarded /toi_s divisions in game_difficulty.game_rows()
+    and game_ledger.main(). If a goalie faced a 1551 shot he must have at least one
     1551 second, or those stages divide by zero and emit inf."""
     import pandas as pd
 

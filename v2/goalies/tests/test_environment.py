@@ -29,6 +29,35 @@ def test_b2b_uses_game_date_not_id():
     assert env["d_shot_share"] == pytest.approx(0.5)
 
 
+def test_nan_toi_games_excluded_from_crossice_rate():
+    # A NaN toi_s means "no timeline for that goalie-game" (2021's five defective
+    # source games), not "zero ice time". Summing crossice_shots with pandas'
+    # NaN-skipping sum would keep the shots in the numerator while the TOI never
+    # reaches the denominator, inflating the rate.
+    games = pd.DataFrame({
+        "season": [2021] * 2, "game_id": [100, 200], "goalie_id": [1, 1],
+        "difficulty_pct": [50.0, float("nan")], "xg_per60": [2.5, float("nan")],
+        "hd_share": [0.2, 0.2], "shots_faced": [30, 30],
+        "crossice_shots": [2, 8], "toi_s": [3600.0, float("nan")],
+    })
+    gg = pd.DataFrame({
+        "season": [2021] * 2, "game_id": [100, 200], "goalie_id": [1] * 2,
+        "team_abbrev": ["EDM"] * 2, "game_date": ["2021-11-01", "2021-11-05"],
+    })
+    shots = pd.DataFrame({
+        "season": [2021], "game_id": [100], "goalie_id": [1],
+        "shot_type": ["wrist"], "shooter_position": ["F"],
+        "on_net": [True], "is_goal": [False], "froze": [0.0],
+        "goalie_is_home": [True], "home_abbrev": ["EDM"],
+    })
+    env = team_environment(games, gg, shots).iloc[0]
+    assert env["crossice_per60"] == pytest.approx(2.0)
+    # The no-timeline game is still a game played, and the NaN-skipping means
+    # stay as they are — only the rate's numerator/denominator pair is filtered.
+    assert env["gp"] == 2
+    assert env["mean_xg_faced_per60"] == pytest.approx(2.5)
+
+
 def test_arena_freeze_offsets_sign():
     # arena AAA freezes visiting goalies' saves at 0.6; their away baseline is 0.4
     rows = []

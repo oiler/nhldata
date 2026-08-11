@@ -42,11 +42,18 @@ def team_environment(games: pd.DataFrame, goalie_games: pd.DataFrame,
         mean_difficulty_pct=("difficulty_pct", "mean"),
         mean_xg_faced_per60=("xg_per60", "mean"),
         hd_share=("hd_share", "mean"),
+    ).reset_index()
+
+    # A NaN toi_s is "no timeline for this goalie-game", not zero ice time.
+    # Summing across it would count its crossice shots while its TOI never
+    # reaches the denominator. The means above skip NaN on both sides already.
+    rate = g[g["toi_s"].notna()].groupby(["season", "team_abbrev"]).agg(
         crossice_shots_sum=("crossice_shots", "sum"),
         toi_s_sum=("toi_s", "sum"),
     ).reset_index()
-    env["crossice_per60"] = env["crossice_shots_sum"] * 3600 / env["toi_s_sum"]
-    env = env.drop(columns=["crossice_shots_sum", "toi_s_sum"])
+    rate["crossice_per60"] = rate["crossice_shots_sum"] * 3600 / rate["toi_s_sum"]
+    env = env.merge(rate[["season", "team_abbrev", "crossice_per60"]],
+                    on=["season", "team_abbrev"], how="left")
 
     b2b = team_games.groupby(["season", "team_abbrev"])["b2b"].sum().rename("b2b_games").reset_index()
     return env.merge(b2b, on=["season", "team_abbrev"]).merge(shot_agg, on=["season", "team_abbrev"])

@@ -19,7 +19,6 @@ from v2.goalies.features import CORSI_PREV  # noqa: E402
 from v2.goalies.gsax_baseline import blind_shot_xg  # noqa: E402
 from v2.goalies.cut import gen_dir, load_shots, load_toi, parse_situation  # noqa: E402
 
-GEN = ROOT / "data" / "generated" / "goalies"
 SEASONS = ("2021", "2022", "2023", "2024", "2025")
 
 
