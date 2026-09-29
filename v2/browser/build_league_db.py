@@ -132,6 +132,18 @@ def build_games_table(conn):
     print(f"  games: {len(df)} rows")
 
 
+PLAYER_METRICS_COLUMNS = ["playerId", "ppi", "ppi_plus", "wppi", "wppi_plus", "avg_toi_share"]
+
+
+def _write_empty_player_metrics(conn, reason):
+    # Opening weeks have no skater at GP >= 5. Pages and build_constants_table
+    # read player_metrics unconditionally, so the table must exist even when empty.
+    pd.DataFrame(columns=PLAYER_METRICS_COLUMNS).to_sql(
+        "player_metrics", conn, if_exists="replace", index=False
+    )
+    print(f"  player_metrics: 0 rows ({reason})")
+
+
 def build_player_metrics_table(conn):
     """Compute PPI, PPI+, wPPI, wPPI+, avg_toi_share for eligible skaters and write to player_metrics."""
     comp = pd.read_sql_query(
@@ -140,7 +152,7 @@ def build_player_metrics_table(conn):
         conn,
     )
     if comp.empty:
-        print("  player_metrics: 0 rows (no competition data)")
+        _write_empty_player_metrics(conn, "no competition data")
         return
 
     # Games played per player
@@ -155,7 +167,7 @@ def build_player_metrics_table(conn):
     eligible = player_df[(player_df["games_played"] >= 5) & player_df["ppi"].notna()].copy()
 
     if eligible.empty:
-        print("  player_metrics: 0 rows (no eligible players)")
+        _write_empty_player_metrics(conn, "no eligible players")
         return
 
     # PPI+
@@ -165,10 +177,10 @@ def build_player_metrics_table(conn):
     eligible = compute_wppi_and_toi_share(eligible, comp)
 
     if eligible.empty:
-        print("  player_metrics: 0 rows (no valid wPPI)")
+        _write_empty_player_metrics(conn, "no valid wPPI")
         return
 
-    out = eligible[["ppi", "ppi_plus", "wppi", "wppi_plus", "avg_toi_share"]].reset_index()
+    out = eligible[PLAYER_METRICS_COLUMNS[1:]].reset_index()
     out.to_sql("player_metrics", conn, if_exists="replace", index=False)
     print(f"  player_metrics: {len(out)} rows")
 
@@ -826,7 +838,9 @@ def build_constants_table(conn):
     )
     metrics = pd.read_sql_query("SELECT playerId, ppi_plus FROM player_metrics", conn)
     if comp.empty or metrics.empty:
-        print("  constants: SKIPPED (no competition or player_metrics data)")
+        # teams.py reads constants unconditionally; an empty table means "no baseline yet".
+        pd.DataFrame(columns=["key", "value"]).to_sql("constants", conn, if_exists="replace", index=False)
+        print("  constants: 0 rows (no competition or player_metrics data)")
         return
 
     comp = comp.merge(metrics, on="playerId", how="inner")

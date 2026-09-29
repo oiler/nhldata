@@ -11,7 +11,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from build_league_db import (
-    build_player_metrics_table, _recover_missing_players,
+    build_player_metrics_table, build_constants_table, _recover_missing_players,
     build_elite_forwards_table, recompute_pct_vs_elite_fwd,
     build_elite_defensemen_table, recompute_pct_vs_elite_def,
     _read_old_elites, _log_elite_changes,
@@ -64,6 +64,36 @@ def test_ineligible_player_excluded():
     build_player_metrics_table(conn)
     row = conn.execute("SELECT * FROM player_metrics WHERE playerId = 4").fetchone()
     assert row is None
+
+
+def _setup_early_season_db():
+    """Opening week: every skater has fewer than 5 games, so nobody is eligible."""
+    conn = sqlite3.connect(":memory:")
+    rows = [
+        {"playerId": pid, "team": "EDM", "gameId": game, "position": "F",
+         "toi_seconds": 900, "height_in": 72, "weight_lbs": 198}
+        for pid in (1, 2)
+        for game in (1, 2)
+    ]
+    pd.DataFrame(rows).to_sql("competition", conn, index=False, if_exists="replace")
+    return conn
+
+
+def test_player_metrics_empty_table_when_no_one_eligible():
+    conn = _setup_early_season_db()
+    build_player_metrics_table(conn)
+    df = pd.read_sql_query("SELECT * FROM player_metrics", conn)
+    assert df.empty
+    assert list(df.columns) == ["playerId", "ppi", "ppi_plus", "wppi", "wppi_plus", "avg_toi_share"]
+
+
+def test_constants_empty_table_when_no_one_eligible():
+    conn = _setup_early_season_db()
+    build_player_metrics_table(conn)
+    build_constants_table(conn)
+    df = pd.read_sql_query("SELECT * FROM constants", conn)
+    assert df.empty
+    assert list(df.columns) == ["key", "value"]
 
 
 def test_ppi_plus_mean_is_100():
