@@ -64,11 +64,11 @@ Values stay 4-digit start years everywhere (stores, queries, paths). Only user-f
 ### App shell: `app.py`
 
 - `app.py` imports `SEASONS`, `DEFAULT_SEASON`, and `season_label` from `seasons.py` and drops its own definitions.
-- The filter bar gets an `id` (`season-bar`) and loses its hard-coded `display:none`. A `toggle_season_bar` callback on `url.pathname`, modeled on `toggle_goalie_situation_bar` (`app.py:314-318`), shows it only on `/games`, `/teams`, `/team/*`, `/skaters`, `/player/*`, and `/goalies`.
-- The radio options use `season_label()` for labels.
+- The filter bar gets an `id` (`season-bar`). It starts hidden, like `goalie-situation-bar`, to avoid a flash on pages that ignore the season. A `toggle_season_bar` callback on `url.pathname`, modeled on `toggle_goalie_situation_bar` (`app.py:314-318`), shows it only on `/games`, `/teams`, `/team/*`, `/skaters`, `/player/*`, and `/goalies`.
+- The season control is a `dbc.RadioItems` inside an `html.Fieldset` with `html.Legend("Season")`, and its options use `season_label()` for labels. Dash 4's `dcc.RadioItems` renders an unnamed `role="listbox"` with no ARIA props, so it can't carry an accessible group name.
 - `filter-season` gets `persistence=True, persistence_type="session"`, so the selection survives full page loads in the same tab. `store-season` stays `memory` and keeps following the radio through `sync_season`. Rewrite the comments at `app.py:58-60` and `app.py:82-85` to describe this.
 - `sync_season` passes the radio value through `normalize_season()`.
-- Style the radio to DESIGN.md. Replace the inline `labelStyle` and `inputStyle` with a `season-options` class. In `assets/style.css`, set option labels to `color: var(--text)`, `text-transform: none`, and `letter-spacing: 0`; set `accent-color: var(--navy)` on the inputs; and give rows a `40px` height under the `640px` breakpoint. Scope the eyebrow `.filter-bar label` rule to the group label, for example with a class on `html.Label("Season")`.
+- Style the control to DESIGN.md. Option text uses `var(--text)`. Navy marks the checked state and the focus ring. Rows are `40px` tall under the `640px` breakpoint. Scope the eyebrow `.filter-bar label` rule to a `filter-bar-label` class on the Season legend and the Situations label. Set Dash 4's `--Dash-Fill-Interactive-Strong` and `--Dash-Text-Strong` tokens to navy and `--text` on `.filter-bar`, so the goalie dropdown's hover and focus states stop using Dash's default purple.
 - The Max MPH glossary entry (`app.py:162-163`) drops "2025-26" and its season-specific figures (league average and leader) and describes "the selected season's regular-season ice time". The Age example (`app.py:143`) and the goalie coverage line (`app.py:207`) stay accurate as written.
 
 ### Pages and shared modules
@@ -76,7 +76,7 @@ Values stay 4-digit start years everywhere (stores, queries, paths). Only user-f
 - Every `season or "2025"` becomes `normalize_season(season)`, and every `season: str = "2025"` default becomes `season: str = DEFAULT_SEASON`: `games.py`, `teams.py`, `team.py`, `skaters.py`, `player.py`, `goalies.py`, `elites.py`, `filters.py`, `db.py`, and `burst_data.py`.
 - A new `db.player_meta(pid, seasons=SEASONS)` looks up `_META_SQL` in each season, newest first, and returns the first match or `None`. `player.py`'s layout calls it. Current team and position come from the most recent season the player appears in.
 - `elites.py` passes its `season` query argument through `normalize_season()`.
-- `game.py` needs no change; it derives the season from the game ID.
+- `game.py` derives the season from the game ID, so it needs no season handling. It does need the early-season guard in the "Early-season database" section: its league mean wPPI is null while `player_metrics` is empty.
 - `build_league_db.py`'s CLI default (`:39`) keeps `"2025"`. It isn't a page, and the orchestrator always passes the season.
 
 ### Season not ready
@@ -96,8 +96,8 @@ The two build bullets in this section shipped on 2026-09-29, ahead of the rest o
 
 - When nothing is eligible, `build_player_metrics_table()` writes an empty `player_metrics` table with its full schema (`playerId, ppi, ppi_plus, wppi, wppi_plus, avg_toi_share`) instead of returning without one.
 - `build_constants_table()` writes an empty `constants` table (its key/value schema) when `player_metrics` is empty.
-- Every other table builder must also complete on a season's first games. The test in the "Testing" section runs the full build to prove it; a builder that fails gets the same empty-table treatment.
-- Pages treat an empty `player_metrics` or `constants` as missing values: an em dash for PPI+ and wPPI+ cells, and no wPPI+ where it needs the league mean. They don't raise.
+- Every other table builder must also complete on a season's first games. The test in the "Testing" section runs the full build to prove it; a builder that fails gets the same empty-table treatment. Known gaps: `build_points_5v5_table()` creates no table when a season has no 5v5 goals, and `recompute_pct_vs_elite_fwd()` and `recompute_pct_vs_elite_def()` add the `pct_any_elite_*` columns only after elites exist (10 GP for forwards, 20 for defensemen), though the skaters page selects them.
+- Pages treat an empty `player_metrics` or `constants` as missing values: an em dash for PPI, PPI+, wPPI+, tTOI%, and DPS+ cells, and no wPPI+ where it needs the league mean. They don't raise, including the game page.
 
 ### Date-range fallback: `filters.py`
 
@@ -144,8 +144,9 @@ Deploy freshness is out of scope, but the code in this design can still be deplo
 
 - For an optional season, the sync script stages `league.db` and `player_bursts.csv` in a temporary directory, runs every check there, and moves them into `runtime_data/<season>/` only when all checks pass. A previously synced copy is removed on failure, so a stale season never ships beside a failed one.
 - The checks are the same for both tiers: non-empty files, `verify_runtime_data.py` burst coverage of at least 80% (`DEFAULT_MIN_OVERLAP`), and a new `birthDate` check.
-- `verify_runtime_data.py` gains the `birthDate` check: `players` has a `birthDate` column (`PRAGMA table_info(players)`), and at least 95% of distinct F/D `playerId`s in `competition` have a non-null `birthDate`. That catches a database built before this change and a recovery path that drops birth dates.
-- The Dockerfile `RUN` guard keeps listing only required files (2024, 2025, `edm.db`, and `goalies.db`). It doesn't list 2026 files, because their absence is a valid state.
+- `verify_runtime_data.py` gains a table check, run first: every table the browser reads exists in `league.db`, so a build that died partway can't ship. It also gains the `birthDate` check: `players` has a `birthDate` column (`PRAGMA table_info(players)`), and at least 95% of distinct F/D `playerId`s in `competition` have a non-null `birthDate`. That catches a database built before this change and a recovery path that drops birth dates.
+- The Dockerfile `RUN` guard keeps listing only required files (2024, 2025, `edm.db`, and `goalies.db`). It doesn't list 2026 files, because their absence is a valid state. A second guard fails the build when a shipped `league.db` has no `players.birthDate` column, which catches a `runtime_data/` copied without a fresh sync.
+- Required seasons stage and check their files the same way optional seasons do, so a failed sync leaves the last good copy in `runtime_data/` untouched.
 - `.gitignore` adds `v2/browser/runtime_data/2026/`.
 
 The result: a 2025-only fix always deploys. 2026-27 appears in production once a sync finds a complete `league.db` and an Edge burst CSV covering at least 80% of its skaters. If a later 2026 Edge CSV slips under 80%, the next deploy drops 2026-27 back to not available, and the sync's `WARNING` line says why. Rerunning the Edge fetch fixes it.
@@ -173,12 +174,12 @@ Each test goes red before the change that makes it pass, and uses synthetic data
 
 `load_bursts()`'s production-raise behavior already has tests in `test_burst_data.py`, which stay as is.
 
-Verify the sync script by running `./tools/sync-runtime-data.sh` four ways:
+A permanent test (`tests/test_sync_runtime_data.py`) runs `./tools/sync-runtime-data.sh` against fixture trees through `SYNC_SRC` and `SYNC_DST` overrides, because the deploy guard is a high-risk boundary. It covers these cases:
 
 1. With 2026 files present and passing: exits 0, and `runtime_data/2026/` holds both files.
-2. With the 2026 burst CSV missing: exits 0, prints a `WARNING` for 2026, and `runtime_data/2026/` doesn't exist, even if an earlier sync created it.
+2. With the 2026 `league.db` present and the burst CSV missing: exits 0, prints a `WARNING` for 2026, and `runtime_data/2026/` doesn't exist, even if an earlier sync created it.
 3. With a 2026 burst CSV that has a header only, or covers under 80% of skaters: same as case 2, with the failed check named.
-4. With a 2025 file missing or failing a check: exits non-zero.
+4. With a 2025 file missing or failing a check: exits non-zero and leaves the existing `runtime_data/2025/` unchanged.
 
 Before finishing, run `python -m pytest v2/ -v`, then start the app locally and check each item:
 

@@ -187,7 +187,7 @@ def test_age_in_season_missing_birth_date():
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `python -m pytest v2/browser/tests/test_utils.py -v`
-Expected: FAIL with `ImportError: cannot import name 'age_in_season'`
+Expected: ERROR at collection, `ImportError: cannot import name 'age_in_season'` (the file's existing tests also error until Step 3)
 
 - [ ] **Step 3: Write the implementation** (append to `v2/browser/utils.py`; add the imports at the top)
 
@@ -238,8 +238,11 @@ def test_season_ready_production_needs_both_files(monkeypatch, tmp_path):
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
     (tmp_path / "2026").mkdir()
     assert season_ready("2026") is False
+    (tmp_path / "2026" / "player_bursts.csv").write_text("playerId\n1\n")
+    assert season_ready("2026") is False  # CSV alone isn't enough
+    (tmp_path / "2026" / "player_bursts.csv").unlink()
     (tmp_path / "2026" / "league.db").write_bytes(b"x")
-    assert season_ready("2026") is False
+    assert season_ready("2026") is False  # league.db alone isn't enough
     (tmp_path / "2026" / "player_bursts.csv").write_text("playerId\n1\n")
     assert season_ready("2026") is True
 
@@ -258,7 +261,7 @@ def test_season_ready_local_dev_needs_only_league_db(monkeypatch, tmp_path):
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `python -m pytest v2/browser/tests/test_runtime_paths.py -v`
-Expected: FAIL with `ImportError: cannot import name 'season_ready'`
+Expected: ERROR at collection, `ImportError: cannot import name 'season_ready'` (the file's existing tests also error until Step 3)
 
 - [ ] **Step 3: Write the implementation** (append to `v2/browser/runtime_paths.py`)
 
@@ -329,10 +332,12 @@ def _row(pid, team):
 
 def test_player_meta_prefers_newest_season(monkeypatch, tmp_path):
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
-    _players_db(tmp_path, "2025", [_row(1, "EDM")])
+    _players_db(tmp_path, "2025", [_row(1, "EDM"), _row(3, "EDM")])
     _players_db(tmp_path, "2026", [_row(1, "VAN"), _row(2, "CGY")])
     assert player_meta(1)["currentTeamAbbrev"] == "VAN"
     assert player_meta(2)["currentTeamAbbrev"] == "CGY"
+    # In 2025 only, while the 2026 DB exists: falls back to the older season.
+    assert player_meta(3)["currentTeamAbbrev"] == "EDM"
 
 
 def test_player_meta_unknown_player(monkeypatch, tmp_path):
@@ -344,7 +349,7 @@ def test_player_meta_unknown_player(monkeypatch, tmp_path):
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `python -m pytest v2/browser/tests/test_player_meta.py -v`
-Expected: FAIL with `ImportError: cannot import name 'player_meta'`
+Expected: ERROR at collection, `ImportError: cannot import name 'player_meta'` (the file's existing tests also error until Step 3)
 
 - [ ] **Step 3: Write the implementation**
 
@@ -400,11 +405,12 @@ Expected: all pass.
 
 **Interfaces:**
 - Consumes: `runtime_paths.player_bursts_csv`, `seasons.DEFAULT_SEASON`.
-- Produces: `burst_data.bursts_for(season: str) -> pd.DataFrame` indexed by `playerId` with columns `bursts_per_60, speed_max_mph, birth_date`; `lru_cache`d (call `bursts_for.cache_clear()` in tests).
+- Produces: `burst_data.bursts_for(season: str) -> pd.DataFrame` indexed by `playerId` with columns `bursts_per_60, speed_max_mph, birth_date`; `lru_cache`d (call `bursts_for.cache_clear()` in tests). `burst_data.preload_ready_seasons(seasons) -> None`, which Task 10 calls from `skaters.py` at import.
+- Also consumes: `runtime_paths.season_ready` (Task 3).
 
 - [ ] **Step 1: Write the failing test** (reuse the file's `_write_csv` and `_VALID_ROW`)
 
-Add `import burst_data` and `from burst_data import bursts_for` to the file's top import block, then append:
+Add `import burst_data` and `from burst_data import bursts_for, preload_ready_seasons` to the file's top import block, then append:
 
 ```python
 @pytest.fixture
@@ -430,12 +436,33 @@ def test_bursts_for_reads_each_seasons_own_csv(tmp_path, monkeypatch, clear_burs
     monkeypatch.setattr(burst_data, "player_bursts_csv", lambda s: tmp_path / f"{s}.csv")
     assert bursts_for("2025").loc[8478402, "speed_max_mph"] == 24.6
     assert bursts_for("2026").loc[8478402, "speed_max_mph"] == 25.1
+
+
+def test_preload_fails_boot_on_empty_csv_for_ready_season(tmp_path, monkeypatch, clear_bursts_cache):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    (tmp_path / "2026").mkdir()
+    (tmp_path / "2026" / "league.db").write_bytes(b"x")
+    _write_csv(tmp_path / "2026" / "player_bursts.csv", [])  # header only
+    with pytest.raises(RuntimeError):
+        preload_ready_seasons(["2026"])
+
+
+def test_preload_skips_season_not_in_image(tmp_path, monkeypatch, clear_bursts_cache):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    preload_ready_seasons(["2026"])  # no files: skipped with a warning, no raise
+
+
+def test_preload_does_nothing_in_local_dev(tmp_path, monkeypatch, clear_bursts_cache):
+    monkeypatch.delenv("DATA_DIR", raising=False)
+    monkeypatch.setattr(burst_data, "player_bursts_csv", lambda s: tmp_path / f"{s}.csv")
+    preload_ready_seasons(["2026"])
+    assert bursts_for.cache_info().currsize == 0
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `python -m pytest v2/browser/tests/test_burst_data.py -v`
-Expected: FAIL with `ImportError: cannot import name 'bursts_for'`
+Expected: ERROR at collection, `ImportError: cannot import name 'bursts_for'` (the file's existing tests also error until Step 3)
 
 - [ ] **Step 3: Write the implementation**
 
@@ -460,7 +487,7 @@ gracefully so the app still runs without the edge pipeline output.
 
 2. Add `import functools` and `from seasons import DEFAULT_SEASON` to the imports, and change `def load_bursts(season: str = "2025", csv_path=None)` to `season: str = DEFAULT_SEASON`.
 3. Change the `detail` line to `detail = f"{reason} — skater SB/a60 and Max MPH depend on it."`.
-4. Append:
+4. Add `season_ready` to the existing `from runtime_paths import ...` line, then append:
 
 ```python
 @functools.lru_cache(maxsize=None)
@@ -470,6 +497,19 @@ def bursts_for(season: str) -> pd.DataFrame:
     Burst CSVs change only on a manual Edge run; restart the app after one.
     """
     return load_bursts(season).set_index("playerId")
+
+
+def preload_ready_seasons(seasons) -> None:
+    """Production only: load each ready season's bursts now, so a present-but-empty
+    CSV fails boot rather than a request. Seasons left out of the image are logged
+    and skipped; the browser shows them as not available."""
+    if not is_runtime_mode():
+        return
+    for season in seasons:
+        if season_ready(season):
+            bursts_for(season)
+        else:
+            logger.warning("season %s not in image; the browser shows it as not available", season)
 ```
 
 - [ ] **Step 4: Run test to verify it passes**
@@ -776,7 +816,7 @@ def test_ready_season_has_no_message(monkeypatch, tmp_path):
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `python -m pytest v2/browser/tests/test_filters_season.py -v`
-Expected: FAIL with `ImportError: cannot import name 'season_not_ready'`
+Expected: ERROR at collection, `ImportError: cannot import name 'season_not_ready'` (the file's existing tests also error until Step 3)
 
 - [ ] **Step 3: Write the implementation**
 
@@ -933,7 +973,7 @@ def test_main_fails_on_partial_db(tmp_path):
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `python -m pytest v2/browser/tests/test_verify_runtime_data.py -v`
-Expected: FAIL with `ImportError: cannot import name 'verify_birthdates'`
+Expected: ERROR at collection, `ImportError: cannot import name 'verify_birthdates'` (the file's existing tests also error until Step 3)
 
 - [ ] **Step 3: Write the implementation**
 
@@ -1056,6 +1096,7 @@ import sys
 from pathlib import Path
 
 import pandas as pd
+import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -1070,13 +1111,15 @@ import pages.teams as teams
 NOT_READY = "2026-27 data isn't available yet."
 
 
-def test_season_aware_pages_say_not_ready(monkeypatch, tmp_path):
+@pytest.mark.parametrize("call", [
+    lambda d0, d1: games.update_games(d0, d1, "2026"),
+    lambda d0, d1: teams.update_teams(d0, d1, "all", "2026"),
+    lambda d0, d1: team.update_team(d0, d1, "all", "EDM", "2026", "all"),
+    lambda d0, d1: player.update_player(d0, d1, "all", 1, "F", "2026"),
+], ids=["games", "teams", "team", "player"])
+def test_season_aware_page_says_not_ready(call, monkeypatch, tmp_path):
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
-    d0, d1 = "2026-10-01", "2026-10-31"
-    assert games.update_games(d0, d1, "2026").children == NOT_READY
-    assert teams.update_teams(d0, d1, "all", "2026").children == NOT_READY
-    assert team.update_team(d0, d1, "all", "EDM", "2026", "all").children == NOT_READY
-    assert player.update_player(d0, d1, "all", 1, "F", "2026").children == NOT_READY
+    assert call("2026-10-01", "2026-10-31").children == NOT_READY
 
 
 def _goalies_db(root, season_rows):
@@ -1204,11 +1247,11 @@ Expected: all tests pass. The grep returns nothing except `skaters.py` (Task 10 
 
 **Interfaces:**
 - Consumes: `burst_data.bursts_for`, `utils.age_in_season`, `runtime_paths.is_runtime_mode`, `runtime_paths.season_ready`, `seasons.SEASONS`, `seasons.normalize_season`, `filters.season_not_ready`, `league.db` `players.birthDate` (Task 6), `competition.pct_any_elite_*` (Task 6b).
-- Produces: `pages.game._league_mean_wppi(season: str) -> float | None`; page behavior otherwise.
+- Produces: `pages.skaters.attach_bursts_and_age(grouped: pd.DataFrame, season: str) -> pd.DataFrame` (adds `bursts_per_60`, `speed_max_mph`, `age`); `pages.game._league_mean_wppi(season: str) -> float | None`; page behavior otherwise.
 
 The spec says `game.py` needs no change, but its "Pages ... don't raise" rule covers it: `game.py` runs `float()` on `AVG(wppi)`, which is `None` while `player_metrics` is empty, so every 2026-27 game page raises in the opening weeks. This task fixes that too.
 
-- [ ] **Step 1: Write the failing test** (add `import pages.game as game` and `import pages.skaters as skaters` to the file's top import block, then append)
+- [ ] **Step 1: Write the failing test** (add `import burst_data`, `import pages.game as game`, and `import pages.skaters as skaters` to the file's top import block, then append)
 
 ```python
 def test_skaters_not_ready(monkeypatch, tmp_path):
@@ -1216,9 +1259,25 @@ def test_skaters_not_ready(monkeypatch, tmp_path):
     assert skaters.update_skaters("2026-10-01", "2026-10-31", "all", "2026").children == NOT_READY
 
 
-def test_skaters_has_no_import_time_2025_bursts():
-    assert not hasattr(skaters, "_BURSTS_DF")
-    assert not hasattr(skaters, "_AGE_CUTOFFS")
+def test_attach_bursts_and_age_uses_the_seasons_own_bursts(monkeypatch, tmp_path):
+    monkeypatch.delenv("DATA_DIR", raising=False)
+    pd.DataFrame({"playerId": [1], "bursts_per_60": [3.0], "speed_max_mph": [23.0],
+                  "birth_date": ["2000-01-01"]}).to_csv(tmp_path / "2025.csv", index=False)
+    monkeypatch.setattr(burst_data, "player_bursts_csv", lambda s: tmp_path / f"{s}.csv")
+    burst_data.bursts_for.cache_clear()
+    grouped = pd.DataFrame({"birthDate": ["2000-09-16", None, ""]},
+                           index=pd.Index([1, 2, 3], name="playerId"))
+
+    out26 = skaters.attach_bursts_and_age(grouped, "2026")  # no 2026 CSV
+    assert out26["bursts_per_60"].isna().all()
+    assert out26["speed_max_mph"].isna().all()
+    assert out26.loc[1, "age"] == 25
+    assert pd.isna(out26.loc[2, "age"]) and pd.isna(out26.loc[3, "age"])
+
+    out25 = skaters.attach_bursts_and_age(grouped, "2025")
+    assert out25.loc[1, "speed_max_mph"] == 23.0
+    assert out25.loc[1, "age"] == 24
+    burst_data.bursts_for.cache_clear()
 
 
 def test_game_league_mean_wppi_is_none_while_metrics_empty(monkeypatch, tmp_path):
@@ -1235,7 +1294,7 @@ def test_game_league_mean_wppi_is_none_while_metrics_empty(monkeypatch, tmp_path
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `python -m pytest v2/browser/tests/test_season_pages.py -v -k "skaters or game"`
-Expected: FAIL. The skaters callback returns "No data found for this range.", `_BURSTS_DF` exists, and `game._league_mean_wppi` doesn't exist.
+Expected: FAIL. The skaters callback returns "No data found for this range.", and `skaters.attach_bursts_and_age` and `game._league_mean_wppi` don't exist.
 
 - [ ] **Step 3: Write the implementation**
 
@@ -1244,10 +1303,7 @@ In `v2/browser/pages/skaters.py`:
 1. Imports: remove `from datetime import date` and `from burst_data import load_bursts`. Add:
 
 ```python
-import logging
-
-from burst_data import bursts_for
-from runtime_paths import is_runtime_mode, season_ready
+from burst_data import bursts_for, preload_ready_seasons
 from seasons import SEASONS, normalize_season
 from utils import age_in_season, seconds_to_mmss
 ```
@@ -1257,18 +1313,18 @@ Add `season_not_ready` to the `from filters import ...` line, and drop the old `
 2. Delete `_AGE_CUTOFFS`, `_age_on()`, and `_BURSTS_DF = load_bursts("2025").set_index("playerId")`. Put this in their place:
 
 ```python
-logger = logging.getLogger(__name__)
-
 # Production loads every ready season's bursts at import, so a present-but-empty
 # CSV fails boot and the deploy fails loudly. On this single-machine app that
 # means production is down until a rollback, which is why the sync script and
 # the Dockerfile guard check the files first.
-if is_runtime_mode():
-    for _s in SEASONS:
-        if season_ready(_s):
-            bursts_for(_s)
-        else:
-            logger.warning("season %s not in image; the browser shows it as not available", _s)
+preload_ready_seasons(SEASONS)
+
+
+def attach_bursts_and_age(grouped, season):
+    """Join the season's own Edge bursts and compute Age from birthDate at the season's cutoff."""
+    out = grouped.join(bursts_for(season)[["bursts_per_60", "speed_max_mph"]])
+    out["age"] = out["birthDate"].apply(lambda b: age_in_season(b, season))
+    return out
 ```
 
 3. In `_COMP_SQL`, change `c.position, p.shootsCatches, c.team, ...` to `c.position, p.shootsCatches, p.birthDate, c.team, ...`.
@@ -1285,8 +1341,7 @@ if is_runtime_mode():
 6. Replace the block from `grouped = grouped.join(_BURSTS_DF)` through the `else: grouped["age"] = None` branch with:
 
 ```python
-    grouped = grouped.join(bursts_for(season)[["bursts_per_60", "speed_max_mph"]])
-    grouped["age"] = grouped["birthDate"].apply(lambda b: age_in_season(b, season))
+    grouped = attach_bursts_and_age(grouped, season)
 ```
 
 7. In `columns`, give every column that can be null early in a season an em dash:
@@ -1393,6 +1448,7 @@ def test_sync_season_normalizes():
 def test_filter_labels_and_persistence():
     (r,) = _by_id(app.app.layout, "filter-season")
     assert [o["label"] for o in r.options] == ["2025-26", "2026-27"]
+    assert r.value == "2025"
     assert r.persistence is True and r.persistence_type == "session"
 
 
@@ -1590,12 +1646,12 @@ def _bursts(path, ids):
                   "birth_date": "2000-01-01"}).to_csv(path, index=False)
 
 
-def _src(tmp, league_2026=True, bursts_2026="full"):
+def _src(tmp, league_2026=True, bursts_2026="full", birth_2025=True, birth_2026=True):
     """bursts_2026: "full", "none" (file absent), "header" (header only), or a list of ids."""
     src = tmp / "data"
     ids = list(range(10))
     _league_db(src / "2024/generated/browser/league.db", ids)
-    _league_db(src / "2025/generated/browser/league.db", ids)
+    _league_db(src / "2025/generated/browser/league.db", ids, birth=birth_2025)
     (src / "2025/generated/browser/edm.db").write_bytes(b"x" * 10)
     _bursts(src / "2025/generated/edge/player_bursts.csv", ids)
     g = src / "generated/browser/goalies.db"
@@ -1604,7 +1660,7 @@ def _src(tmp, league_2026=True, bursts_2026="full"):
     pd.DataFrame({"situation": ["all", "5v5"]}).to_sql("goalie_seasons", con, index=False)
     con.close()
     if league_2026:
-        _league_db(src / "2026/generated/browser/league.db", ids)
+        _league_db(src / "2026/generated/browser/league.db", ids, birth=birth_2026)
     csv_2026 = src / "2026/generated/edge/player_bursts.csv"
     if bursts_2026 == "full":
         _bursts(csv_2026, ids)
@@ -1649,6 +1705,8 @@ def test_optional_season_bursts_missing_removes_stale_copy(tmp_path):
 
 def test_optional_season_low_coverage_names_check(tmp_path):
     dst = tmp_path / "rt"
+    (dst / "2026").mkdir(parents=True)
+    (dst / "2026/league.db").write_bytes(b"stale")
     r = _run(_src(tmp_path, bursts_2026=[0, 1]), dst)
     assert r.returncode == 0, r.stderr
     assert "burst coverage" in _warning_line(r.stderr)
@@ -1661,6 +1719,20 @@ def test_optional_season_header_only_csv_names_check(tmp_path):
     assert r.returncode == 0, r.stderr
     assert "empty burst CSV" in _warning_line(r.stderr)
     assert not (dst / "2026").exists()
+
+
+def test_optional_season_without_birthdates_names_check(tmp_path):
+    dst = tmp_path / "rt"
+    r = _run(_src(tmp_path, birth_2026=False), dst)
+    assert r.returncode == 0, r.stderr
+    assert "birthDate" in _warning_line(r.stderr)
+    assert not (dst / "2026").exists()
+
+
+def test_required_season_without_birthdates_is_fatal(tmp_path):
+    r = _run(_src(tmp_path, birth_2025=False), tmp_path / "rt")
+    assert r.returncode != 0
+    assert "birthDate" in r.stderr
 
 
 def test_required_season_failure_is_fatal_and_keeps_last_good_copy(tmp_path):
@@ -1680,7 +1752,7 @@ def test_required_season_failure_is_fatal_and_keeps_last_good_copy(tmp_path):
 Run this step only in the worktree, where `data/` doesn't exist. The old script ignores `SYNC_SRC`/`SYNC_DST`, so in the main checkout it would overwrite the real `runtime_data/`. In the worktree it creates empty `runtime_data/2024/` and `2025/` directories (gitignored) and fails at its first `cp`.
 
 Run: `python -m pytest v2/browser/tests/test_sync_runtime_data.py -v`
-Expected: all five FAIL. The required-season test fails on `"required season 2025" in r.stderr`, because the old script exits at `cp` with a different message.
+Expected: all seven FAIL. The required-season tests fail on `"required season 2025" in r.stderr`, because the old script exits at `cp` with a different message.
 
 - [ ] **Step 3: Write the implementation**
 
@@ -1833,7 +1905,7 @@ In `.gitignore`, add `v2/browser/runtime_data/2026/` after the `2025/` line.
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `python -m pytest v2/browser/tests/test_sync_runtime_data.py -v`
-Expected: PASS (5 tests)
+Expected: PASS (7 tests)
 
 Then check the required-season guard: temporarily change `exit 1` in the required-season loop to `true`, rerun, and confirm `test_required_season_failure_is_fatal_and_keeps_last_good_copy` goes red. Restore the line.
 
@@ -1848,26 +1920,32 @@ Expected: all pass; `check-ignore` prints the `.gitignore` line.
 
 ### Task 13: Rebuild and verify in the running app
 
-This task runs from the main checkout after oiler merges, because the orchestrator and the real `data/` tree live there (`data/` is gitignored, so a worktree has none). Don't `git stash` to get a merge through: the 08:00 orchestrator runs from this working tree.
+This task needs the real `data/` tree, which lives only in the main checkout (`data/` is gitignored, so a worktree has none). Run it twice:
 
-After the merge, every sync is refused until Step 2's rebuild of 2025, because the 2025 `league.db` has no `birthDate` column yet. That's the guard working.
+1. **Before merge:** check out the feature branch in the main checkout and run Steps 1-6. `data/` stays in place across checkouts. Do it outside the 08:00 window and switch back to master afterward, because the orchestrator runs from this working tree. A failure found here gets fixed on the branch, not on master.
+2. **After merge:** on master, rerun Steps 2-4 so the databases and `runtime_data/` match the merged code.
+
+Don't `git stash` to get a merge through, for the same reason. After the merge, every sync is refused until Step 2's rebuild of 2025, because the old 2025 `league.db` has no `birthDate` column. That's the guard working.
 
 **Files:** none changed, except oiler's local-only `docs/fly-deploy-runbook.md` in Step 7.
 
 - [ ] **Step 1: Preconditions and backup**
 
-Run: `ls data/2026/generated/competition/*.csv | head -1` and `cp data/2025/generated/browser/league.db /tmp/league-2025-pre-birthdate.db`
-Expected: at least one 2026 competition CSV (the orchestrator has processed a game), and the backup exists. Without a 2026 CSV, the 2026 build has no competition table; skip the 2026 build until the orchestrator has run.
+Run: `ls data/2026/generated/competition/*.csv | head -1`, `ls data/2026/generated/flatboxscores/boxscores.csv`, and `cp data/2025/generated/browser/league.db /tmp/league-2025-pre-birthdate.db`
+Expected: at least one 2026 competition CSV and the 2026 boxscores CSV (the orchestrator has processed a game), and the backup exists. Without them the 2026 build has no `competition` or `games` table; wait for the orchestrator to run.
 
 - [ ] **Step 2: Rebuild both seasons**
 
 Run: `python v2/browser/build_league_db.py 2025 && python v2/browser/build_league_db.py 2026`
 Expected: both end with `Done.`; the 2026 build prints `player_metrics: 0 rows (no eligible players)` in the opening weeks. If the 2025 build fails, restore the backup to `data/2025/generated/browser/league.db`.
 
-- [ ] **Step 3: Check the rebuilt 2025 database**
+- [ ] **Step 3: Check the rebuilt databases**
 
 Run: `python v2/browser/verify_runtime_data.py data/2025/generated/edge/player_bursts.csv data/2025/generated/browser/league.db`
-Expected: `OK:` lines for burst coverage and `birthDate coverage` at or near 100%.
+Expected: `OK:` lines for the tables, burst coverage, and `birthDate coverage` at or near 100%.
+
+Run: `cd v2/browser && python -c "from verify_runtime_data import verify_tables, verify_birthdates; db='../../data/2026/generated/browser/league.db'; print(verify_tables(db), verify_birthdates(db))"`
+Expected: both `(True, ...)`. 2026 has no Edge CSV yet, so the sync won't check it; this covers the 2026 players who enter through the JSON recovery path.
 
 - [ ] **Step 4: Run the real sync**
 
@@ -1887,9 +1965,10 @@ Run: `cd v2/browser && python app.py`, then open `http://127.0.0.1:8050`.
 - The season filter doesn't appear on home, a game page, a goalie page, or `/elites`.
 - Open a 2026-27 game page from `/games`. It renders, with em dashes for PPI+ and Game wPPI+ in the opening weeks.
 - Select 2026-27 on Skaters, click a player link, and confirm the player page shows 2026-27. Reload, and confirm the radio and content still agree.
+- Open `/player/<id>` for a skater whose first NHL game is in 2026-27. The heading shows the player's name, not `Player <id>`.
 - In 2026-27, PPI, PPI+, wPPI+, tTOI%, and DPS+ show em dashes while no skater has 5 games, and no page errors.
 - SB/a60 and Max MPH show em dashes for 2026-27 without an Edge run. Age shows, and a skater with no `birthDate` shows `—`. The columns still sort numerically.
-- At desktop width and at 375 px: the `SEASON` eyebrow label sits beside the options, the radios are navy, and the option text is `#171717`. They stay navy, never purple, on hover and on keyboard focus.
+- At desktop width and at 375 px: the Season and Situations group labels keep the eyebrow style (0.75rem, uppercase, tertiary text), the `SEASON` label sits beside the options, the radios are navy, and the option text is `#171717`. They stay navy, never purple, on hover and on keyboard focus.
 - Tab reaches the season group, and the arrow keys switch seasons. VoiceOver announces "Season" with the group.
 - Under `640px`, each season option is a `40px`-tall target. On `/team/EDM` and `/goalies`, the Season and Situations bars stack without overflow.
 - On `/goalies`, open the Situations dropdown: the options are sentence case, `#171717` text, and navy on hover.

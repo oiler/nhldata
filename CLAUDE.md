@@ -101,7 +101,7 @@ All outputs must be validated against official sources:
 3. **Implement**: Write clean, well-documented code
 4. **Test**: Verify outputs match official statistics exactly
 5. **Handle Failures**: Implement robust error handling and fallback mechanisms
-6. **Git**: Do no commit files to the git repo. Those actions will be done manually
+6. **Git**: Do not commit files to the git repo. Those actions will be done manually. Exception: during a multi-task subagent-driven build on a feature branch, one local commit per reviewed task is allowed. Never push, and never commit on master.
 
 ## Testing Practices
 - **Test computations, not callbacks**: For each new feature, add a targeted test for the pandas/math logic it touches. Full Dash callback tests are not needed — focus on the pure functions that can break silently.
