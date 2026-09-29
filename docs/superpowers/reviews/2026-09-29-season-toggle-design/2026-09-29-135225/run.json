@@ -1,0 +1,737 @@
+{
+  "doc": "/Users/jrf1039/files/projects/nhl/docs/superpowers/specs/2026-09-29-season-toggle-design.md",
+  "doc_sha256": "39acb198ee0f07b9ec59ac48168cc5fc3b7a353654053412b8c2526cf4ba19c8",
+  "type": "spec",
+  "spec": null,
+  "mode": "apply",
+  "lenses": [
+    "accuracy",
+    "completeness",
+    "design",
+    "operations",
+    "data"
+  ],
+  "extras": {
+    "operations": "Deploy guard section changes sync-runtime-data.sh and the Dockerfile build guard that protect production.",
+    "data": "Adds a birthDate column to league.db players and requires rebuilds that interleave with the daily orchestrator run."
+  },
+  "evergreen": [
+    "/Users/jrf1039/files/projects/nhl/CLAUDE.md",
+    "/Users/jrf1039/files/projects/nhl/DESIGN.md"
+  ],
+  "reviews_dir": "/Users/jrf1039/files/projects/nhl/docs/superpowers/reviews",
+  "status": {
+    "accuracy": "valid",
+    "completeness": "valid",
+    "design": "valid",
+    "operations": "failed",
+    "data": "valid"
+  },
+  "attempts": {
+    "accuracy": 1,
+    "design": 1,
+    "operations": 2
+  },
+  "failures": {
+    "accuracy": "F-12 needs the bullets Where, Evidence, Problem, Fix in that order; found Where, Evidence, Fix; F-13 needs the bullets Where, Evidence, Problem, Fix in that order; found Where, Evidence, Fix; F-14 needs the bullets Where, Evidence, Problem, Fix in that order; found Where, Evidence, Fix; F-15 needs the bullets Where, Evidence, Problem, Fix in that order; found Where, Evidence, Fix; F-16 needs the bullets Where, Evidence, Problem, Fix in that order; found Where, Evidence, Fix",
+    "design": "F-12 has an empty bullet",
+    "operations": "F-8 needs the bullets Where, Evidence, Problem, Fix in that order; found Where, Evidence, Fix; F-14 needs the bullets Where, Evidence, Problem, Fix in that order; found Where, Evidence, Fix"
+  },
+  "index": [
+    {
+      "id": "completeness/F-1",
+      "lens": "completeness",
+      "n": 1,
+      "severity": "blocker",
+      "title": "Early-season 2026 build crashes, and pages raise on the missing `player_metrics` and `constants` tables"
+    },
+    {
+      "id": "completeness/F-2",
+      "lens": "completeness",
+      "n": 2,
+      "severity": "blocker",
+      "title": "Goal says elites follows the season filter; Design says it reads the URL"
+    },
+    {
+      "id": "completeness/F-3",
+      "lens": "completeness",
+      "n": 3,
+      "severity": "blocker",
+      "title": "\"Rollover is a change to one file\" contradicts the three-file Rollover section"
+    },
+    {
+      "id": "completeness/F-4",
+      "lens": "completeness",
+      "n": 4,
+      "severity": "blocker",
+      "title": "Un-hiding the season filter ships a control that conflicts with DESIGN.md"
+    },
+    {
+      "id": "design/F-2",
+      "lens": "design",
+      "n": 2,
+      "severity": "blocker",
+      "title": "\"Rollover is a change to one file\" contradicts the Rollover section and misses the app.py glossary"
+    },
+    {
+      "id": "design/F-8",
+      "lens": "design",
+      "n": 8,
+      "severity": "blocker",
+      "title": "Elites is listed as following the selected season, but the design keeps it URL-driven"
+    },
+    {
+      "id": "design/F-11",
+      "lens": "design",
+      "n": 11,
+      "severity": "blocker",
+      "title": "The season filter will ship with Bootstrap-default styling, which conflicts with DESIGN.md"
+    },
+    {
+      "id": "accuracy/F-1",
+      "lens": "accuracy",
+      "n": 1,
+      "severity": "major",
+      "title": "`build_players_table()` reads `players.csv`, not player JSONs"
+    },
+    {
+      "id": "accuracy/F-2",
+      "lens": "accuracy",
+      "n": 2,
+      "severity": "major",
+      "title": "Elites can't \"follow the selected season\" if it reads the season from the URL"
+    },
+    {
+      "id": "accuracy/F-3",
+      "lens": "accuracy",
+      "n": 3,
+      "severity": "major",
+      "title": "Switching `store-season` to session storage doesn't keep the selected season across page loads"
+    },
+    {
+      "id": "accuracy/F-4",
+      "lens": "accuracy",
+      "n": 4,
+      "severity": "major",
+      "title": "\"Same rendering as missing TOI\" doesn't work for numeric columns"
+    },
+    {
+      "id": "accuracy/F-5",
+      "lens": "accuracy",
+      "n": 5,
+      "severity": "major",
+      "title": "\"Rollover is a change to one file\" contradicts the three-file rollover procedure"
+    },
+    {
+      "id": "completeness/F-5",
+      "lens": "completeness",
+      "n": 5,
+      "severity": "major",
+      "title": "Session storage for `store-season` has no stated observable behavior, and as wired it likely does nothing"
+    },
+    {
+      "id": "completeness/F-6",
+      "lens": "completeness",
+      "n": 6,
+      "severity": "major",
+      "title": "No mechanism exists for the em dash in numeric columns, and \"same rendering as missing TOI\" has two readings"
+    },
+    {
+      "id": "completeness/F-7",
+      "lens": "completeness",
+      "n": 7,
+      "severity": "major",
+      "title": "`build_players_table()` reads a CSV, not player JSONs, and `_recover_missing_players()` is left out"
+    },
+    {
+      "id": "completeness/F-8",
+      "lens": "completeness",
+      "n": 8,
+      "severity": "major",
+      "title": "The deploy-guard verification and the 2026 build depend on artifacts nobody is scheduled to produce"
+    },
+    {
+      "id": "design/F-1",
+      "lens": "design",
+      "n": 1,
+      "severity": "major",
+      "title": "Age source is described wrongly, and the JSON-recovery path that supplies 21% of 2025 skaters is left out"
+    },
+    {
+      "id": "design/F-3",
+      "lens": "design",
+      "n": 3,
+      "severity": "major",
+      "title": "The Edge-burst em dash mechanism named (\"same rendering as missing TOI\") doesn't fit numeric columns"
+    },
+    {
+      "id": "data/F-1",
+      "lens": "data",
+      "n": 1,
+      "severity": "major",
+      "title": "`birthDate` source is named wrong: `build_players_table()` reads the players CSV, not player JSONs"
+    },
+    {
+      "id": "data/F-2",
+      "lens": "data",
+      "n": 2,
+      "severity": "major",
+      "title": "Adding `birthDate` only to the CSV path drops Age for 21% of 2025 skaters"
+    },
+    {
+      "id": "data/F-3",
+      "lens": "data",
+      "n": 3,
+      "severity": "major",
+      "title": "No deploy guard checks the new `players.birthDate` column, and the page deliberately doesn't guard either"
+    },
+    {
+      "id": "accuracy/F-6",
+      "lens": "accuracy",
+      "n": 6,
+      "severity": "minor",
+      "title": "`runtime_data/2026/` isn't gitignored"
+    },
+    {
+      "id": "accuracy/F-7",
+      "lens": "accuracy",
+      "n": 7,
+      "severity": "minor",
+      "title": "The hard-coded `\"2025\"` survey misses entries, and the design keeps one of them"
+    },
+    {
+      "id": "accuracy/F-8",
+      "lens": "accuracy",
+      "n": 8,
+      "severity": "minor",
+      "title": "The season-specific glossary text isn't addressed"
+    },
+    {
+      "id": "accuracy/F-9",
+      "lens": "accuracy",
+      "n": 9,
+      "severity": "minor",
+      "title": "\"Instead of failing\" misdescribes today's missing-burst behavior"
+    },
+    {
+      "id": "accuracy/F-10",
+      "lens": "accuracy",
+      "n": 10,
+      "severity": "minor",
+      "title": "Stale docs and messages after moving Age off the burst CSV and the raise off import"
+    },
+    {
+      "id": "accuracy/F-11",
+      "lens": "accuracy",
+      "n": 11,
+      "severity": "minor",
+      "title": "Player metadata lookup silently drops the 2024 fallback"
+    },
+    {
+      "id": "accuracy/F-12",
+      "lens": "accuracy",
+      "n": 12,
+      "severity": "minor",
+      "title": "Test rows don't name the unit under test, and the \"fails because\" reasons depend on that"
+    },
+    {
+      "id": "accuracy/F-17",
+      "lens": "accuracy",
+      "n": 17,
+      "severity": "minor",
+      "title": "Unhiding the season filter exposes an inline Bootstrap text color that DESIGN.md rules out"
+    },
+    {
+      "id": "completeness/F-9",
+      "lens": "completeness",
+      "n": 9,
+      "severity": "minor",
+      "title": "`runtime_data/2026/` isn't gitignored"
+    },
+    {
+      "id": "completeness/F-10",
+      "lens": "completeness",
+      "n": 10,
+      "severity": "minor",
+      "title": "The season value from the client is never validated against `SEASONS`"
+    },
+    {
+      "id": "completeness/F-11",
+      "lens": "completeness",
+      "n": 11,
+      "severity": "minor",
+      "title": "Two proposed tests target code that can't be imported or called in isolation as specified"
+    },
+    {
+      "id": "completeness/F-12",
+      "lens": "completeness",
+      "n": 12,
+      "severity": "minor",
+      "title": "The Goal promises a plain \"not available\" message on every page, but the design specifies one only for goalies"
+    },
+    {
+      "id": "completeness/F-13",
+      "lens": "completeness",
+      "n": 13,
+      "severity": "minor",
+      "title": "Team-page goalie message: which empty case, and \"empty section\" misdescribes current code"
+    },
+    {
+      "id": "completeness/F-14",
+      "lens": "completeness",
+      "n": 14,
+      "severity": "minor",
+      "title": "Stale prose the design makes wrong isn't listed for update"
+    },
+    {
+      "id": "completeness/F-15",
+      "lens": "completeness",
+      "n": 15,
+      "severity": "minor",
+      "title": "The player metadata lookup silently drops the 2024 fallback"
+    },
+    {
+      "id": "design/F-4",
+      "lens": "design",
+      "n": 4,
+      "severity": "minor",
+      "title": "Lazy burst loading removes the boot-time failure that the burst_data.py and Dockerfile comments describe as the safety net"
+    },
+    {
+      "id": "design/F-5",
+      "lens": "design",
+      "n": 5,
+      "severity": "minor",
+      "title": "No deploy guard catches a stale league.db without the birthDate column"
+    },
+    {
+      "id": "design/F-6",
+      "lens": "design",
+      "n": 6,
+      "severity": "minor",
+      "title": "Switching store-season to session storage has no effect, because the RadioItems resets it on every load"
+    },
+    {
+      "id": "design/F-7",
+      "lens": "design",
+      "n": 7,
+      "severity": "minor",
+      "title": "The now-visible season filter appears on pages that ignore it"
+    },
+    {
+      "id": "design/F-9",
+      "lens": "design",
+      "n": 9,
+      "severity": "minor",
+      "title": "Unlisted risk: every deploy now waits on a manual Edge refresh that meets 80% coverage"
+    },
+    {
+      "id": "design/F-10",
+      "lens": "design",
+      "n": 10,
+      "severity": "minor",
+      "title": "Test seams aren't named for the Age and player-metadata tests, and the lru_cache test needs cache isolation"
+    },
+    {
+      "id": "data/F-4",
+      "lens": "data",
+      "n": 4,
+      "severity": "minor",
+      "title": "Deploy guard couples every deploy, including a 2025 hotfix, to 2026 Edge freshness"
+    },
+    {
+      "id": "data/F-5",
+      "lens": "data",
+      "n": 5,
+      "severity": "minor",
+      "title": "Non-atomic `league.db` rebuild can be synced or read mid-build"
+    },
+    {
+      "id": "data/F-6",
+      "lens": "data",
+      "n": 6,
+      "severity": "minor",
+      "title": "Migration order: the daily run rebuilds 2026 without `birthDate` until the change reaches master"
+    },
+    {
+      "id": "data/F-7",
+      "lens": "data",
+      "n": 7,
+      "severity": "minor",
+      "title": "Replacing the 2024 metadata fallback with `SEASONS` orphans the shipped 2024 `league.db`"
+    },
+    {
+      "id": "data/F-8",
+      "lens": "data",
+      "n": 8,
+      "severity": "minor",
+      "title": "`runtime_data/2026/` isn't gitignored"
+    },
+    {
+      "id": "data/F-9",
+      "lens": "data",
+      "n": 9,
+      "severity": "minor",
+      "title": "Switching `store-season` to session storage doesn't persist the selection, and season values aren't validated"
+    },
+    {
+      "id": "data/F-10",
+      "lens": "data",
+      "n": 10,
+      "severity": "minor",
+      "title": "Team goalie \"not yet available\" check conflates a missing season with a missing team row"
+    },
+    {
+      "id": "data/F-11",
+      "lens": "data",
+      "n": 11,
+      "severity": "minor",
+      "title": "\"Same rendering as missing TOI\" doesn't carry over to numeric columns; Age and burst NULLs render blank, not as an em dash"
+    },
+    {
+      "id": "accuracy/F-13",
+      "lens": "accuracy",
+      "n": 13,
+      "severity": "nit",
+      "title": "`app.py:84` is not where `display:none` is"
+    },
+    {
+      "id": "accuracy/F-14",
+      "lens": "accuracy",
+      "n": 14,
+      "severity": "nit",
+      "title": "`db.query()` does have a caller"
+    },
+    {
+      "id": "accuracy/F-15",
+      "lens": "accuracy",
+      "n": 15,
+      "severity": "nit",
+      "title": "Team goalie section today is omitted, not empty"
+    },
+    {
+      "id": "accuracy/F-16",
+      "lens": "accuracy",
+      "n": 16,
+      "severity": "nit",
+      "title": "Fallback start date misses the 2026-27 opener, and the empty-DB test case is ambiguous"
+    },
+    {
+      "id": "completeness/F-16",
+      "lens": "completeness",
+      "n": 16,
+      "severity": "nit",
+      "title": "The sync-script failure test passes for a different reason than the guard it claims to check"
+    },
+    {
+      "id": "completeness/F-17",
+      "lens": "completeness",
+      "n": 17,
+      "severity": "nit",
+      "title": "\"Only the filter labels use `season_label()`\" contradicts the goalie message"
+    },
+    {
+      "id": "completeness/F-18",
+      "lens": "completeness",
+      "n": 18,
+      "severity": "nit",
+      "title": "The `app.py` line citation for `display:none` is wrong"
+    },
+    {
+      "id": "completeness/F-19",
+      "lens": "completeness",
+      "n": 19,
+      "severity": "nit",
+      "title": "`season_label()` is specified only by one example"
+    },
+    {
+      "id": "design/F-12",
+      "lens": "design",
+      "n": 12,
+      "severity": "nit",
+      "title": "Two hard-coded 2025 references the spec's list misses or misdescribes"
+    },
+    {
+      "id": "design/F-13",
+      "lens": "design",
+      "n": 13,
+      "severity": "nit",
+      "title": "The team-page goalie section is already omitted, not empty"
+    },
+    {
+      "id": "design/F-14",
+      "lens": "design",
+      "n": 14,
+      "severity": "nit",
+      "title": "The player metadata lookup silently drops the 2024 fallback"
+    },
+    {
+      "id": "data/F-12",
+      "lens": "data",
+      "n": 12,
+      "severity": "nit",
+      "title": "Implementation details the Age change needs"
+    },
+    {
+      "id": "data/F-13",
+      "lens": "data",
+      "n": 13,
+      "severity": "nit",
+      "title": "The fallback window starts after the opening date the spec states"
+    }
+  ],
+  "dispositions": {
+    "completeness/F-1": {
+      "verdict": "accept",
+      "why": "Verified build_league_db.py:156-158 and :825. Added the Problem bullet, the Early-season database section, and a red-first full-build test."
+    },
+    "completeness/F-2": {
+      "verdict": "accept",
+      "why": "Took option (a): removed elites from the success list and added a /elites non-goal (URL-driven, normalized). Same as accuracy/F-2 and design/F-8."
+    },
+    "completeness/F-3": {
+      "verdict": "accept",
+      "why": "Reworded the rollover criterion: one line in seasons.py for the browser, with the guards (sync script, Dockerfile, .gitignore) listed in Rollover. Same as design/F-2 and accuracy/F-5."
+    },
+    "completeness/F-4": {
+      "verdict": "accept",
+      "why": "DESIGN.md sets --text, a navy radio accent, and 40px mobile rows. Added a styling bullet to App shell and a DESIGN.md manual check. Same as design/F-11 and accuracy/F-17."
+    },
+    "completeness/F-5": {
+      "verdict": "accept",
+      "why": "filter-season gets session persistence, store-season stays memory, success criterion states it, and manual reload/link check added. Same as accuracy/F-3, design/F-6, and data/F-9."
+    },
+    "completeness/F-6": {
+      "verdict": "accept",
+      "why": "Replaced the missing-TOI reference with Format(...).nully on numeric columns, and added a manual sort check. Same as accuracy/F-4, design/F-3, and data/F-11."
+    },
+    "completeness/F-7": {
+      "verdict": "accept",
+      "why": "Age source is now the keep list plus the _recover_missing_players change; the test row is split in two. Same as accuracy/F-1, data/F-1, and design/F-1."
+    },
+    "completeness/F-8": {
+      "verdict": "accept",
+      "why": "oiler chose 2026-09-29: two tiers. 2025 is required and blocks deploys; 2026 is optional, ships only when its checks pass, and otherwise shows as not available. Deploy guard and Season not ready sections rewritten."
+    },
+    "completeness/F-9": {
+      "verdict": "accept",
+      "why": "Added the .gitignore entry to Deploy guard and to Rollover step 2. Same as accuracy/F-6 and data/F-8."
+    },
+    "completeness/F-10": {
+      "verdict": "accept",
+      "why": "Added normalize_season to seasons.py and applied it at every client entry point, including elites and sync_season, plus a test row. Covers the validation half of data/F-9."
+    },
+    "completeness/F-11": {
+      "verdict": "accept",
+      "why": "Named the seams: burst_data.bursts_for, db.player_meta, utils.age_in_season, with cache_clear and tmp_path isolation. Same as accuracy/F-12 and design/F-10."
+    },
+    "completeness/F-12": {
+      "verdict": "accept",
+      "why": "Added a Season without a database section: a season-level message when league_db(season) is missing, and the range messages stay otherwise."
+    },
+    "completeness/F-13": {
+      "verdict": "accept",
+      "why": "The team goalie message shows only when the season is absent from goalies.db, and a missing team row keeps omitting the section. Same as data/F-10, accuracy/F-15, and design/F-13."
+    },
+    "completeness/F-14": {
+      "verdict": "accept",
+      "why": "Added a Text and contract updates section and a glossary bullet. BURST_COLUMNS keeps birth_date, and the browser joins only the two burst columns. Same as accuracy/F-8 and accuracy/F-10."
+    },
+    "completeness/F-15": {
+      "verdict": "accept",
+      "why": "Stated in Non-goals: the 2024 fallback is dropped, a 2024-only player shows as Player {id}, and runtime_data/2024 keeps shipping. Same as accuracy/F-11, design/F-14, and data/F-7."
+    },
+    "completeness/F-16": {
+      "verdict": "accept",
+      "why": "Sync verification now has three runs, including a header-only or under-80% CSV that must fail at verify_runtime_data.py."
+    },
+    "completeness/F-17": {
+      "verdict": "accept",
+      "why": "Changed the rule to: only user-facing text (filter labels and not-available messages) uses season_label()."
+    },
+    "completeness/F-18": {
+      "verdict": "accept",
+      "why": "Changed the citation to app.py:99. Same as accuracy/F-13 and design/F-12."
+    },
+    "completeness/F-19": {
+      "verdict": "accept",
+      "why": "The season_label row now gives the formula f\"{y}-{(y + 1) % 100:02d}\"."
+    },
+    "design/F-2": {
+      "verdict": "accept",
+      "why": "Took option (b) and reworded the criterion (see completeness/F-3). The Max MPH glossary becomes season-neutral in App shell."
+    },
+    "design/F-8": {
+      "verdict": "accept",
+      "why": "Same fix as completeness/F-2: elites dropped from the criterion and made a URL-driven non-goal."
+    },
+    "design/F-11": {
+      "verdict": "accept",
+      "why": "Same fix as completeness/F-4: a season-options class, token colors, a navy accent, 40px mobile rows, and a scoped eyebrow rule."
+    },
+    "accuracy/F-1": {
+      "verdict": "accept",
+      "why": "Same fix as completeness/F-7."
+    },
+    "accuracy/F-2": {
+      "verdict": "accept",
+      "why": "Same fix as completeness/F-2."
+    },
+    "accuracy/F-3": {
+      "verdict": "accept",
+      "why": "Same fix as completeness/F-5. Also added the table-link reload to Problem and the Skaters-to-player link check to Testing."
+    },
+    "accuracy/F-4": {
+      "verdict": "accept",
+      "why": "Same fix as completeness/F-6."
+    },
+    "accuracy/F-5": {
+      "verdict": "accept",
+      "why": "Same fix as completeness/F-3."
+    },
+    "accuracy/F-6": {
+      "verdict": "accept",
+      "why": "Same fix as completeness/F-9. The Dockerfile comment update is in Text and contract updates."
+    },
+    "accuracy/F-7": {
+      "verdict": "accept",
+      "why": "Added filters.py:16 and burst_data.py:24 to Problem, the fallback uses normalize_season, and the build_league_db CLI default stays 2025 with a stated reason."
+    },
+    "accuracy/F-8": {
+      "verdict": "accept",
+      "why": "Added a glossary bullet: Max MPH becomes season-neutral, and the Age example and goalie coverage line stay."
+    },
+    "accuracy/F-9": {
+      "verdict": "accept",
+      "why": "The criterion now reads never another season values, and Problem names the wrong-season join at skaters.py:160."
+    },
+    "accuracy/F-10": {
+      "verdict": "accept",
+      "why": "Added Text and contract updates for burst_data.py, the Dockerfile comment, and verify_runtime_data.py. The boot failure is kept through the runtime-mode preload (design/F-4)."
+    },
+    "accuracy/F-11": {
+      "verdict": "accept",
+      "why": "Same fix as completeness/F-15."
+    },
+    "accuracy/F-12": {
+      "verdict": "accept",
+      "why": "Same fix as completeness/F-11. The testing table now has a Unit column, and each fails-before reason matches the unit."
+    },
+    "accuracy/F-13": {
+      "verdict": "accept",
+      "why": "Same fix as completeness/F-18."
+    },
+    "accuracy/F-14": {
+      "verdict": "accept",
+      "why": "The edm.db non-goal now says db.query() is called only by available_teams(), which has no callers."
+    },
+    "accuracy/F-15": {
+      "verdict": "accept",
+      "why": "Same fix as completeness/F-13: the text now says it keeps omitting the section."
+    },
+    "accuracy/F-16": {
+      "verdict": "accept",
+      "why": "The fallback starts on 09-01, and the test row says missing DB, or games with no scored rows. Same as data/F-13."
+    },
+    "accuracy/F-17": {
+      "verdict": "accept",
+      "why": "Same fix as completeness/F-4."
+    },
+    "design/F-1": {
+      "verdict": "accept",
+      "why": "Same fix as completeness/F-7. The 198-of-940 rationale is stated in the Age section."
+    },
+    "design/F-3": {
+      "verdict": "accept",
+      "why": "Same fix as completeness/F-6. The criterion is reworded to never another season values."
+    },
+    "design/F-4": {
+      "verdict": "accept",
+      "why": "In runtime mode, skaters.py preloads bursts_for for every SEASONS entry at import, so boot still fails on a bad CSV. Local dev stays lazy."
+    },
+    "design/F-5": {
+      "verdict": "accept",
+      "why": "verify_runtime_data.py gains a birthDate column and 95% coverage check per synced season, with a test row. Same as data/F-3."
+    },
+    "design/F-6": {
+      "verdict": "accept",
+      "why": "Same fix as completeness/F-5."
+    },
+    "design/F-7": {
+      "verdict": "accept",
+      "why": "The filter bar gets id season-bar and a toggle_season_bar pathname callback showing it only on season-aware pages. Reflected in success criteria and manual checks."
+    },
+    "design/F-9": {
+      "verdict": "accept",
+      "why": "Same as completeness/F-8: unrelated deploys no longer wait on a 2026 Edge refresh."
+    },
+    "design/F-10": {
+      "verdict": "accept",
+      "why": "Same fix as completeness/F-11."
+    },
+    "design/F-12": {
+      "verdict": "accept",
+      "why": "Same fixes as accuracy/F-7 (filters.py:16) and completeness/F-18 (app.py:99)."
+    },
+    "design/F-13": {
+      "verdict": "accept",
+      "why": "Same fix as completeness/F-13."
+    },
+    "design/F-14": {
+      "verdict": "accept",
+      "why": "Same fix as completeness/F-15."
+    },
+    "data/F-1": {
+      "verdict": "accept",
+      "why": "Same fix as completeness/F-7."
+    },
+    "data/F-2": {
+      "verdict": "accept",
+      "why": "The recovery-path birthDate change is included with the 198-of-940 rationale, and the fixture update is named in the test row."
+    },
+    "data/F-3": {
+      "verdict": "accept",
+      "why": "Same fix as design/F-5."
+    },
+    "data/F-4": {
+      "verdict": "accept",
+      "why": "Same as completeness/F-8: a 2025 hotfix always deploys, and 2026 is an optional tier."
+    },
+    "data/F-5": {
+      "verdict": "defer",
+      "why": "Pre-existing risk (the build deletes then recreates league.db). The fix is an atomic write in build_league_db.py that belongs with the BACKLOG deploy-freshness item; oiler decides scope."
+    },
+    "data/F-6": {
+      "verdict": "accept",
+      "why": "Added a Rollout order section: rebuild 2025 and 2026 from the main checkout after merge, with the interim daily-run behavior stated."
+    },
+    "data/F-7": {
+      "verdict": "accept",
+      "why": "Same decision as completeness/F-15: the fallback is dropped. runtime_data/2024 keeps shipping, and its removal is noted as separate cleanup."
+    },
+    "data/F-8": {
+      "verdict": "accept",
+      "why": "Same fix as completeness/F-9."
+    },
+    "data/F-9": {
+      "verdict": "accept",
+      "why": "Same fixes as completeness/F-5 (radio persistence) and completeness/F-10 (normalize_season)."
+    },
+    "data/F-10": {
+      "verdict": "accept",
+      "why": "Same fix as completeness/F-13, using the season-level SELECT 1 check."
+    },
+    "data/F-11": {
+      "verdict": "accept",
+      "why": "Same fix as completeness/F-6."
+    },
+    "data/F-12": {
+      "verdict": "accept",
+      "why": "The Age section names the groupby birthDate first-aggregation. The skaters join takes only bursts_per_60 and speed_max_mph, so no birth_date collision."
+    },
+    "data/F-13": {
+      "verdict": "accept",
+      "why": "Same fix as accuracy/F-16: the fallback starts 09-01."
+    }
+  }
+}

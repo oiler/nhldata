@@ -53,7 +53,11 @@ nhl/
 │               ├── json/
 │               └── csv/
 ├── docs/                    # Documentation
-│   └── plans/               # Design documents
+│   ├── plans/               # Design docs and plans through 2026-09 (archive)
+│   └── superpowers/         # New work from 2026-09-29
+│       ├── specs/           # YYYY-MM-DD-<topic>-design.md
+│       ├── plans/           # YYYY-MM-DD-<topic>-plan.md
+│       └── reviews/         # orko-review runs
 ├── resources/               # Reference materials
 ├── tools/                   # Utility scripts
 ├── v1/                      # Version 1 scripts

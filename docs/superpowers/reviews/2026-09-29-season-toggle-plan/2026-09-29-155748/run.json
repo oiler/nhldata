@@ -1,0 +1,513 @@
+{
+  "doc": "/Users/jrf1039/files/projects/nhl/docs/superpowers/plans/2026-09-29-season-toggle-plan.md",
+  "doc_sha256": "b5b6f27d10a798bc107cbc69f2ac1c5ad542b59bb0aaffabf83a0225740dcaab",
+  "type": "plan",
+  "spec": "/Users/jrf1039/files/projects/nhl/docs/superpowers/specs/2026-09-29-season-toggle-design.md",
+  "mode": "apply",
+  "lenses": [
+    "coverage",
+    "executability",
+    "verification",
+    "operations",
+    "frontend"
+  ],
+  "extras": {
+    "operations": "Task 12 rewrites the deploy guard (sync script and Dockerfile), and the operations lens was dropped from the spec review.",
+    "frontend": "Task 11 un-hides and restyles the season filter against DESIGN.md and adds Dash persistence and pathname toggling."
+  },
+  "evergreen": [
+    "/Users/jrf1039/files/projects/nhl/CLAUDE.md",
+    "/Users/jrf1039/files/projects/nhl/DESIGN.md"
+  ],
+  "reviews_dir": "/Users/jrf1039/files/projects/nhl/docs/superpowers/reviews",
+  "status": {
+    "coverage": "valid",
+    "executability": "valid",
+    "verification": "failed",
+    "operations": "valid",
+    "frontend": "valid"
+  },
+  "attempts": {
+    "verification": 2
+  },
+  "failures": {
+    "verification": "F-5 needs the bullets Where, Evidence, Problem, Fix in that order; found Where, Evidence, Fix; F-8 needs the bullets Where, Evidence, Problem, Fix in that order; found Where, Evidence, Fix"
+  },
+  "index": [
+    {
+      "id": "coverage/F-1",
+      "lens": "coverage",
+      "n": 1,
+      "severity": "blocker",
+      "title": "The early-season build fix the plan treats as shipped isn't committed, so a feature branch won't have it"
+    },
+    {
+      "id": "executability/F-1",
+      "lens": "executability",
+      "n": 1,
+      "severity": "blocker",
+      "title": "The \"already shipped\" early-season build fix is not in git, so a branch cut from HEAD doesn't have it"
+    },
+    {
+      "id": "operations/F-1",
+      "lens": "operations",
+      "n": 1,
+      "severity": "blocker",
+      "title": "The early-season build fix is uncommitted on master, so a feature branch won't have it and the merge back will abort"
+    },
+    {
+      "id": "frontend/F-1",
+      "lens": "frontend",
+      "n": 1,
+      "severity": "blocker",
+      "title": "Season radios turn purple on hover and keyboard focus, which conflicts with DESIGN.md"
+    },
+    {
+      "id": "coverage/F-2",
+      "lens": "coverage",
+      "n": 2,
+      "severity": "major",
+      "title": "The skaters page raises for 2026-27 for about six weeks, and no task covers it or the spec's full-build test"
+    },
+    {
+      "id": "coverage/F-3",
+      "lens": "coverage",
+      "n": 3,
+      "severity": "major",
+      "title": "`game.py` raises on an empty `player_metrics`; the spec contradicts itself here and the plan followed the \"no change\" side"
+    },
+    {
+      "id": "executability/F-2",
+      "lens": "executability",
+      "n": 2,
+      "severity": "major",
+      "title": "The skaters page raises for 2026-27 until a forward has 10 GP and a defenseman has 20 GP"
+    },
+    {
+      "id": "operations/F-2",
+      "lens": "operations",
+      "n": 2,
+      "severity": "major",
+      "title": "Every checkpoint expects \"all pass\" from the full suite, but `requires_data` tests fail in a worktree"
+    },
+    {
+      "id": "operations/F-3",
+      "lens": "operations",
+      "n": 3,
+      "severity": "major",
+      "title": "Nothing at image build or boot enforces the new `players.birthDate` column, so a deploy without a fresh sync breaks the skaters page in production"
+    },
+    {
+      "id": "operations/F-4",
+      "lens": "operations",
+      "n": 4,
+      "severity": "major",
+      "title": "The optional-tier checks pass a partially built 2026 `league.db`, which then ships and breaks every 2026-27 page"
+    },
+    {
+      "id": "operations/F-5",
+      "lens": "operations",
+      "n": 5,
+      "severity": "major",
+      "title": "The plan drops the spec's full-build test, and `points_5v5` still isn't created when a season has no 5v5 goals"
+    },
+    {
+      "id": "frontend/F-2",
+      "lens": "frontend",
+      "n": 2,
+      "severity": "major",
+      "title": "The season radio group has no accessible name, and Dash 4 renders it as an unnamed `listbox`"
+    },
+    {
+      "id": "coverage/F-4",
+      "lens": "coverage",
+      "n": 4,
+      "severity": "minor",
+      "title": "The sync script keys the required tier on one variable, not the explicitly named files the spec calls for, and the spec's rollover steps break it"
+    },
+    {
+      "id": "coverage/F-5",
+      "lens": "coverage",
+      "n": 5,
+      "severity": "minor",
+      "title": "The optional-season `WARNING` line doesn't name the failed check, so the plan reverses a spec decision"
+    },
+    {
+      "id": "coverage/F-6",
+      "lens": "coverage",
+      "n": 6,
+      "severity": "minor",
+      "title": "The sync tests skip two of the spec's verification cases: burst CSV missing alone, and a header-only CSV"
+    },
+    {
+      "id": "coverage/F-7",
+      "lens": "coverage",
+      "n": 7,
+      "severity": "minor",
+      "title": "The plan keeps the season bar's hard-coded `display:none`; the spec says to remove it"
+    },
+    {
+      "id": "coverage/F-8",
+      "lens": "coverage",
+      "n": 8,
+      "severity": "minor",
+      "title": "Task 12 adds a test-only env interface and a permanent test file; the spec asked for four verification runs"
+    },
+    {
+      "id": "coverage/F-9",
+      "lens": "coverage",
+      "n": 9,
+      "severity": "minor",
+      "title": "Two tests can't go red before their change, which conflicts with the evergreen \"every test goes red\" rule"
+    },
+    {
+      "id": "executability/F-3",
+      "lens": "executability",
+      "n": 3,
+      "severity": "minor",
+      "title": "Checkpoints say \"all pass\", but 5 `requires_data` tests fail in any checkout without `data/`"
+    },
+    {
+      "id": "executability/F-4",
+      "lens": "executability",
+      "n": 4,
+      "severity": "minor",
+      "title": "Two new tests never go red, which breaks the plan's own \"every test goes red\" rule"
+    },
+    {
+      "id": "executability/F-5",
+      "lens": "executability",
+      "n": 5,
+      "severity": "minor",
+      "title": "DESIGN.md conflict: Dash 4's hover and focus rule turns the season option text purple"
+    },
+    {
+      "id": "executability/F-6",
+      "lens": "executability",
+      "n": 6,
+      "severity": "minor",
+      "title": "Conflict with the evergreen CLAUDE.md on commits"
+    },
+    {
+      "id": "executability/F-7",
+      "lens": "executability",
+      "n": 7,
+      "severity": "minor",
+      "title": "The spec's full-build early-season test was dropped, and two builders still fail on a season's first day"
+    },
+    {
+      "id": "operations/F-6",
+      "lens": "operations",
+      "n": 6,
+      "severity": "minor",
+      "title": "New docstring and comment text claim Fly's health check stops a bad image before it takes traffic, but the project's own incident shows otherwise"
+    },
+    {
+      "id": "operations/F-7",
+      "lens": "operations",
+      "n": 7,
+      "severity": "minor",
+      "title": "No deploy, production-mode smoke test, or rollback step, and Task 13 only exercises local-dev mode"
+    },
+    {
+      "id": "operations/F-8",
+      "lens": "operations",
+      "n": 8,
+      "severity": "minor",
+      "title": "If 2026-27 drops out of a deploy, the only record is one line in the middle of the sync output"
+    },
+    {
+      "id": "operations/F-9",
+      "lens": "operations",
+      "n": 9,
+      "severity": "minor",
+      "title": "Task 12 Step 2's red-phase note is wrong in both environments, and one test never goes red in the worktree"
+    },
+    {
+      "id": "frontend/F-3",
+      "lens": "frontend",
+      "n": 3,
+      "severity": "minor",
+      "title": "Scoping the eyebrow rule silently restyles the goalie situation dropdown's options"
+    },
+    {
+      "id": "frontend/F-4",
+      "lens": "frontend",
+      "n": 4,
+      "severity": "minor",
+      "title": "Early-season columns that come from `player_metrics` still render blank, not as em dashes"
+    },
+    {
+      "id": "frontend/F-5",
+      "lens": "frontend",
+      "n": 5,
+      "severity": "minor",
+      "title": "Task 13 drops the desktop-width and interaction checks the spec requires"
+    },
+    {
+      "id": "frontend/F-6",
+      "lens": "frontend",
+      "n": 6,
+      "severity": "minor",
+      "title": "Switching to a not-ready season swaps page content with no announcement"
+    },
+    {
+      "id": "coverage/F-10",
+      "lens": "coverage",
+      "n": 10,
+      "severity": "nit",
+      "title": "Task 13's manual checks drop the desktop width and the Age em dash"
+    },
+    {
+      "id": "coverage/F-11",
+      "lens": "coverage",
+      "n": 11,
+      "severity": "nit",
+      "title": "The Dockerfile comment generalizes the gitignored season list"
+    },
+    {
+      "id": "coverage/F-12",
+      "lens": "coverage",
+      "n": 12,
+      "severity": "nit",
+      "title": "The team page's PPI column gets no em dash (a spec omission, not a plan gap)"
+    },
+    {
+      "id": "executability/F-8",
+      "lens": "executability",
+      "n": 8,
+      "severity": "nit",
+      "title": "Spec sync case 3 (a header-only 2026 burst CSV) has no test"
+    },
+    {
+      "id": "executability/F-9",
+      "lens": "executability",
+      "n": 9,
+      "severity": "nit",
+      "title": "The docstring phrase Task 8 says to replace is split across two lines"
+    },
+    {
+      "id": "executability/F-10",
+      "lens": "executability",
+      "n": 10,
+      "severity": "nit",
+      "title": "Some line references are stale or imprecise"
+    },
+    {
+      "id": "executability/F-11",
+      "lens": "executability",
+      "n": 11,
+      "severity": "nit",
+      "title": "Appended test code puts imports in the middle of the file"
+    },
+    {
+      "id": "operations/F-10",
+      "lens": "operations",
+      "n": 10,
+      "severity": "nit",
+      "title": "The Tech Stack names Python 3.11, but the image and CI run 3.12"
+    },
+    {
+      "id": "operations/F-11",
+      "lens": "operations",
+      "n": 11,
+      "severity": "nit",
+      "title": "An exported `SYNC_SRC` or `SYNC_DST` silently redirects a real sync"
+    },
+    {
+      "id": "operations/F-12",
+      "lens": "operations",
+      "n": 12,
+      "severity": "nit",
+      "title": "The local deploy runbook goes stale, and the plan doesn't update it"
+    },
+    {
+      "id": "frontend/F-7",
+      "lens": "frontend",
+      "n": 7,
+      "severity": "nit",
+      "title": "The not-ready state leaves live-looking date pickers and Home/Away toggles above the message"
+    },
+    {
+      "id": "frontend/F-8",
+      "lens": "frontend",
+      "n": 8,
+      "severity": "nit",
+      "title": "Two small copy points in the shell and the team goalie section"
+    }
+  ],
+  "dispositions": {
+    "coverage/F-1": {
+      "verdict": "accept",
+      "why": "Added Task 0 (oiler commits the early-season fix, the season switch, and docs on master, then branches; verify with git show). The global constraint now points to Task 0. Same as executability/F-1 and operations/F-1."
+    },
+    "executability/F-1": {
+      "verdict": "accept",
+      "why": "Same fix as coverage/F-1: Task 0 precondition; docs/superpowers is committed with it, so the worktree has the spec."
+    },
+    "operations/F-1": {
+      "verdict": "accept",
+      "why": "Same fix as coverage/F-1. Task 0 includes the orchestrator files, and Tasks 0 and 13 say not to git stash, because the 08:00 run uses the working tree."
+    },
+    "frontend/F-1": {
+      "verdict": "accept",
+      "why": "Task 11 CSS retokens --Dash-Fill-Interactive-Strong and --Dash-Text-Strong on .filter-bar, and Task 13 checks hover and focus are navy. Same as executability/F-5."
+    },
+    "coverage/F-2": {
+      "verdict": "accept",
+      "why": "Added Task 6b: the full-build test in main() order (red verified in scratch on points_5v5), pct_any_elite columns added before the early returns, and an empty points_5v5. Same as executability/F-2."
+    },
+    "coverage/F-3": {
+      "verdict": "accept",
+      "why": "Task 10 now fixes game.py (_league_mean_wppi helper with a red test, numeric-safe rounding, nully PPI+/Game wPPI+) and states the spec deviation. The spec line itself still needs correcting (outside this doc)."
+    },
+    "executability/F-2": {
+      "verdict": "accept",
+      "why": "Same fix as coverage/F-2 (Task 6b)."
+    },
+    "operations/F-2": {
+      "verdict": "accept",
+      "why": "Every Task 1-12 checkpoint uses -m \"not requires_data\" (the CI command), with a global constraint explaining why. Task 13 keeps the full suite. Same as executability/F-3."
+    },
+    "operations/F-3": {
+      "verdict": "accept",
+      "why": "Added a Dockerfile RUN guard for players.birthDate on shipped 2025/2026 league.db, staged the required tier so a failed sync keeps the last good copy (with a test), and Task 13 states syncs are refused until the 2025 rebuild."
+    },
+    "operations/F-4": {
+      "verdict": "accept",
+      "why": "Task 8 adds verify_tables (REQUIRED_TABLES) run first in main(), with red tests. The atomic-build half is left to the existing BACKLOG deploy-freshness item."
+    },
+    "operations/F-5": {
+      "verdict": "accept",
+      "why": "Same fix as coverage/F-2: Task 6b adds the full-build test and the empty points_5v5 table."
+    },
+    "frontend/F-2": {
+      "verdict": "accept",
+      "why": "Took option 1: dbc.RadioItems (props verified on 2.0.4) inside html.Fieldset with html.Legend, token-colored CSS, an accessible-name test, and a Task 13 VoiceOver and keyboard check."
+    },
+    "coverage/F-4": {
+      "verdict": "accept",
+      "why": "The sync script now loops REQUIRED_SEASONS, names 2024/league.db and 2025/edm.db literally, and its header says a season leaving the required tier moves to OPTIONAL_SEASONS."
+    },
+    "coverage/F-5": {
+      "verdict": "accept",
+      "why": "stage_season captures the verify output, and the single WARNING line carries the reason. Tests assert the reason is on the WARNING line itself."
+    },
+    "coverage/F-6": {
+      "verdict": "accept",
+      "why": "Added a bursts-missing-with-league.db-present test (the real-life case) and a header-only test asserting empty burst CSV. Same as executability/F-8."
+    },
+    "coverage/F-7": {
+      "verdict": "accept",
+      "why": "Kept the hidden start and stated the deviation and reason in Task 11 and in the layout comment. The spec wording update is outside this doc."
+    },
+    "coverage/F-8": {
+      "verdict": "accept",
+      "why": "Task 12 records the decision: a permanent test because the deploy guard is a high-risk boundary, with SYNC_SRC/SYNC_DST for it. It asks for the spec Testing section to be updated (outside this doc)."
+    },
+    "coverage/F-9": {
+      "verdict": "accept",
+      "why": "Added a guard-test global constraint. Task 9 marks the team-absent test as a guard with a temporary-break step, and the Task 12 required-season test now asserts the new message, so it goes red. Same as executability/F-4 and operations/F-9."
+    },
+    "executability/F-3": {
+      "verdict": "accept",
+      "why": "Same fix as operations/F-2, including the Task 11 Step 4 command."
+    },
+    "executability/F-4": {
+      "verdict": "accept",
+      "why": "Same fix as coverage/F-9. The Task 12 Step 2 note now says to run only in the worktree and explains the old script behavior."
+    },
+    "executability/F-5": {
+      "verdict": "accept",
+      "why": "Same fix as frontend/F-1."
+    },
+    "executability/F-6": {
+      "verdict": "accept",
+      "why": "The Git constraint now cites the standing SDD exception (feedback_sdd_local_commits.md) and says project CLAUDE.md step 6 does not list it yet. Adding it to CLAUDE.md is a separate evergreen edit for oiler."
+    },
+    "executability/F-7": {
+      "verdict": "accept",
+      "why": "Task 6b adds the full-build test and fixes points_5v5. Task 13 Step 1 adds the at-least-one-2026-game precondition for the no-competition case."
+    },
+    "operations/F-6": {
+      "verdict": "accept",
+      "why": "Rewrote the burst_data docstring (Task 5) and the skaters preload comment (Task 10): a bad file fails the deploy loudly, and production is down until a rollback on this single-machine app."
+    },
+    "operations/F-7": {
+      "verdict": "accept",
+      "why": "Task 13 adds a 2025 league.db backup, a Step 5 production-mode smoke test with DATA_DIR, and an explicit statement that this plan does not deploy, plus the deploy, verify, and rollback commands."
+    },
+    "operations/F-8": {
+      "verdict": "accept",
+      "why": "The sync ends with a Seasons in image summary line (tested), and the skaters runtime preload logs a warning at boot for each season not in the image."
+    },
+    "operations/F-9": {
+      "verdict": "accept",
+      "why": "Same fix as coverage/F-9: worktree-only note, and the required-season test asserts the new stderr message."
+    },
+    "frontend/F-3": {
+      "verdict": "accept",
+      "why": "Task 11 states the goalie dropdown side effect, adds a 0.9rem option size rule (the token rule covers color), and Task 13 checks the dropdown."
+    },
+    "frontend/F-4": {
+      "verdict": "accept",
+      "why": "Task 10 adds nully to skaters tTOI% and DPS+, and to team tTOI%, PPI, and both DPS+ entries. Task 13 checks all of them. Covers coverage/F-12."
+    },
+    "frontend/F-5": {
+      "verdict": "accept",
+      "why": "Task 13 Step 6 adds desktop and 375 px checks, hover and focus color, keyboard and VoiceOver, 40px targets, and bar stacking. Same as coverage/F-10."
+    },
+    "frontend/F-6": {
+      "verdict": "accept",
+      "why": "Tasks 9 and 10 add aria-live=polite to each season-aware page content div (games, teams, team, player, goalies, skaters)."
+    },
+    "coverage/F-10": {
+      "verdict": "accept",
+      "why": "Same fix as frontend/F-5, plus a check that a skater with no birthDate shows an em dash in Age."
+    },
+    "coverage/F-11": {
+      "verdict": "accept",
+      "why": "The Dockerfile comment now names runtime_data/2024/, /2025/, and /2026/ explicitly."
+    },
+    "coverage/F-12": {
+      "verdict": "accept",
+      "why": "Same fix as frontend/F-4: team PPI gets nully."
+    },
+    "executability/F-8": {
+      "verdict": "accept",
+      "why": "Same fix as coverage/F-6: test_optional_season_header_only_csv_names_check."
+    },
+    "executability/F-9": {
+      "verdict": "accept",
+      "why": "Task 8 now gives the full replacement module docstring for lines 1-11 instead of a phrase edit."
+    },
+    "executability/F-10": {
+      "verdict": "accept",
+      "why": "Task 4 cites player.py:105-116. Task 10 uses content anchors (_make_position_table columns, update_teams columns) instead of line numbers."
+    },
+    "executability/F-11": {
+      "verdict": "accept",
+      "why": "Added a global constraint that new test imports go in the top import block. Tasks 5 and 10 now say to add their imports there."
+    },
+    "operations/F-10": {
+      "verdict": "accept",
+      "why": "Tech Stack now says Python 3.12 (browser image and CI) and 3.11 (orchestrator and local builds)."
+    },
+    "operations/F-11": {
+      "verdict": "accept",
+      "why": "The sync script prints the resolved SRC -> DST and a NOTE line when either override is set."
+    },
+    "operations/F-12": {
+      "verdict": "accept",
+      "why": "Task 13 Step 7 has oiler update the local runbook: test counts, the 2026 gitignore entry, and a season Verify bullet."
+    },
+    "frontend/F-7": {
+      "verdict": "accept",
+      "why": "Task 9 states that the page date pickers and Home/Away buttons stay visible but inert while the not-available message shows, and that this is intended."
+    },
+    "frontend/F-8": {
+      "verdict": "accept",
+      "why": "The Max MPH glossary now reads one season's regular-season ice time, and the not-available branch of the team goalie section reuses the (5v5) heading expression."
+    }
+  }
+}
