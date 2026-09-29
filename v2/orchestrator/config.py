@@ -8,7 +8,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
 
 # Active season — the only season the daily run fetches for.
-SEASON = os.environ.get("NHL_SEASON", "2025")
+SEASON = os.environ.get("NHL_SEASON", "2026")
 
 # Game type: 02 = Regular Season
 GAME_TYPE = "02"

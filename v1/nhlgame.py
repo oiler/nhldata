@@ -53,7 +53,7 @@ except ImportError:
 # ============================================================================
 # CONFIGURATION - Edit these values as needed
 # ============================================================================
-SEASON = os.environ.get("NHL_SEASON", "2025")  # 4-digit start year; override via NHL_SEASON
+SEASON = os.environ.get("NHL_SEASON", "2026")  # 4-digit start year; override via NHL_SEASON
 GAME_TYPE = "02"  # 01=Preseason, 02=Regular Season, 03=Playoffs, 04=All-Star
 RATE_LIMIT_SECONDS = 9  # Delay between API requests
 

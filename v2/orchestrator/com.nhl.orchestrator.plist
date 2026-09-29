@@ -34,11 +34,11 @@
     <key>EnvironmentVariables</key>
     <dict>
         <key>NHL_SEASON</key>
-        <string>2025</string>
+        <string>2026</string>
     </dict>
     <key>StandardOutPath</key>
-    <string>/Users/jrf1039/files/projects/nhl/data/2025/logs/launchd-stdout.log</string>
+    <string>/Users/jrf1039/files/projects/nhl/data/2026/logs/launchd-stdout.log</string>
     <key>StandardErrorPath</key>
-    <string>/Users/jrf1039/files/projects/nhl/data/2025/logs/launchd-stderr.log</string>
+    <string>/Users/jrf1039/files/projects/nhl/data/2026/logs/launchd-stderr.log</string>
 </dict>
 </plist>
