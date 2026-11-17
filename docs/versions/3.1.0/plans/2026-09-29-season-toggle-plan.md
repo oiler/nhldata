@@ -1097,7 +1097,7 @@ Expected: all pass.
 - Consumes: `seasons.normalize_season`, `seasons.season_label`, `filters.season_not_ready`.
 - Produces: page behavior only.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # v2/browser/tests/test_season_pages.py
@@ -1181,14 +1181,14 @@ def test_elites_normalizes_query_string_season(monkeypatch):
     assert set(seen) == {"2025"}
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `python -m pytest v2/browser/tests/test_season_pages.py -v`
 Expected: FAIL. The page callbacks return date-range messages ("No games found in this range." and similar), the goalie texts differ, the season-absent team section is `None`, and elites queries `"../x"` and `"2024"`.
 
 `test_team_goalie_section_team_absent_is_omitted` passes before the change: it guards today's behavior. After Step 3, prove it can fail by temporarily making the new empty branch return the message `Div` unconditionally, confirm it goes red, then restore.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 For each of `games.py`, `teams.py`, `team.py`, and `player.py`:
 1. Add imports `from filters import season_not_ready` (merge into the existing `from filters import ...` line) and `from seasons import normalize_season`.
@@ -1237,12 +1237,12 @@ The rest of the function after that branch stays as is.
 
 In `elites.py`: add `from seasons import normalize_season` and change `season = season or "2025"` to `season = normalize_season(season)`.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `python -m pytest v2/browser/tests/test_season_pages.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Checkpoint**
+- [x] **Step 5: Checkpoint**
 
 Run: `python -m pytest v2/ -q -m "not requires_data"` and `grep -rn '"2025"' v2/browser/pages/ v2/browser/filters.py v2/browser/db.py v2/browser/burst_data.py`
 Expected: all tests pass. The grep returns nothing except `skaters.py` (Task 10 handles it).

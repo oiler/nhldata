@@ -6,7 +6,8 @@ from dash.dash_table import FormatTemplate
 from dash.dash_table.Format import Format, Scheme
 
 from db import league_query, player_meta
-from filters import make_filter_bar, register_home_away_callback, register_season_callback, compute_deployment_metrics
+from filters import make_filter_bar, register_home_away_callback, register_season_callback, compute_deployment_metrics, season_not_ready
+from seasons import normalize_season
 from metrics import carryover_per_player, events_per60, corsi_per60, points_per100_shots
 from runtime_paths import player_bursts_csv
 from table_style import table_styles
@@ -113,7 +114,7 @@ def layout(player_id=None):
         dcc.Store(id="player-pid", data=pid),
         dcc.Store(id="player-position", data=pos_code),
         make_filter_bar("player", include_home_away=True),
-        html.Div(id="player-content"),
+        html.Div(id="player-content", **{"aria-live": "polite"}),
     ])
 
 
@@ -127,7 +128,10 @@ def layout(player_id=None):
     Input("store-season", "data"),
 )
 def update_player(date_start, date_end, home_away, pid, position, season):
-    season = season or "2025"
+    season = normalize_season(season)
+    not_ready = season_not_ready(season)
+    if not_ready:
+        return not_ready
     if not date_start or not date_end or pid is None:
         return html.P("Select a date range.")
 

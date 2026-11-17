@@ -5,7 +5,8 @@ from dash import html, dash_table, callback, Input, Output
 from dash.dash_table.Format import Format, Scheme
 
 from db import league_query
-from filters import make_filter_bar, register_home_away_callback, register_season_callback
+from filters import make_filter_bar, register_home_away_callback, register_season_callback, season_not_ready
+from seasons import normalize_season
 from table_style import table_styles
 
 dash.register_page(__name__, path="/teams", name="Teams")
@@ -50,7 +51,7 @@ def layout():
     return html.Div([
         html.H2("Teams"),
         make_filter_bar("teams", include_home_away=True),
-        html.Div(id="teams-content"),
+        html.Div(id="teams-content", **{"aria-live": "polite"}),
     ])
 
 
@@ -62,7 +63,10 @@ def layout():
     Input("store-season", "data"),
 )
 def update_teams(date_start, date_end, home_away, season):
-    season = season or "2025"
+    season = normalize_season(season)
+    not_ready = season_not_ready(season)
+    if not_ready:
+        return not_ready
     if not date_start or not date_end:
         return html.P("Select a date range.")
 

@@ -5,6 +5,7 @@ from dash import html, dash_table
 from dash.dash_table.Format import Format, Scheme
 
 from db import league_query
+from seasons import normalize_season
 from table_style import table_styles
 
 dash.register_page(__name__, path="/elites", name="Elites")
@@ -120,7 +121,7 @@ def _build_def_table(df):
 
 
 def layout(season=None):
-    season = season or "2025"
+    season = normalize_season(season)
     children = []
 
     # --- Forwards ---

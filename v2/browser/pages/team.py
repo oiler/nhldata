@@ -6,7 +6,8 @@ from dash.dash_table import FormatTemplate
 from dash.dash_table.Format import Format, Scheme
 
 from db import league_query, goalies_query
-from filters import make_filter_bar, register_home_away_callback, register_season_callback, compute_deployment_metrics
+from filters import make_filter_bar, register_home_away_callback, register_season_callback, compute_deployment_metrics, season_not_ready
+from seasons import normalize_season, season_label
 from table_style import table_styles
 from utils import seconds_to_mmss
 
@@ -76,10 +77,20 @@ SELECT mean_difficulty_pct, mean_xg_faced_per60, hd_share, crossice_per60, b2b_g
 FROM team_environment WHERE season = ? AND team_abbrev = ? AND situation = ?
 """
 
+_ENV_SEASON_SQL = "SELECT 1 FROM team_environment WHERE season = ? LIMIT 1"
+
 
 def _goalie_environment_section(season, team, situation):
     env = goalies_query(_ENV_SQL, params=(int(season), team, situation))
     if env.empty:
+        # Only a season missing from goalies.db gets the message; a team missing
+        # from a season that has goalie data keeps the section omitted.
+        if goalies_query(_ENV_SEASON_SQL, params=(int(season),)).empty:
+            heading = "Goalie environment (5v5)" if situation == "5v5" else "Goalie environment"
+            return html.Div([
+                html.H3(heading),
+                html.P(f"{season_label(season)} goalie data isn't available yet."),
+            ])
         return None
     r = env.iloc[0]
     heading = "Goalie environment (5v5)" if situation == "5v5" else "Goalie environment"
@@ -164,7 +175,7 @@ def layout(abbrev=None):
         html.H2(f"{abbrev} — Season Overview"),
         dcc.Store(id="team-abbrev", data=abbrev),
         make_filter_bar("team", include_home_away=True),
-        html.Div(id="team-content"),
+        html.Div(id="team-content", **{"aria-live": "polite"}),
     ])
 
 
@@ -178,7 +189,10 @@ def layout(abbrev=None):
     Input("goalie-situation", "value"),
 )
 def update_team(date_start, date_end, home_away, abbrev, season, goalie_situation):
-    season = season or "2025"
+    season = normalize_season(season)
+    not_ready = season_not_ready(season)
+    if not_ready:
+        return not_ready
     if not date_start or not date_end or not abbrev:
         return html.P("Select a date range.")
 

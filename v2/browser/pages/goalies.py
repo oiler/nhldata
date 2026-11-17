@@ -5,6 +5,7 @@ from dash.dash_table.Format import Format, Scheme
 
 from db import goalies_query
 from metrics import gsax_per60, xga_per60
+from seasons import normalize_season, season_label
 from table_style import table_styles
 from utils import seconds_to_mmss
 
@@ -29,7 +30,7 @@ def layout():
         html.H2("Goalies"),
         html.P(_CAVEAT, style={"fontSize": "0.85rem", "color": "#6c757d",
                                "maxWidth": "48rem"}),
-        html.Div(id="goalies-content"),
+        html.Div(id="goalies-content", **{"aria-live": "polite"}),
     ])
 
 
@@ -39,11 +40,11 @@ def layout():
     Input("goalie-situation", "value"),
 )
 def update_goalies(season, situation):
-    season = season or "2025"
+    season = normalize_season(season)
     situation = situation if situation in ("all", "5v5") else "all"
     df = goalies_query(_SQL, params=(int(season), situation))
     if df.empty:
-        return html.P("No goalie data for this season.")
+        return html.P(f"{season_label(season)} goalie data isn't available yet.")
     df["goalie_link"] = df.apply(lambda r: f"[{r['name']}](/goalie/{r['goalie_id']})", axis=1)
     df["toi_display"] = (df["toi_s"] / df["gp"].where(df["gp"] > 0)).apply(seconds_to_mmss)
     df["gsax_per60"] = gsax_per60(df["gsax"], df["toi_s"])
