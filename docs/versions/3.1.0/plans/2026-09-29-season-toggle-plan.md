@@ -606,7 +606,7 @@ Expected: PASS (all, including the two early-season tests already there)
 Run: `python -m pytest v2/ -q -m "not requires_data"`
 Expected: all pass.
 
-- [ ] **Step 6: Rebuild both seasons' databases**
+- [x] **Step 6: Rebuild both seasons' databases**
 
 From Task 8 on, the sync refuses a `league.db` without `players.birthDate`. Rebuild now, after this task's commit, so a deploy stays possible during the rest of the build. Back up first.
 
