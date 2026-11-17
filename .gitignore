@@ -14,3 +14,8 @@ v2/browser/runtime_data/2025/
 
 # Local-only operational runbook — kept out of the repo intentionally
 docs/fly-deploy-runbook.md
+
+# Local Claude files and scratch space
+CLAUDE.local.md
+.claude/settings.local.json
+tmp/

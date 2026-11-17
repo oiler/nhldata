@@ -3,7 +3,7 @@
 The all-situations pipeline is the default; `--situation 5v5` filters the
 shared shots CSVs to situationCode 1551 and redirects outputs to GEN/5v5.
 Goalie TOI is cut-aware as of 2026-07-30 (see
-docs/plans/2026-07-30-goalie-5v5-toi-design.md): `load_toi` serves boxscore TOI
+docs/versions/3.1.0/specs/2026-07-30-goalie-5v5-toi-design.md): `load_toi` serves boxscore TOI
 for the all cut and timeline-derived 5v5 TOI for the 5v5 cut. It previously came
 from the parent GEN dir regardless of cut, which made every 5v5 per-60 a 5v5
 numerator over an all-situations denominator. `wp_table` remains genuinely

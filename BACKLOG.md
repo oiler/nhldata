@@ -1,63 +1,102 @@
 # Backlog
 
-Committed work not yet scheduled. Research ideas live in `docs/opportunities.md`.
+Everything not promised yet. An item gains authority only when it moves into `ROADMAP.md`.
+
+## Items
+
+### Idea notes
+
+- **Shooters:** off-wing and handedness effects on shot quality. A research direction. `research/shooters/docs/2026-05-10-shooters.md`
+- **Lines:** forward roles (driver, shooter, complementer) and defense-pair shots against per 60, weighted by zone starts. `docs/context/ideas/lines.md`
+- **Timeline viewer:** a read-only, row-by-row tool for browsing timeline data. `docs/context/ideas/timelines.md`
 
 ---
 
-## Keep the deployed browser current during the season
+### Pipeline follow-ups from the 2026-11-17 catch-up fix
 
-**Added:** 2026-09-29
-
-**Problem:** The deployed app (`app.nhldata.org`) reads data baked into the Docker image at build time, and there's no Fly volume. The daily 08:00 orchestrator run updates local data only, so the live site shows the in-progress season (2026-27) only as of the last manual `./tools/sync-runtime-data.sh` + `fly deploy`.
-
-**Constraints:**
-
-- Deploy locally only. A CI deploy built from a bare checkout with no data took production down on 2026-07-29, and `.github/workflows/fly-deploy.yml` is now `workflow_dispatch`-only.
-- The sync script and the Dockerfile `RUN` guard name each season's runtime files explicitly. Any new approach has to keep the guarantee that a dataless or partial image can't ship.
-- The daily pipeline doesn't build the files the browser needs beyond `league.db`: Edge bursts (`player_bursts.csv`), `edm.db`, and `goalies.db` are manual today.
-- `build_league_db.py` deletes `league.db` and then rebuilds it table by table, so a sync or a page read during the 08:00 build (or after a failed one) sees a partial database. Any automated sync needs the build to write to a temporary file and `os.replace()` it into place. Source: orko-review finding `data/F-5` on the season-toggle spec.
-
-**Options:**
-
-1. **Daily local deploy.** After the 08:00 run, a local job rebuilds the manual artifacts, syncs, and runs `fly deploy`. Smallest change, but it depends on this Mac being awake and building an image every day.
-2. **Manual cadence with an "as of" date.** Deploy when convenient (for example, weekly), and show the data date in the app header.
-3. **Move data off the image.** A Fly volume or object storage that the pipeline pushes to, so data refreshes without a deploy. Most robust, but it changes the deploy model and the runtime-data guards.
-
-**Depends on:** the season-toggle work (2025-26 + 2026-27 in the browser).
+- `v2/orchestrator/tools/fetch.py` accepts a `season` argument and ignores it. The fetcher reads `NHL_SEASON` from the environment.
+- `download_shifts_only` in `v1/nhlgame.py` still stops a range at the first game without shifts. The full-download loop no longer does.
+- A game whose shift reports never become available is fetched again every morning. No 2026-27 game is in that state.
+- The manual backfill left two things unchecked: `points_5v5` covers 319 of 325 games (six games with no 5v5 goals is plausible), and `elite_defensemen` held 2 rows against 40 `elite_forwards`.
 
 ---
 
-## Extend the goalie pipeline to 2026-27
+### Detect NHL Play-by-Play Data Corrections
 
-**Added:** 2026-09-29
+**Problem:** Our 5v5 goal counts occasionally differ by 1-2 goals from NHL.com official stats (e.g., LAK 5v5 GF: 113 vs NHL's 114 for 2025 season). The NHL likely makes post-game corrections to play-by-play data, but we only download each game once.
 
-**Problem:** The goalie pipeline covers 2021-22 through 2025-26 only. `SEASONS = ("2021", ..., "2025")` is hard-coded in 10 modules under `v2/goalies/` and in `v2/browser/build_goalies_db.py`. Until it's extended, the browser shows "not yet available" for 2026-27 on `/goalies` and in the team page's goalie section.
+**Research findings (2026-03-15):**
 
-**Decision needed first:** how to score an in-progress season against models fit on 2021–2025. The GSAx baseline, game difficulty, arena adjustments, and freeze pricing were all fit on the five completed seasons.
+- The public NHL API (`api-web.nhle.com`) has no changelog, no `Last-Modified` header, and no `updatedAt` field in the JSON response.
+- HTTP ETags are request-time-based (not content-based), so they can't detect changes.
+- The `gameState` transition from `FINAL` to `OFF` is the best proxy for "data is probably stable," but corrections may still happen after.
+- Cache TTLs on completed games are only 3-5 seconds, suggesting the NHL expects clients to re-fetch and that data can change.
+- No open-source library (Hockey-Scraper, chickenstats, nhl-api-py) implements automatic staleness detection.
+- chickenstats maintains a 570-line manual corrections file (`_fixes.py`) for known NHL data errors spanning 2010-2025, confirming that errors are real and persistent.
+- The commercial Sportradar NHL API has a "Daily Change Log" endpoint, but the free public API does not.
 
-- **Score against the frozen baseline.** Keep the 2021–2025 fits fixed and apply them to 2026-27 games. Stable and comparable across the season, but the baseline drifts out of date as the league changes.
-- **Refit including 2026-27.** Adds the new season to the pooled fits. Moves every historical number on each rebuild, and early-season samples are thin.
+**Possible approaches:**
 
-**Other work:**
-
-- Replace the per-module `SEASONS` tuples with one shared definition so the next season is a one-line change.
-- Decide whether goalies.db rebuilds join the daily orchestrator run or stay manual.
-- Check the research honesty guardrails on `/goalie/<id>` against small in-season samples (for example, the freeze-percentile eligibility of `MIN_SAVES_FOR_PCT = 500` saves).
-
-**Depends on:** the season-toggle work.
+1. **Hash-and-compare** — Store a checksum of each game's play-by-play JSON at download time. Periodically re-fetch and flag games where the checksum changed.
+2. **Scheduled re-download window** — Re-fetch play-by-play for games played within the last N days as part of the daily pipeline, since corrections are most likely shortly after games.
+3. **Accept small discrepancies** — Document that our 5v5 data uses strict `1551` situation codes from a single point-in-time download and may differ slightly from NHL.com.
 
 ---
 
-## Scheduled and on-demand Edge refresh
+### NHL EDGE Skating & Tracking Data
 
-**Added:** 2026-09-29
+**Opportunity:** The free public NHL API exposes player-level EDGE tracking data (speed bursts, skating distance, zone time, shot speed) that we could incorporate into player profiles and team analysis.
 
-**Problem:** The Edge burst data (`data/<season>/generated/edge/player_bursts.csv`) behind SB/a60 and Max MPH is built by hand: `NHL_SEASON=<season> python v2/edge/fetch_skater_detail.py`, then `compute_burst_rates.py`. During the season the numbers go stale between manual runs.
+**Status (2026-11-17):** speed bursts shipped in May 2026 (`v2/edge/`, SB/a60 and Max MPH in the browser; plan in `docs/plans/2026-05-04-edge-player-data-and-burst-per-60.md`). The other endpoints below are unused.
 
-**Want:**
+**Research findings (2026-03-15):**
 
-- One command that refreshes Edge data for the active season, runnable on demand (for example, `python v2/orchestrator/runner.py "refresh edge"` or a standalone script).
-- A monthly schedule (launchd, like the daily orchestrator), kept out of the daily run so about 800 Edge requests don't add a failure mode every morning.
-- The same season guards as the daily run: read `NHL_SEASON`, require the season's `league.db` to exist (the skater list comes from it), and write a log to `data/<season>/logs/`.
+- Endpoints live at `api-web.nhle.com/v1/edge/{endpoint}/{playerId}/{season}/{gameType}`
+- Parameters: `playerId`, `season` (e.g., `20252026`), `gameType` (`2` = regular season, `3` = playoffs)
+- Originally built for NHL broadcast graphics — may be less stable than core stats endpoints
+- `nhl-api-py` (which we already use) has a dedicated `client.edge.*` module wrapping these
 
-**Depends on:** the season-toggle work (per-season burst loading in the browser).
+**Available skater endpoints:**
+
+| Endpoint | Data |
+|----------|------|
+| `skater-skating-speed-detail` | Top 10 speeds, max speed, burst counts (22+ mph, 20-22 mph, 18-20 mph) |
+| `skater-skating-distance-detail` | Skating distance per game/period |
+| `skater-zone-time` | Time spent in offensive/defensive/neutral zones |
+| `skater-shot-speed-detail` | Shot velocity data |
+| `skater-shot-location-detail` | Shot location data |
+| `skater-detail` | General EDGE overview for a player |
+
+**Also available:** Team-level rollups (`team-skating-speed-detail`, etc.), top-10 leaderboards (`skater-speed-top-10`, etc.), and goalie tracking data.
+
+**Possible uses:**
+
+1. **Player profiles** — Add speed/burst stats to the player page in the browser
+2. **Team averages** — Aggregate skating metrics on the teams leaderboard
+3. **PPI correlation** — Explore relationship between physical size (PPI) and skating speed/deployment
+
+**References:**
+- [NHL EDGE endpoints discovery (Issue #69)](https://github.com/Zmalski/NHL-API-Reference/issues/69)
+- [nhl-api-py EDGE module](https://github.com/coreyjs/nhl-api-py)
+- [Zmalski/NHL-API-Reference](https://github.com/Zmalski/NHL-API-Reference)
+
+---
+
+### Historical Season Replay for Elite Changelog
+
+**Opportunity:** Once the 2025-26 season is complete, replay the full season day-by-day to retroactively populate the elite changelog and stress-test the pipeline.
+
+**Concept:** Download the complete season's data from the NHL API, then simulate the nightly build process incrementally — day 1 processes only games from opening night, day 2 adds the next day's games, and so on through the final game. Each simulated day rebuilds the league DB and diffs the elite sets, appending any additions, removals, or type changes to `elite_changelog.csv`.
+
+**Value:**
+
+1. **Full elite changelog** — Produces a complete history of when players entered and exited elite status throughout the season, useful for understanding how the model responds to real data over time
+2. **Pipeline regression testing** — Running 180+ sequential builds against real data is likely to surface edge cases and bugs that synthetic tests miss (traded players mid-season, injury absences dropping below GP thresholds, late-season threshold crossings)
+3. **Model tuning** — The changelog would reveal how volatile the elite thresholds are — if players are churning in and out daily, the thresholds may need adjustment
+
+**Implementation sketch:**
+
+- Collect full-season play-by-play, shifts, boxscores, and timelines
+- Write a replay script that filters data by game date, copies the subset into the working directories, and runs `build_league_db.py` for each day
+- The existing `_read_old_elites` / `_log_elite_changes` machinery handles the diffing automatically
+- Output: a single `elite_changelog.csv` spanning the entire season

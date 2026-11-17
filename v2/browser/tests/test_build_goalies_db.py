@@ -65,7 +65,7 @@ def test_season_toi_is_nan_when_no_game_has_a_timeline():
     """A 5v5 TOI of NaN means "no timeline for this goalie-game", which is not
     the same fact as the 0 toi_5v5.py writes for a goalie who played but saw no
     5v5 ice. A plain sum() collapses the whole-season case to 0.0 and destroys
-    that distinction — see docs/plans/2026-07-30-goalie-5v5-toi-design.md."""
+    that distinction — see docs/versions/3.1.0/specs/2026-07-30-goalie-5v5-toi-design.md."""
     gg = _gg()
     gg["toi_s"] = np.nan
     row = build_goalie_seasons(gg, _gsax(), _shots(), _terms(), _ledger()).iloc[0]

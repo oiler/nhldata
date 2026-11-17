@@ -111,7 +111,7 @@ def main() -> None:
         for season in SEASONS:
             # gp/teams stay all-situations: a goalie who dressed and played is
             # one appearance regardless of cut. TOI follows the cut as of
-            # 2026-07-30 — see docs/plans/2026-07-30-goalie-5v5-toi-design.md.
+            # 2026-07-30 — see docs/versions/3.1.0/specs/2026-07-30-goalie-5v5-toi-design.md.
             gg = load_toi(season, situation)
             gsax = pd.read_csv(src / f"gsax_{season}.csv")
             shots = load_shots(season, situation,

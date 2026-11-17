@@ -1,6 +1,7 @@
 # NHL Data
 
 - https://app.nhldata.org/
+- Why the project exists and what guides it: [PROJECT.md](PROJECT.md)
 
 ## What This Project Does
 

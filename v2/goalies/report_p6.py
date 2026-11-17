@@ -17,7 +17,7 @@ from v2.goalies.portability import paired_bootstrap_dr  # noqa: E402
 VAL = ROOT / "data" / "generated" / "goalies" / "validation"
 K_GRID = (250, 500, 1000, 2000, 4000)
 
-# Anchors from the P3 gate (docs/plans/2026-06-11-goalie-evaluation-design.md
+# Anchors from the P3 gate (research/goalies/docs/2026-06-11-goalie-evaluation-design.md
 # Sec 6b, approved 2026-07-14) and repeatability.py's docstring anchors.
 REPEAT_ANCHORS = {
     "freeze": "P3 anchor: year-pair r 0.60-0.80, split-half 0.712 (real skill)",

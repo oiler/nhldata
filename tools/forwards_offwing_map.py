@@ -1,6 +1,6 @@
 """Forwards-only off-wing shooting map in natural forward territory.
 
-Question (docs/ideas/2026-05-10-shooters.md): for forwards, in the areas they
+Question (research/shooters/docs/2026-05-10-shooters.md): for forwards, in the areas they
 naturally occupy (below the tops of the circles, x_norm >= 54), where — if
 anywhere — is off-wing shooting more accurate, and do one-timer-ish shots
 (quick release after a same-team event, especially a cross-ice one) drive it?

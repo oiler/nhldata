@@ -6,7 +6,7 @@ joined from player-landing files. Off-wing = shot taken from the side of the
 ice opposite the shooter's handedness, after rotating coordinates so every
 shooter attacks toward +x.
 
-Scope decisions (see docs/ideas/2026-05-10-shooters.md research summary):
+Scope decisions (see research/shooters/docs/2026-05-10-shooters.md research summary):
 - Blocked shots excluded: no shotType, recorded at block location.
 - Tips/deflections/wraparounds etc. excluded: not aimed shots, locations
   unreliable. Core types only: wrist, snap, slap, backhand.

@@ -6,7 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
+### Changed
+- The daily pipeline fetches and builds 2026-27 (since 2026-09-29).
+
 ### Fixed
+- `league.db` builds before any skater reaches 5 games played. Early in a
+  season the build stopped with `no such table: player_metrics`.
+- Missing goalie time on ice shows as an em dash instead of a wrong per-60.
 - Production 502 on 2026-07-29. The `Deploy to Fly` Action deployed on every push
   to master, but builds from a bare `git checkout` — which lacks the gitignored
   `v2/browser/runtime_data/{2024,2025}/`. `pages/skaters.py` loads the burst CSV at
@@ -16,9 +22,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   - `fly-deploy.yml` is `workflow_dispatch`-only; deploys are local-only.
 
 ### Added
+- Goalie pages have a situation dropdown: all situations or strict 5v5. The
+  goalies list, the goalie page, the team goalie section, and the glossary
+  follow it. Deployed 2026-07-21.
+- GSAx/60 and xGA/60 on the goalie pages in both situations, using 5v5 goalie
+  time on ice built from the per-second timelines.
+- A notes page, with a goalie note and a goalie glossary.
 - `Tests` workflow — runs `pytest v2/` on push to master and on PRs. Tests that
   read the gitignored `data/` tree are marked `requires_data` (registered in
   `pyproject.toml`) and deselected in CI; 295 of 298 run there.
+
+## [3.0.0] - 2026-07-19
+### Added
+- Goalies in the browser, built from the goalie evaluation models:
+  - `/goalies`: a goalie index for each season.
+  - `/goalie/<id>`: season cards, a per-game ledger, and a freeze-value line
+    stated relative to the median goalie.
+  - A goalie environment section on each team page.
+- `goalies.db`, a cross-season database the browser reads beside `league.db`.
+  `tools/sync-runtime-data.sh` copies and checks it before a deploy.
+
+### Notes
+- This entry was written on 2026-11-17 from the commit history. The `v3.0.0`
+  tag was created without one.
 
 ## [2.3.0] - 2026-06-22
 ### Added
