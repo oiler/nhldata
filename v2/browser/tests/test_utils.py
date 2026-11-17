@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from utils import seconds_to_mmss
+from utils import age_in_season, seconds_to_mmss
 
 
 def test_zero():
@@ -38,3 +38,14 @@ def test_nan_is_missing_data_not_zero():
 def test_float_rounds_down():
     """Float input is truncated to int."""
     assert seconds_to_mmss(856.9) == "14:16"
+
+
+def test_age_in_season_cutoff_boundary():
+    assert age_in_season("2000-09-16", "2026") == 25
+    assert age_in_season("2000-09-15", "2026") == 26
+
+
+def test_age_in_season_missing_birth_date():
+    assert age_in_season(None, "2026") is None
+    assert age_in_season("", "2026") is None
+    assert age_in_season(float("nan"), "2026") is None

@@ -170,7 +170,7 @@ Expected: all pass. Commit and push the task.
 - Consumes: `seasons.age_cutoff`.
 - Produces: `utils.age_in_season(birth_date, season: str) -> int | None`.
 
-- [ ] **Step 1: Write the failing test** (append to `v2/browser/tests/test_utils.py`; add the import beside the file's existing `from utils import ...` line)
+- [x] **Step 1: Write the failing test** (append to `v2/browser/tests/test_utils.py`; add the import beside the file's existing `from utils import ...` line)
 
 ```python
 from utils import age_in_season
@@ -187,12 +187,12 @@ def test_age_in_season_missing_birth_date():
     assert age_in_season(float("nan"), "2026") is None
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `python -m pytest v2/browser/tests/test_utils.py -v`
 Expected: ERROR at collection, `ImportError: cannot import name 'age_in_season'` (the file's existing tests also error until Step 3)
 
-- [ ] **Step 3: Write the implementation** (append to `v2/browser/utils.py`; add the imports at the top)
+- [x] **Step 3: Write the implementation** (append to `v2/browser/utils.py`; add the imports at the top)
 
 ```python
 from datetime import date
@@ -212,12 +212,12 @@ def age_in_season(birth_date, season: str):
     return age
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `python -m pytest v2/browser/tests/test_utils.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Checkpoint**
+- [x] **Step 5: Checkpoint**
 
 Run: `python -m pytest v2/ -q -m "not requires_data"`
 Expected: all pass.
