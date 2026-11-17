@@ -5,7 +5,7 @@ Planned work, in order. When a milestone finishes, it moves to `docs/history.md`
 The project is past its first release: `docs/history.md` lists the releases through v3.0.0. This file holds only the work that's planned next.
 
 - **Current milestone:** Season toggle (v3.1.0).
-- **Order:** set by oiler on 2026-11-17 (Decision Queue D37 and D40). The season toggle ships on the current code layout, the code restructure follows as its own release, and the daily pipeline moves machines after that.
+- **Order:** set by oiler on 2026-11-17 (Decision Queue D37 and D40). The season toggle ships on the current code layout, the code restructure follows as its own release, and the daily pipeline moves machines after that. The Dependabot fix was added at high priority on 2026-11-17, right after the season toggle.
 
 ## Milestones
 
@@ -19,6 +19,24 @@ v3.1.0 also carries what's merged since v3.0.0: the goalie 5v5 situation cut, 5v
 - **Spec:** `docs/versions/3.1.0/specs/2026-09-29-season-toggle-design.md`
 - **Plan:** `docs/versions/3.1.0/plans/2026-09-29-season-toggle-plan.md`. Task 0 is done.
 - **Depends on:** nothing.
+
+### Fix the open Dependabot alerts (high priority)
+
+**Added:** 2026-11-17
+
+GitHub reports 14 open Dependabot alerts on `master`: 2 critical, 6 high, and 6 moderate. All of them are in `uv.lock`, the local environment the pipeline and builds run in.
+
+- **Alerts by package:**
+  - `certifi`: 1 critical, patched in 2026.10.18.
+  - `anyio`: 1 critical and 1 moderate, patched in 4.14.2.
+  - `urllib3`: 2 high and 1 moderate, patched in 2.8.0.
+  - `soupsieve`: 4 high and 4 moderate, the highest patched version 4.0.0.
+- **Work:**
+  - Upgrade the four packages in `uv.lock`, run the full test suite, and run one daily pipeline by hand.
+  - Check the deployed image too. It installs from `v2/browser/requirements.txt`, not `uv.lock`. Its `urllib3>=2.7.0` floor is below 2.8.0, and `certifi` and `anyio` have no floor. Raise or add the floors to the patched versions.
+  - Confirm the alerts close on GitHub after the push.
+- **Version:** v3.1.1, a patch release.
+- **Depends on:** nothing. It can go ahead of the season toggle's deploy if oiler wants the image patched first.
 
 ### Restructure the code into browser, pipeline, and research
 
