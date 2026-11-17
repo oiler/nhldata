@@ -33,5 +33,5 @@ def test_agent_imports():
 
 def test_runner_imports():
     from v2.orchestrator.runner import daily_prompt
-    prompt = daily_prompt("2025")
+    prompt = daily_prompt("2025", "2026-02-25", {"fetch": [900], "generate": [900]})
     assert "2025" in prompt

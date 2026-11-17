@@ -55,3 +55,35 @@ def test_validate_game_invalid_json():
         result = validate_game(game_id, data_dir=base)
         assert result["status"] == "invalid"
         assert "boxscore" in result["errors"][0]
+
+
+def _write_raw(base: Path, game_id: str):
+    for sub, name in (("boxscores", f"{game_id}.json"), ("plays", f"{game_id}.json"),
+                      ("meta", f"{game_id}.json"), ("shifts", f"{game_id}_home.json"),
+                      ("shifts", f"{game_id}_away.json")):
+        _write_json(base / sub / name, {"id": game_id})
+
+
+def _write_derived(base: Path, game_id: str, skip: str | None = None):
+    for sub in ("flatplays", "timelines/csv", "competition"):
+        if sub == skip:
+            continue
+        path = base / "generated" / sub / f"{game_id}.csv"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("x")
+
+
+def test_pending_games_separates_fetch_from_generate():
+    from v2.orchestrator.tools.validate import pending_games
+
+    with tempfile.TemporaryDirectory() as tmp:
+        base = Path(tmp)
+        # 1: fully processed. 2: never fetched. 3: fetched, timeline never generated.
+        _write_raw(base, "2026020001")
+        _write_derived(base, "2026020001")
+        _write_raw(base, "2026020003")
+        _write_derived(base, "2026020003", skip="timelines/csv")
+
+        result = pending_games([2026020001, 2026020002, 2026020003], data_dir=base)
+
+    assert result == {"fetch": [2], "generate": [2, 3]}

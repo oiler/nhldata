@@ -61,6 +61,7 @@ RATE_LIMIT_SECONDS = 9  # Delay between API requests
 SHIFT_RATE_LIMIT_SECONDS = int(os.environ.get("NHL_SHIFT_DELAY", "5"))  # Delay between HTML shift requests; override via NHL_SHIFT_DELAY
 SHIFT_RETRY_ATTEMPTS = 5  # Number of retry attempts for shift fetches
 SHIFT_RETRY_DELAY_SECONDS = 10  # Delay between retries
+MAX_CONSECUTIVE_SHIFT_FAILURES = 3  # Stop a range after this many games in a row without shifts
 
 # API Endpoints (shifts now handled via HTML scraping)
 ENDPOINTS = {
@@ -173,8 +174,9 @@ def download_game(game_id: str, paths: Dict[str, Path]) -> Tuple[int, int, bool]
     Download all endpoint data for a single game.
 
     Returns:
-        Tuple of (successful_downloads, failed_downloads, should_stop)
-        should_stop is True if a critical error occurred (shifts failed)
+        Tuple of (successful_downloads, failed_downloads, shifts_failed)
+        shifts_failed is True if either shift report could not be fetched; the
+        game's API endpoints are then skipped, so the whole game is retried later
     """
     print(f"\n{'='*60}")
     print(f"Processing Game ID: {game_id}")
@@ -183,11 +185,10 @@ def download_game(game_id: str, paths: Dict[str, Path]) -> Tuple[int, int, bool]
     successful = 0
     failed = 0
 
-    # First, download shifts via HTML scraping (critical - stops on failure)
+    # First, download shifts via HTML scraping
     home_success, away_success = download_shifts(game_id, paths["shifts"])
 
     if not home_success or not away_success:
-        # Critical failure - return immediately with stop signal
         return successful, failed + 2, True
 
     successful += 2  # Count both home and away shifts
@@ -865,21 +866,32 @@ def main():
     total_successful = 0
     total_failed = 0
 
+    games_without_shifts = []
+    consecutive_shift_failures = 0
+
     for game_num in range(start_game, end_game + 1):
         game_id = construct_game_id(game_num)
-        successful, failed, should_stop = download_game(game_id, paths)
+        successful, failed, shifts_failed = download_game(game_id, paths)
         total_successful += successful
         total_failed += failed
         games_processed += 1
 
-        if should_stop:
-            # Critical error occurred - stop processing
+        if shifts_failed:
+            games_without_shifts.append(game_id)
+            consecutive_shift_failures += 1
+        else:
+            consecutive_shift_failures = 0
+
+        # One game's shift report timing out is routine, so carry on to the next game.
+        # Several in a row means the report server is down or refusing us, so stop.
+        if consecutive_shift_failures == MAX_CONSECUTIVE_SHIFT_FAILURES:
             print(f"\n{'='*60}")
-            print(f"DOWNLOAD STOPPED DUE TO CRITICAL ERROR")
+            print(f"DOWNLOAD STOPPED: {MAX_CONSECUTIVE_SHIFT_FAILURES} games in a row had no shifts")
             print(f"{'='*60}")
-            print(f"Games processed before error: {games_processed}")
+            print(f"Games processed before stopping: {games_processed}")
             print(f"Total successful downloads: {total_successful}")
             print(f"Total failed downloads: {total_failed}")
+            print(f"Games without shifts: {', '.join(games_without_shifts)}")
             print(f"{'='*60}\n")
             sys.exit(1)
 
@@ -895,10 +907,15 @@ def main():
     print(f"Total games processed: {total_games}")
     print(f"Total successful downloads: {total_successful}")
     print(f"Total failed downloads: {total_failed}")
+    if games_without_shifts:
+        print(f"Games without shifts: {', '.join(games_without_shifts)}")
     print(f"\nError logs:")
     print(f"  - nogames.json (404 errors)")
     print(f"  - errors.json (other errors)")
     print(f"{'='*60}\n")
+
+    if games_without_shifts:
+        sys.exit(1)
 
 
 if __name__ == "__main__":

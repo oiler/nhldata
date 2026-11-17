@@ -17,26 +17,52 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 from v2.orchestrator.agent import run_agent
 from v2.orchestrator.config import SEASON
 from v2.orchestrator.log_writer import LogWriter
+from v2.orchestrator.tools.schedule import played_game_ids
+from v2.orchestrator.tools.validate import pending_games
 
 
-def daily_prompt(season: str) -> str:
-    yesterday = (date.today() - timedelta(days=1)).isoformat()
-    return (
+def to_ranges(numbers: list[int]) -> list[tuple[int, int]]:
+    """Group sorted game numbers into inclusive (start, end) runs."""
+    ranges = []
+    for n in numbers:
+        if ranges and n == ranges[-1][1] + 1:
+            ranges[-1] = (ranges[-1][0], n)
+        else:
+            ranges.append((n, n))
+    return ranges
+
+
+def _format_ranges(numbers: list[int]) -> str:
+    return ", ".join(f"{a}-{b}" for a, b in to_ranges(numbers)) or "none"
+
+
+def daily_prompt(season: str, yesterday: str, pending: dict) -> str:
+    header = (
         f"Run the daily pipeline. Season is {season} (the {season}-{int(season)+1} NHL season).\n"
-        f"Yesterday's date is {yesterday}. Do not second-guess the date — use it as given.\n"
-        f"1. Call check_schedule with date {yesterday}.\n"
-        f"2. If games were found, fetch them with fetch_games.\n"
-        f"3. Validate all fetched data.\n"
-        f"4. If shifts are missing, retry with fetch_shifts.\n"
-        f"5. Run all generation steps for new games.\n"
-        f"6. Rebuild the league database.\n"
-        f"7. Send a notification summarizing what happened.\n"
-        f"If no games were played yesterday, just send a notification saying so."
+        f"Every game played through {yesterday} has already been checked against the files on disk, "
+        f"so do not call check_schedule.\n"
+    )
+    if not pending["generate"]:
+        return header + (
+            "No games are waiting to be fetched or generated. "
+            "Just send a notification saying so."
+        )
+    return header + (
+        f"Game-number ranges to fetch: {_format_ranges(pending['fetch'])}\n"
+        f"Game-number ranges to generate: {_format_ranges(pending['generate'])}\n"
+        f"These include any games earlier runs missed. Use the ranges exactly as given.\n"
+        f"1. Call fetch_games once for each fetch range.\n"
+        f"2. Validate all fetched data.\n"
+        f"3. If shifts are missing, retry with fetch_shifts.\n"
+        f"4. Run the generation steps, calling the per-range steps once for each generate range.\n"
+        f"5. Rebuild the league database.\n"
+        f"6. Send a notification summarizing what happened."
     )
 
 
 def main():
     season = SEASON
+    log = LogWriter(season)
 
     if len(sys.argv) > 1:
         # Manual mode — user provided a command
@@ -45,9 +71,17 @@ def main():
         user_message = f"[Season: {season}] {user_message}"
     else:
         # Scheduled daily mode
-        user_message = daily_prompt(season)
+        yesterday = (date.today() - timedelta(days=1)).isoformat()
+        try:
+            pending = pending_games(played_game_ids(yesterday, season), season=season)
+        # The schedule is an external API: any failure here ends the run with a log entry.
+        except Exception as e:
+            log.section("Summary")
+            log.item(f"Schedule error: {e}")
+            print(f"Schedule error: {e}\nLog saved to: {log.save()}")
+            return
+        user_message = daily_prompt(season, yesterday, pending)
 
-    log = LogWriter(season)
     log.section("Agent Input")
     log.item(user_message)
 
