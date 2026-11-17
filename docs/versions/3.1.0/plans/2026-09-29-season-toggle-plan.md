@@ -411,7 +411,7 @@ Expected: all pass.
 - Produces: `burst_data.bursts_for(season: str) -> pd.DataFrame` indexed by `playerId` with columns `bursts_per_60, speed_max_mph, birth_date`; `lru_cache`d (call `bursts_for.cache_clear()` in tests). `burst_data.preload_ready_seasons(seasons) -> None`, which Task 10 calls from `skaters.py` at import.
 - Also consumes: `runtime_paths.season_ready` (Task 3).
 
-- [ ] **Step 1: Write the failing test** (reuse the file's `_write_csv` and `_VALID_ROW`)
+- [x] **Step 1: Write the failing test** (reuse the file's `_write_csv` and `_VALID_ROW`)
 
 Add `import burst_data` and `from burst_data import bursts_for, preload_ready_seasons` to the file's top import block, then append:
 
@@ -462,12 +462,12 @@ def test_preload_does_nothing_in_local_dev(tmp_path, monkeypatch, clear_bursts_c
     assert bursts_for.cache_info().currsize == 0
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `python -m pytest v2/browser/tests/test_burst_data.py -v`
 Expected: ERROR at collection, `ImportError: cannot import name 'bursts_for'` (the file's existing tests also error until Step 3)
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 In `v2/browser/burst_data.py`:
 
@@ -515,12 +515,12 @@ def preload_ready_seasons(seasons) -> None:
             logger.warning("season %s not in image; the browser shows it as not available", season)
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `python -m pytest v2/browser/tests/test_burst_data.py -v`
 Expected: PASS (existing tests included)
 
-- [ ] **Step 5: Checkpoint**
+- [x] **Step 5: Checkpoint**
 
 Run: `python -m pytest v2/ -q -m "not requires_data"`
 Expected: all pass.
