@@ -629,7 +629,7 @@ The early-season fix covers `player_metrics` and `constants`. Two more gaps brea
 - Consumes: the builders in `main()` order; the module path constants `SEASON_DIR`, `COMPETITION_DIR`, `PLAYERS_CSV`, `FLATBOXSCORES_CSV`, `FLATPLAYS_DIR`.
 - Produces: after any build, `league.db` has every table in `verify_runtime_data.REQUIRED_TABLES` (Task 8), and `competition` has `pct_any_elite_fwd` and `pct_any_elite_def`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # v2/browser/tests/test_build_opening_night.py
@@ -699,12 +699,12 @@ def test_opening_night_build_creates_every_page_table(tmp_path, monkeypatch):
 
 The step list mirrors `main()` minus `_log_elite_changes`, which writes a changelog file and reads no table the pages need.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `python -m pytest v2/browser/tests/test_build_opening_night.py -v`
 Expected: FAIL with `no such table: points_5v5`, raised from `build_elite_forwards_table`. (Verified against the current code in a scratch run on 2026-09-29.)
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 In `build_points_5v5_table()`, replace the `if not frames:` branch:
 
@@ -756,12 +756,12 @@ Make the matching change in `recompute_pct_vs_elite_def()`:
 
 Delete the original "Ensure ... column exists" blocks that followed `elite_set = ...` in both functions.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `python -m pytest v2/browser/tests/test_build_opening_night.py v2/browser/tests/test_player_metrics.py -v`
 Expected: PASS. The existing `recompute_pct_vs_elite_*` tests still pass.
 
-- [ ] **Step 5: Checkpoint**
+- [x] **Step 5: Checkpoint**
 
 Run: `python -m pytest v2/ -q -m "not requires_data"`
 Expected: all pass.

@@ -214,6 +214,10 @@ def build_points_5v5_table(conn):
             frames.append(pd.DataFrame(records))
 
     if not frames:
+        # Downstream builders and pages read points_5v5 unconditionally.
+        pd.DataFrame(columns=["gameId", "playerId", "goals", "assists", "points"]).to_sql(
+            "points_5v5", conn, if_exists="replace", index=False
+        )
         print("  points_5v5: 0 rows (no 5v5 goals found)")
         return
     out = pd.concat(frames, ignore_index=True)
@@ -551,17 +555,18 @@ def recompute_pct_vs_elite_fwd(conn):
     Also computes pct_any_elite_fwd — a binary metric: for each second, 1 if any
     elite forward is on the opposing side, 0 otherwise.  Averaged per game per player.
     """
+    # Pages select pct_any_elite_fwd, so the column must exist before any early
+    # return (no elites until forwards reach 10 GP).
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(competition)").fetchall()}
+    if "pct_any_elite_fwd" not in cols:
+        conn.execute("ALTER TABLE competition ADD COLUMN pct_any_elite_fwd REAL DEFAULT 0.0")
+        conn.commit()
+
     elite_rows = conn.execute("SELECT playerId FROM elite_forwards").fetchall()
     if not elite_rows:
         print("  pct_vs_elite_fwd: skipped (no elite forwards)")
         return
     elite_set = {r[0] for r in elite_rows}
-
-    # Ensure pct_any_elite_fwd column exists
-    cols = {r[1] for r in conn.execute("PRAGMA table_info(competition)").fetchall()}
-    if "pct_any_elite_fwd" not in cols:
-        conn.execute("ALTER TABLE competition ADD COLUMN pct_any_elite_fwd REAL DEFAULT 0.0")
-        conn.commit()
 
     # Build per-game lookups from competition table
     pos_rows = conn.execute(
@@ -743,6 +748,13 @@ def recompute_pct_vs_elite_def(conn):
     Also computes pct_any_elite_def — a binary metric: for each second, 1 if any
     elite D is on the opposing side, 0 otherwise.  Averaged per game per player.
     """
+    # Pages select pct_any_elite_def, so the column must exist before any early
+    # return (no elites until defensemen reach 20 GP).
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(competition)").fetchall()}
+    if "pct_any_elite_def" not in cols:
+        conn.execute("ALTER TABLE competition ADD COLUMN pct_any_elite_def REAL DEFAULT 0.0")
+        conn.commit()
+
     elite_rows = conn.execute(
         "SELECT playerId FROM elite_defensemen"
     ).fetchall()
@@ -750,12 +762,6 @@ def recompute_pct_vs_elite_def(conn):
         print("  pct_vs_elite_def: skipped (no elite defensemen)")
         return
     elite_set = {r[0] for r in elite_rows}
-
-    # Ensure pct_any_elite_def column exists
-    cols = {r[1] for r in conn.execute("PRAGMA table_info(competition)").fetchall()}
-    if "pct_any_elite_def" not in cols:
-        conn.execute("ALTER TABLE competition ADD COLUMN pct_any_elite_def REAL DEFAULT 0.0")
-        conn.commit()
 
     # Build per-game lookups from competition table
     pos_rows = conn.execute(
