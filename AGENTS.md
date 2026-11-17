@@ -15,7 +15,7 @@ NHL game data analytics: a data pipeline that turns public NHL API data into sec
 - `GLOSSARY.md`: definitions of the project's stats and terms.
 - `PATHWAYS.md`: files to add as the project grows.
 - `docs/history.md`: finished milestones, and a dated log. Artifact.
-- `docs/versions/`: one folder per release, with its record, specs, plans, and reviews. Its `README.md` explains the layout and the close-out. superpowers writes specs to `docs/versions/<version>/specs/` and plans to `docs/versions/<version>/plans/`, not to `docs/superpowers/`. Artifacts.
+- `docs/versions/`: one folder per release, with its record, specs, plans, and reviews. Its `README.md` explains the layout and the close-out. A release that needs a separate spec or plan puts it in `docs/versions/<version>/specs/` or `docs/versions/<version>/plans/`. The project doesn't use superpowers. Artifacts.
 - `docs/context/`: background, such as the kickoff note, analysis write-ups, idea notes, and session logs. Artifacts.
 - `docs/plans/`: specs and plans from January to June 2026 that predate release folders. An archive; don't add to it. Artifacts.
 - `research/<study>/docs/`: a study's design, plans, pre-registration, and reports. `research/goalies/docs/` and `research/shooters/docs/` exist today. New research documents go here, not in `docs/versions/`. Artifacts.
@@ -37,7 +37,7 @@ NHL game data analytics: a data pipeline that turns public NHL API data into sec
 - **Tests:** `python -m pytest v2/ -v`. Run it before finishing any change. CI runs `python -m pytest v2/ -q -m "not requires_data"`, because `data/` is gitignored.
 - **Daily pipeline by hand:** `python v2/orchestrator/runner.py`. `NHL_SEASON` selects the season.
 - **Rebuild a season from raw files:** `python v2/orchestrator/sync_season.py <season>`.
-- **Deploy (oiler only):** `./tools/sync-runtime-data.sh`, then `fly deploy`. Deploy locally only, never from CI.
+- **Deploy:** `./tools/sync-runtime-data.sh`, then `fly deploy`. Claude deploys only after oiler approves that deploy. Deploy locally only, never from CI.
 - `docs/commands.md` lists the rest.
 
 ## Technical stack
@@ -54,9 +54,9 @@ NHL game data analytics: a data pipeline that turns public NHL API data into sec
 - **Discuss before implementing.** Talk through the solution and its edge cases, explain the reasoning and tradeoffs, and wait for an explicit instruction before writing code. Cite the specific NHL rule or official source a decision rests on.
 - **Validate against official sources.** Outputs must match official NHL statistics exactly: ESPN box scores for game summaries, NHL.com for time on ice, and established scrapers (Hockey-Scraper patterns) as a cross-check.
 - **Python, not R.** Use Python tools and libraries for everything.
-- **Git.** Don't commit. oiler reviews and commits by hand. The one exception: during a multi-task subagent-driven build on a feature branch, one local commit per reviewed task is allowed. Never push, and never commit on `master`.
-- **Releases.** A release's close-out uses the document steps in `docs/versions/README.md`. oiler runs the git steps.
-- **Code review.** A subagent-driven build reviews each task before its commit. oiler reviews every change before it's committed to `master`.
+- **Git.** Trunk-based development (D50, 2026-11-17). Work one change at a time on `master`. Claude commits each change once the tests pass, and pushes it to `hub`. Each commit leaves `master` working, because the 08:00 pipeline runs from this checkout: don't leave a change half-done across 08:00.
+- **Deploys.** Pause for oiler's approval before every Fly deploy. A push doesn't deploy: `fly-deploy.yml` runs only by hand.
+- **Releases.** A release's close-out uses the document steps in `docs/versions/README.md`. oiler tags releases.
 - Never capitalize "oiler".
 
 ### Situation timelines

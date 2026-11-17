@@ -1,6 +1,6 @@
 # Season toggle Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> Build this plan task by task, in order, in one session. Run the task's tests after each task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Let the Dash browser switch between 2025-26 and 2026-27, show "not available yet" for a season without verified data, and keep the deploy guard strict for the default season only.
 
@@ -19,12 +19,12 @@
 - Tests use synthetic data only (the pattern in `v2/browser/tests/test_player_metrics.py`). Every test goes red before the code that makes it pass.
 - Run tests from the repo root with `python -m pytest`. Browser test files add `v2/browser` to `sys.path` the way existing test files do.
 - Pages can be imported in tests only after `import app` (it registers the page registry). Dash callbacks are directly callable in tests.
-- Git: never commit on master and never push; oiler commits. Under subagent-driven execution on the feature branch, one local commit per reviewed task is allowed. That's oiler's standing exception for SDD builds (auto-memory `feedback_sdd_local_commits.md`); project `CLAUDE.md` step 6 doesn't list it yet.
+- Git: trunk-based, as `AGENTS.md` section "Project rules" says. Build in the main checkout on `master`. Commit each task once its tests pass, and push it. Each commit leaves `master` working, because the 08:00 orchestrator runs from this checkout. Never deploy without oiler's approval.
 - Don't touch `v2/browser/runtime_data/` contents except through `tools/sync-runtime-data.sh`.
 - The early-season `build_league_db.py` fix (empty `player_metrics` and `constants`) is committed to master in Task 0. Don't redo it.
-- Test runs in Tasks 1–12 use `python -m pytest v2/ -q -m "not requires_data"`, the CI command. A worktree has no `data/` (it's gitignored), so the `requires_data` tests can't pass there. Task 13 runs the full suite from the main checkout.
+- Test runs in Tasks 1–12 use `python -m pytest v2/ -q -m "not requires_data"`, the CI command, so each pushed commit passes CI. Task 13 rebuilds the data and runs the full suite.
 - New imports in an existing test file go in that file's top import block, not beside the appended tests.
-- A test that guards existing behavior passes before the change. Where a task marks a test as a guard, prove it can fail by temporarily breaking the code it covers, then restore the code (global `CLAUDE.md`, "Testing existing code").
+- A test that guards existing behavior passes before the change. Where a task marks a test as a guard, prove it can fail by temporarily breaking the code it covers, then restore the code (the `coding-defaults` skill, "Existing code with no test").
 
 ## Review Focus
 
@@ -37,6 +37,8 @@
 ---
 
 ### Task 0: Preconditions (oiler, before branching)
+
+Done before 2026-11-17. The paths below predate the move of these documents into `docs/versions/3.1.0/`.
 
 The main checkout's working tree holds uncommitted work this plan depends on. A branch cut from the current HEAD (`78ce20f`) has none of it, and Task 6 edits two of the same files, so a later merge would fail.
 
@@ -53,7 +55,7 @@ Don't `git stash` instead: the 08:00 orchestrator runs from this working tree, a
 - [ ] **Step 2: Confirm and branch**
 
 Run: `git show HEAD:v2/browser/build_league_db.py | grep -q _write_empty_player_metrics && echo ok`
-Expected: `ok`. Then create the feature branch or worktree from that commit.
+Expected: `ok`.
 
 ---
 
@@ -1607,7 +1609,7 @@ Expected: all pass.
 - Consumes: the `verify_runtime_data.py` CLI (Task 8), which checks tables, burst coverage, and `birthDate` coverage. New env overrides `SYNC_SRC` and `SYNC_DST`, which default to the repo paths and exist for the tests.
 - Produces: a required season's files are replaced in `runtime_data/` only after every check passes; any failure exits non-zero and leaves the last good copy. An optional season's files ship only when every check passes; otherwise the sync removes `runtime_data/<season>/`, prints one `WARNING: <season> not synced — <reason>` line, and exits 0. The last line is a `Seasons in image:` summary.
 
-This task turns the spec's four manual sync runs into a permanent test. The deploy guard is a high-risk boundary (global `CLAUDE.md`, "Write tests where they pay off"), and the `SYNC_SRC`/`SYNC_DST` overrides exist only so the test can point the script at fixture trees. Update the spec's Testing section to match when you next edit it.
+This task turns the spec's four manual sync runs into a permanent test. The deploy guard is a high-risk boundary (the `coding-defaults` skill, "Write tests where they pay off"), and the `SYNC_SRC`/`SYNC_DST` overrides exist only so the test can point the script at fixture trees. Update the spec's Testing section to match when you next edit it.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1749,9 +1751,17 @@ def test_required_season_failure_is_fatal_and_keeps_last_good_copy(tmp_path):
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run this step only in the worktree, where `data/` doesn't exist. The old script ignores `SYNC_SRC`/`SYNC_DST`, so in the main checkout it would overwrite the real `runtime_data/`. In the worktree it creates empty `runtime_data/2024/` and `2025/` directories (gitignored) and fails at its first `cp`.
+Never run this test in the main checkout before Step 3. The old script ignores `SYNC_SRC`/`SYNC_DST`, so there it would overwrite the real `runtime_data/`. Run it in a throwaway worktree, which has no `data/`. There the old script creates empty `runtime_data/2024/` and `2025/` directories (gitignored) and fails at its first `cp`.
 
-Run: `python -m pytest v2/browser/tests/test_sync_runtime_data.py -v`
+Run:
+
+```bash
+git worktree add --detach "$TMPDIR/nhl-sync-red" HEAD
+cp v2/browser/tests/test_sync_runtime_data.py "$TMPDIR/nhl-sync-red/v2/browser/tests/"
+(cd "$TMPDIR/nhl-sync-red" && python -m pytest v2/browser/tests/test_sync_runtime_data.py -v)
+git worktree remove --force "$TMPDIR/nhl-sync-red"
+```
+
 Expected: all seven FAIL. The required-season tests fail on `"required season 2025" in r.stderr`, because the old script exits at `cp` with a different message.
 
 - [ ] **Step 3: Write the implementation**
@@ -1920,12 +1930,9 @@ Expected: all pass; `check-ignore` prints the `.gitignore` line.
 
 ### Task 13: Rebuild and verify in the running app
 
-This task needs the real `data/` tree, which lives only in the main checkout (`data/` is gitignored, so a worktree has none). Run it twice:
+This task runs on `master` in the main checkout, after Task 12 is pushed. Run it outside the 08:00 window. A failure found here gets fixed in a new commit.
 
-1. **Before merge:** check out the feature branch in the main checkout and run Steps 1-6. `data/` stays in place across checkouts. Do it outside the 08:00 window and switch back to master afterward, because the orchestrator runs from this working tree. A failure found here gets fixed on the branch, not on master.
-2. **After merge:** on master, rerun Steps 2-4 so the databases and `runtime_data/` match the merged code.
-
-Don't `git stash` to get a merge through, for the same reason. After the merge, every sync is refused until Step 2's rebuild of 2025, because the old 2025 `league.db` has no `birthDate` column. That's the guard working.
+From Task 8's commit until Step 2's rebuild of 2025, every sync is refused, because the old 2025 `league.db` has no `birthDate` column. That's the guard working.
 
 **Files:** none changed, except oiler's local-only `docs/fly-deploy-runbook.md` in Step 7.
 
@@ -1939,23 +1946,31 @@ Expected: at least one 2026 competition CSV and the 2026 boxscores CSV (the orch
 Run: `python v2/browser/build_league_db.py 2025 && python v2/browser/build_league_db.py 2026`
 Expected: both end with `Done.`; the 2026 build prints `player_metrics: 0 rows (no eligible players)` in the opening weeks. If the 2025 build fails, restore the backup to `data/2025/generated/browser/league.db`.
 
+- [ ] **Step 2b: Run the 2026-27 Edge fetch (D51)**
+
+Run: `NHL_SEASON=2026 python v2/edge/fetch_skater_detail.py && NHL_SEASON=2026 python v2/edge/compute_burst_rates.py`
+Expected: `data/2026/generated/edge/player_bursts.csv` exists. The fetch makes about 800 requests and reads the skater list from the 2026 `league.db` that Step 2 rebuilt.
+
 - [ ] **Step 3: Check the rebuilt databases**
 
 Run: `python v2/browser/verify_runtime_data.py data/2025/generated/edge/player_bursts.csv data/2025/generated/browser/league.db`
 Expected: `OK:` lines for the tables, burst coverage, and `birthDate coverage` at or near 100%.
 
 Run: `cd v2/browser && python -c "from verify_runtime_data import verify_tables, verify_birthdates; db='../../data/2026/generated/browser/league.db'; print(verify_tables(db), verify_birthdates(db))"`
-Expected: both `(True, ...)`. 2026 has no Edge CSV yet, so the sync won't check it; this covers the 2026 players who enter through the JSON recovery path.
+Expected: both `(True, ...)`. This covers the 2026 players who enter through the JSON recovery path.
+
+Run: `python v2/browser/verify_runtime_data.py data/2026/generated/edge/player_bursts.csv data/2026/generated/browser/league.db`
+Expected: the same `OK:` lines as 2025, with burst coverage of at least 80%.
 
 - [ ] **Step 4: Run the real sync**
 
 Run: `./tools/sync-runtime-data.sh`
-Expected: exit 0. Until a 2026 Edge run exists: one `WARNING: 2026 not synced` line, no `runtime_data/2026/`, and a final `Seasons in image: 2025 (required) | skipped: 2026` line.
+Expected: exit 0, `runtime_data/2026/` holds both files, and the last line is `Seasons in image: 2025 (required), 2026 (optional)`. A `WARNING: 2026 not synced` line means a 2026 check failed; fix it before Step 5.
 
 - [ ] **Step 5: Production-mode smoke test**
 
 Run: `DATA_DIR=$PWD/v2/browser/runtime_data python v2/browser/app.py`, then open `http://127.0.0.1:8050`.
-Expected: the app boots and logs `season 2026 not in image`. `/skaters` on 2025-26 shows Age, and 2026-27 shows "2026-27 data isn't available yet." on every season-aware page.
+Expected: the app boots. `/skaters` shows Age on 2025-26, and on 2026-27 it shows Age, SB/a60, and Max MPH. Every season-aware page shows 2026-27 data.
 
 - [ ] **Step 6: Manual checks in local dev**
 
@@ -1967,7 +1982,7 @@ Run: `cd v2/browser && python app.py`, then open `http://127.0.0.1:8050`.
 - Select 2026-27 on Skaters, click a player link, and confirm the player page shows 2026-27. Reload, and confirm the radio and content still agree.
 - Open `/player/<id>` for a skater whose first NHL game is in 2026-27. The heading shows the player's name, not `Player <id>`.
 - In 2026-27, PPI, PPI+, wPPI+, tTOI%, and DPS+ show em dashes while no skater has 5 games, and no page errors.
-- SB/a60 and Max MPH show em dashes for 2026-27 without an Edge run. Age shows, and a skater with no `birthDate` shows `—`. The columns still sort numerically.
+- SB/a60 and Max MPH show 2026-27 values, with em dashes only for skaters the Edge data doesn't cover. Age shows, and a skater with no `birthDate` shows `—`. The columns still sort numerically.
 - At desktop width and at 375 px: the Season and Situations group labels keep the eyebrow style (0.75rem, uppercase, tertiary text), the `SEASON` label sits beside the options, the radios are navy, and the option text is `#171717`. They stay navy, never purple, on hover and on keyboard focus.
 - Tab reaches the season group, and the arrow keys switch seasons. VoiceOver announces "Season" with the group.
 - Under `640px`, each season option is a `40px`-tall target. On `/team/EDM` and `/goalies`, the Season and Situations bars stack without overflow.

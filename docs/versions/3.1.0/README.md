@@ -4,7 +4,7 @@ The first milestone in `ROADMAP.md`. It lets the browser switch between 2025-26 
 
 v3.1.0 also carries the work merged to `master` since v3.0.0: the goalie 5v5 situation cut, 5v5 goalie time on ice, the fix for the 2026-07-29 production outage, the switch of the daily pipeline to 2026-27, and the daily run's catch-up on missed games. `CHANGELOG.md` section "Unreleased" lists them.
 
-The release isn't built yet. Task 0 of the season-toggle plan is done.
+The release isn't built yet. Task 0 of the season-toggle plan is done. On 2026-11-17 the plan was updated to build without superpowers, on `master` by trunk-based development (D50), and to add a 2026-27 Edge run before the sync (D51).
 
 ## This folder
 
@@ -46,6 +46,4 @@ Not run yet.
 - [ ] The version added to `CHANGELOG.md`
 - [ ] The milestone's row and log entry added to `docs/history.md`
 - [ ] The milestone removed from `ROADMAP.md`, so the next milestone is first in its list
-- [ ] The release commit tagged: the commit that adds the version to `CHANGELOG.md`
-
-oiler runs the git steps. `AGENTS.md` section "Project rules" says so.
+- [ ] The release commit tagged by oiler: the commit that adds the version to `CHANGELOG.md`
