@@ -70,7 +70,7 @@ Expected: `ok`.
 - Consumes: nothing.
 - Produces: `SEASONS: list[str]`, `DEFAULT_SEASON: str`, `normalize_season(value) -> str`, `season_label(season: str) -> str`, `age_cutoff(season: str) -> datetime.date`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # v2/browser/tests/test_seasons.py
@@ -108,12 +108,12 @@ def test_age_cutoff():
     assert age_cutoff("2026") == date(2026, 9, 15)
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `python -m pytest v2/browser/tests/test_seasons.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'seasons'`
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 ```python
 # v2/browser/seasons.py
@@ -148,15 +148,15 @@ def age_cutoff(season: str) -> date:
     return date(int(season), 9, 15)
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `python -m pytest v2/browser/tests/test_seasons.py -v`
 Expected: PASS (5 tests)
 
-- [ ] **Step 5: Checkpoint**
+- [x] **Step 5: Checkpoint**
 
 Run: `python -m pytest v2/ -q -m "not requires_data"`
-Expected: all pass. No commit on master.
+Expected: all pass. Commit and push the task.
 
 ---
 
