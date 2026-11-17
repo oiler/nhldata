@@ -4,18 +4,32 @@
 import pandas as pd
 from dash import html, dcc, callback, Input, Output, ctx
 from db import league_query
+from runtime_paths import season_ready
+from seasons import DEFAULT_SEASON, normalize_season, season_label
 
 
-def season_date_range(season: str = "2025") -> tuple[str, str]:
-    """Return (min_date, max_date) from the games table."""
+def season_date_range(season: str = DEFAULT_SEASON) -> tuple[str, str]:
+    """Return (min_date, max_date) from the games table.
+
+    Falls back to Sept 1 of the start year through June 30 of the next when the
+    season has no scored games yet. Sept 1 covers a late-September opener.
+    """
+    season = normalize_season(season)
     df = league_query(
         "SELECT MIN(gameDate) AS min_d, MAX(gameDate) AS max_d FROM games WHERE awayTeam_score IS NOT NULL",
         season=season,
     )
-    if df.empty or df.iloc[0]["min_d"] is None:
-        yr = int(season) if season else 2025
-        return (f"{yr - 1}-10-01", f"{yr}-06-30")
+    if df.empty or pd.isna(df.iloc[0]["min_d"]):
+        yr = int(season)
+        return (f"{yr}-09-01", f"{yr + 1}-06-30")
     return (df.iloc[0]["min_d"], df.iloc[0]["max_d"])
+
+
+def season_not_ready(season: str):
+    """The not-available message when `season` has no data to show, else None."""
+    if season_ready(season):
+        return None
+    return html.P(f"{season_label(season)} data isn't available yet.")
 
 
 def make_filter_bar(page_id: str, include_home_away: bool = True) -> html.Div:
@@ -94,7 +108,7 @@ def register_season_callback(page_id: str):
         Input("store-season", "data"),
     )
     def update_dates(season):
-        min_d, max_d = season_date_range(season or "2025")
+        min_d, max_d = season_date_range(season)
         return min_d, min_d, max_d, max_d, min_d, max_d
 
 

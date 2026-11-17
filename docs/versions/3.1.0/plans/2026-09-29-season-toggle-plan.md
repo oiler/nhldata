@@ -778,7 +778,7 @@ Expected: all pass.
 - Consumes: `seasons.normalize_season`, `seasons.season_label`, `seasons.DEFAULT_SEASON`, `runtime_paths.season_ready`.
 - Produces: `filters.season_date_range(season: str = DEFAULT_SEASON) -> tuple[str, str]`; `filters.season_not_ready(season: str) -> html.P | None`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # v2/browser/tests/test_filters_season.py
@@ -823,12 +823,12 @@ def test_ready_season_has_no_message(monkeypatch, tmp_path):
     assert season_not_ready("2026") is None
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `python -m pytest v2/browser/tests/test_filters_season.py -v`
 Expected: ERROR at collection, `ImportError: cannot import name 'season_not_ready'` (the file's existing tests also error until Step 3)
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 In `v2/browser/filters.py`, add imports:
 
@@ -866,12 +866,12 @@ def season_not_ready(season: str):
 
 In the `register_season_callback` inner function, change `season_date_range(season or "2025")` to `season_date_range(season)`.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `python -m pytest v2/browser/tests/test_filters_season.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Checkpoint**
+- [x] **Step 5: Checkpoint**
 
 Run: `python -m pytest v2/ -q -m "not requires_data"`
 Expected: all pass.
