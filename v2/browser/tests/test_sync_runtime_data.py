@@ -130,3 +130,65 @@ def test_required_season_failure_is_fatal_and_keeps_last_good_copy(tmp_path):
     assert r.returncode != 0
     assert "required season 2025" in r.stderr
     assert (dst / "2025/league.db").read_bytes() == b"last good"
+
+
+def test_required_and_other_files_arrive(tmp_path):
+    dst = tmp_path / "rt"
+    r = _run(_src(tmp_path), dst)
+    assert r.returncode == 0, r.stderr
+    for f in ["2025/league.db", "2025/player_bursts.csv", "2025/edm.db",
+              "2024/league.db", "goalies.db"]:
+        assert (dst / f).stat().st_size > 0, f
+
+
+def _last_good(dst):
+    (dst / "2025").mkdir(parents=True)
+    (dst / "2025/league.db").write_bytes(b"last good")
+    (dst / "goalies.db").write_bytes(b"last good goalies")
+
+
+def test_missing_edm_db_is_fatal_and_leaves_runtime_data_unchanged(tmp_path):
+    src = _src(tmp_path)
+    (src / "2025/generated/browser/edm.db").unlink()
+    dst = tmp_path / "rt"
+    _last_good(dst)
+    r = _run(src, dst)
+    assert r.returncode != 0
+    assert "edm.db" in r.stderr
+    assert (dst / "2025/league.db").read_bytes() == b"last good"
+    assert not (dst / "2025/edm.db").exists()
+
+
+def test_single_cut_goalies_db_is_fatal_and_leaves_runtime_data_unchanged(tmp_path):
+    src = _src(tmp_path)
+    g = src / "generated/browser/goalies.db"
+    g.unlink()
+    con = sqlite3.connect(g)
+    pd.DataFrame({"situation": ["all"]}).to_sql("goalie_seasons", con, index=False)
+    con.close()
+    dst = tmp_path / "rt"
+    _last_good(dst)
+    r = _run(src, dst)
+    assert r.returncode != 0
+    assert "goalies.db" in r.stderr
+    assert (dst / "2025/league.db").read_bytes() == b"last good"
+    assert (dst / "goalies.db").read_bytes() == b"last good goalies"
+
+
+def test_required_failure_leaves_optional_season_alone(tmp_path):
+    src = _src(tmp_path, birth_2025=False)
+    dst = tmp_path / "rt"
+    (dst / "2026").mkdir(parents=True)
+    (dst / "2026/league.db").write_bytes(b"earlier 2026")
+    r = _run(src, dst)
+    assert r.returncode != 0
+    assert (dst / "2026/league.db").read_bytes() == b"earlier 2026"
+
+
+def test_optional_season_zero_byte_csv_names_check(tmp_path):
+    src = _src(tmp_path)
+    (src / "2026/generated/edge/player_bursts.csv").write_bytes(b"")
+    r = _run(src, tmp_path / "rt")
+    assert r.returncode == 0, r.stderr
+    assert "empty" in _warning_line(r.stderr)
+    assert not (tmp_path / "rt/2026").exists()

@@ -1894,6 +1894,8 @@ echo "Seasons in image: ${REQUIRED_SEASONS[*]} (required)${shipped}${skipped:+ |
 
 The `shipped` and `skipped` values are strings, not arrays, because macOS `/bin/bash` 3.2 treats an empty array as unbound under `set -u`.
 
+**Changed after the 2026-11-17 review.** The committed script differs from the listing above in three ways. It stages every required file, including `edm.db`, `goalies.db`, and the 2024 `league.db`, under one temp dir and checks them before `runtime_data/` changes, so a failed required check leaves every file untouched. Before, a bad `edm.db` or `goalies.db` left 2025 half-replaced. A `trap` removes the staging area on any exit. The season loops use `${arr[@]+"${arr[@]}"}` so an empty list runs on bash 3.2. Five tests cover these: required files arrive, a missing `edm.db` or a single-cut `goalies.db` leaves `runtime_data/` unchanged, a required failure leaves an earlier 2026 alone, and a zero-byte optional CSV is named.
+
 In the `Dockerfile`, replace the comment block above the existing `RUN set -eu` guard with:
 
 ```dockerfile

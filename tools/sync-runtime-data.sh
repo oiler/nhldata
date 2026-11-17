@@ -32,56 +32,62 @@ echo "sync: $SRC -> $DST"
 REQUIRED_SEASONS=("2025")
 OPTIONAL_SEASONS=("2026")
 
-# Stage a season's league.db and player_bursts.csv in a temp dir and run every
-# check there. On success print the temp dir; on failure print the reason and
-# return 1.
+# Everything is staged under one temp dir and checked there. runtime_data/
+# changes only after every required check passes, so a failed sync leaves the
+# last good required files untouched. The trap removes the staging area on any
+# exit, including Ctrl-C.
+STAGE_ROOT="$(mktemp -d)"
+trap 'rm -rf "$STAGE_ROOT"' EXIT
+
+# Stage a season's league.db and player_bursts.csv and run every check there.
+# On success print the staging dir; on failure print the reason and return 1.
 stage_season() {
     local season="$1" stage out
-    stage="$(mktemp -d)"
+    stage="$(mktemp -d "$STAGE_ROOT/$season.XXXXXX")"
     if ! cp "$SRC/$season/generated/browser/league.db" "$stage/league.db" 2>/dev/null \
        || ! cp "$SRC/$season/generated/edge/player_bursts.csv" "$stage/player_bursts.csv" 2>/dev/null; then
-        rm -rf "$stage"
         echo "league.db or player_bursts.csv is missing"
         return 1
     fi
     if [[ ! -s "$stage/league.db" || ! -s "$stage/player_bursts.csv" ]]; then
-        rm -rf "$stage"
         echo "league.db or player_bursts.csv is empty"
         return 1
     fi
     if ! out="$(python3 "$VERIFY" "$stage/player_bursts.csv" "$stage/league.db" 2>&1)"; then
-        rm -rf "$stage"
         echo "${out//$'\n'/; }"
         return 1
     fi
     echo "$stage"
 }
 
-for season in "${REQUIRED_SEASONS[@]}"; do
+# 1. Required seasons: stage and check, without touching runtime_data/.
+# ${arr[@]+"${arr[@]}"} keeps an empty list from tripping set -u on bash 3.2.
+required_staged=""
+for season in ${REQUIRED_SEASONS[@]+"${REQUIRED_SEASONS[@]}"}; do
     if ! result="$(stage_season "$season")"; then
-        echo "ERROR: required season $season failed: $result — refusing to ship. runtime_data/$season/ is unchanged." >&2
+        echo "ERROR: required season $season failed: $result — refusing to ship. runtime_data/ is unchanged." >&2
         exit 1
     fi
-    mkdir -p "$DST/$season"
-    mv "$result/league.db" "$result/player_bursts.csv" "$DST/$season/"
-    rm -rf "$result"
+    required_staged="$required_staged $season=$result"
 done
 
-# Files outside the season tiers: named explicitly, all required.
-mkdir -p "$DST/2024" "$DST/2025"
-cp "$SRC/2024/generated/browser/league.db" "$DST/2024/league.db"
-cp "$SRC/2025/generated/browser/edm.db"    "$DST/2025/edm.db"
-cp "$SRC/generated/browser/goalies.db"     "$DST/goalies.db"
-for f in "$DST/2024/league.db" "$DST/2025/edm.db" "$DST/goalies.db"; do
-    if [[ ! -s "$f" ]]; then
-        echo "ERROR: $f is missing or empty — refusing to ship." >&2
+# 2. Files outside the season tiers: named explicitly, all required, staged
+# and checked the same way.
+OTHER="$STAGE_ROOT/other"
+mkdir -p "$OTHER/2024" "$OTHER/2025"
+for pair in "2024/generated/browser/league.db:2024/league.db" \
+            "2025/generated/browser/edm.db:2025/edm.db" \
+            "generated/browser/goalies.db:goalies.db"; do
+    from="${pair%%:*}"; to="${pair#*:}"
+    if ! cp "$SRC/$from" "$OTHER/$to" 2>/dev/null || [[ ! -s "$OTHER/$to" ]]; then
+        echo "ERROR: $SRC/$from is missing or empty — refusing to ship. runtime_data/ is unchanged." >&2
         exit 1
     fi
 done
 
 # goalies.db must carry BOTH situation cuts — a stale single-cut db would
 # blank the 5v5 dropdown in prod while looking superficially healthy.
-python3 - "$DST/goalies.db" <<'EOF'
+if ! python3 - "$OTHER/goalies.db" <<'EOF'
 import sqlite3, sys
 conn = sqlite3.connect(sys.argv[1])
 n = dict(conn.execute(
@@ -90,17 +96,31 @@ assert set(n) == {"all", "5v5"} and min(n.values()) > 0, \
     f"goalies.db situation coverage broken: {n}"
 print(f"goalies.db situation coverage OK: {n}")
 EOF
+then
+    echo "ERROR: goalies.db failed its check — refusing to ship. runtime_data/ is unchanged." >&2
+    exit 1
+fi
 
-# Optional seasons: any earlier copy is removed first, so a stale season never
-# ships beside a failed one.
+# 3. Every required check passed: replace the required files.
+for entry in $required_staged; do
+    season="${entry%%=*}"; stage="${entry#*=}"
+    mkdir -p "$DST/$season"
+    mv "$stage/league.db" "$stage/player_bursts.csv" "$DST/$season/"
+done
+mkdir -p "$DST/2024" "$DST/2025"
+mv "$OTHER/2024/league.db" "$DST/2024/league.db"
+mv "$OTHER/2025/edm.db"    "$DST/2025/edm.db"
+mv "$OTHER/goalies.db"     "$DST/goalies.db"
+
+# 4. Optional seasons: any earlier copy is removed first, so a stale season
+# never ships beside a failed one.
 shipped=""
 skipped=""
-for season in "${OPTIONAL_SEASONS[@]}"; do
+for season in ${OPTIONAL_SEASONS[@]+"${OPTIONAL_SEASONS[@]}"}; do
     rm -rf "${DST:?}/$season"
     if result="$(stage_season "$season")"; then
         mkdir -p "$DST/$season"
         mv "$result/league.db" "$result/player_bursts.csv" "$DST/$season/"
-        rm -rf "$result"
         shipped="$shipped, $season (optional)"
     else
         echo "WARNING: $season not synced — $result. The browser will show it as not available." >&2
