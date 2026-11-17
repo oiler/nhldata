@@ -537,7 +537,7 @@ Expected: all pass.
 - Consumes: `players.csv` column `birthDate` (ISO `YYYY-MM-DD`), player JSON field `birthDate`.
 - Produces: `league.db` `players.birthDate` (TEXT, nullable).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 In `_setup_recovery_db()`, add `"birthDate": "1990-01-01"` to the existing players row, so the table has the column the recovery path appends to. Then append:
 
@@ -573,12 +573,12 @@ def test_recover_missing_players_carries_birth_date(tmp_path, monkeypatch):
     assert row == ("2004-02-29",)
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `python -m pytest v2/browser/tests/test_player_metrics.py -v -k "birth_date or recover"`
 Expected: the two new tests FAIL (`no such column: birthDate` for the first; `None` birthDate or a missing-column error for the second). The existing recovery tests still pass.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 In `build_players_table()`, add `"birthDate"` to `keep`:
 
@@ -596,12 +596,12 @@ In `_recover_missing_players()`, add to the `recovered.append({...})` dict:
             "birthDate": d.get("birthDate"),
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `python -m pytest v2/browser/tests/test_player_metrics.py -v`
 Expected: PASS (all, including the two early-season tests already there)
 
-- [ ] **Step 5: Checkpoint**
+- [x] **Step 5: Checkpoint**
 
 Run: `python -m pytest v2/ -q -m "not requires_data"`
 Expected: all pass.

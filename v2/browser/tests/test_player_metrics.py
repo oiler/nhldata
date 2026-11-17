@@ -221,7 +221,7 @@ def _setup_recovery_db():
     pd.DataFrame([
         {"playerId": 1, "firstName": "Existing", "lastName": "Player",
          "currentTeamAbbrev": "FLA", "position": "F", "shootsCatches": "L",
-         "heightInInches": 72, "weightInPounds": 198},
+         "heightInInches": 72, "weightInPounds": 198, "birthDate": "1990-01-01"},
     ]).to_sql("players", conn, index=False, if_exists="replace")
     pd.DataFrame([
         {"playerId": 1, "team": "FLA", "gameId": 1, "position": "F", "toi_seconds": 900,
@@ -1289,3 +1289,34 @@ def test_elite_changelog_def_type_change(tmp_path):
     assert result.iloc[0]["playerId"] == 10
     assert result.iloc[0]["action"] == "Production → Full Elite"
     assert result.iloc[0]["position"] == "D"
+
+
+def test_players_table_carries_birth_date(tmp_path, monkeypatch):
+    import build_league_db
+    csv = tmp_path / "players.csv"
+    pd.DataFrame([{
+        "playerId": 1, "firstName": "A", "lastName": "B", "currentTeamAbbrev": "EDM",
+        "position": "C", "shootsCatches": "L", "heightInInches": 72,
+        "weightInPounds": 198, "birthDate": "1997-01-13", "extra": "ignored",
+    }]).to_csv(csv, index=False)
+    monkeypatch.setattr(build_league_db, "PLAYERS_CSV", str(csv))
+    conn = sqlite3.connect(":memory:")
+    build_league_db.build_players_table(conn)
+    row = conn.execute("SELECT birthDate FROM players WHERE playerId = 1").fetchone()
+    assert row == ("1997-01-13",)
+
+
+def test_recover_missing_players_carries_birth_date(tmp_path, monkeypatch):
+    import build_league_db
+    conn = _setup_recovery_db()
+    players_dir = tmp_path / "players"
+    players_dir.mkdir()
+    (players_dir / "99999.json").write_text(json.dumps({
+        "firstName": {"default": "New"}, "lastName": {"default": "Guy"},
+        "currentTeamAbbrev": "FLA", "position": "C", "shootsCatches": "R",
+        "heightInInches": 70, "weightInPounds": 180, "birthDate": "2004-02-29",
+    }))
+    monkeypatch.setattr(build_league_db, "SEASON_DIR", str(tmp_path))
+    _recover_missing_players(conn)
+    row = conn.execute("SELECT birthDate FROM players WHERE playerId = 99999").fetchone()
+    assert row == ("2004-02-29",)

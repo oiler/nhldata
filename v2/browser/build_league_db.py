@@ -69,7 +69,7 @@ def build_players_table(conn):
     keep = [
         "playerId", "firstName", "lastName",
         "currentTeamAbbrev", "position", "shootsCatches",
-        "heightInInches", "weightInPounds",
+        "heightInInches", "weightInPounds", "birthDate",
     ]
     df = pd.read_csv(PLAYERS_CSV, usecols=keep)
     df.to_sql("players", conn, if_exists="replace", index=False)
@@ -108,6 +108,7 @@ def _recover_missing_players(conn):
             "shootsCatches": d.get("shootsCatches", ""),
             "heightInInches": d.get("heightInInches"),
             "weightInPounds": d.get("weightInPounds"),
+            "birthDate": d.get("birthDate"),
         })
 
     if recovered:
