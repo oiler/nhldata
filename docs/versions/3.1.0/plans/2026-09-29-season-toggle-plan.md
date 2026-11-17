@@ -1946,22 +1946,22 @@ From Task 8's commit until Step 2's rebuild of 2025, every sync is refused, beca
 
 **Files:** none changed, except oiler's local-only `docs/fly-deploy-runbook.md` in Step 7.
 
-- [ ] **Step 1: Preconditions and backup**
+- [x] **Step 1: Preconditions and backup**
 
 Run: `ls data/2026/generated/competition/*.csv | head -1`, `ls data/2026/generated/flatboxscores/boxscores.csv`, and `cp data/2025/generated/browser/league.db /tmp/league-2025-pre-birthdate.db`
 Expected: at least one 2026 competition CSV and the 2026 boxscores CSV (the orchestrator has processed a game), and the backup exists. Without them the 2026 build has no `competition` or `games` table; wait for the orchestrator to run.
 
-- [ ] **Step 2: Rebuild both seasons**
+- [x] **Step 2: Rebuild both seasons**
 
 Run: `python v2/browser/build_league_db.py 2025 && python v2/browser/build_league_db.py 2026`
 Expected: both end with `Done.`; the 2026 build prints `player_metrics: 0 rows (no eligible players)` in the opening weeks. If the 2025 build fails, restore the backup to `data/2025/generated/browser/league.db`.
 
-- [ ] **Step 2b: Run the 2026-27 Edge fetch (D51)**
+- [x] **Step 2b: Run the 2026-27 Edge fetch (D51)**
 
 Run: `NHL_SEASON=2026 python v2/edge/fetch_skater_detail.py && NHL_SEASON=2026 python v2/edge/compute_burst_rates.py`
 Expected: `data/2026/generated/edge/player_bursts.csv` exists. The fetch makes about 800 requests and reads the skater list from the 2026 `league.db` that Step 2 rebuilt.
 
-- [ ] **Step 3: Check the rebuilt databases**
+- [x] **Step 3: Check the rebuilt databases**
 
 Run: `python v2/browser/verify_runtime_data.py data/2025/generated/edge/player_bursts.csv data/2025/generated/browser/league.db`
 Expected: `OK:` lines for the tables, burst coverage, and `birthDate coverage` at or near 100%.
@@ -1972,12 +1972,12 @@ Expected: both `(True, ...)`. This covers the 2026 players who enter through the
 Run: `python v2/browser/verify_runtime_data.py data/2026/generated/edge/player_bursts.csv data/2026/generated/browser/league.db`
 Expected: the same `OK:` lines as 2025, with burst coverage of at least 80%.
 
-- [ ] **Step 4: Run the real sync**
+- [x] **Step 4: Run the real sync**
 
 Run: `./tools/sync-runtime-data.sh`
 Expected: exit 0, `runtime_data/2026/` holds both files, and the last line is `Seasons in image: 2025 (required), 2026 (optional)`. A `WARNING: 2026 not synced` line means a 2026 check failed; fix it before Step 5.
 
-- [ ] **Step 5: Production-mode smoke test**
+- [x] **Step 5: Production-mode smoke test**
 
 Run: `DATA_DIR=$PWD/v2/browser/runtime_data python v2/browser/app.py`, then open `http://127.0.0.1:8050`.
 Expected: the app boots. `/skaters` shows Age on 2025-26, and on 2026-27 it shows Age, SB/a60, and Max MPH. Every season-aware page shows 2026-27 data.
@@ -2002,7 +2002,7 @@ Run: `cd v2/browser && python app.py`, then open `http://127.0.0.1:8050`.
 
 In `docs/fly-deploy-runbook.md` (gitignored, local only): update the pre-flight test counts, add `2026` to the gitignored `runtime_data` list, and add a Verify bullet: "the season filter shows 2025-26 and 2026-27; 2026-27 shows data or the not-available message, matching the sync's `Seasons in image` line."
 
-- [ ] **Step 8: Final suite**
+- [x] **Step 8: Final suite**
 
 Run: `python -m pytest v2/ -v`
 Expected: all pass, including the `requires_data` tests.
