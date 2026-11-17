@@ -5,7 +5,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from runtime_paths import league_db, edm_db, player_bursts_csv, data_root
+from runtime_paths import league_db, edm_db, player_bursts_csv, data_root, season_ready
 
 
 def test_data_root_uses_env_var(monkeypatch, tmp_path):
@@ -41,3 +41,27 @@ def test_fallback_layout_matches_existing_db_path(monkeypatch):
     monkeypatch.delenv("DATA_DIR", raising=False)
     root = data_root()
     assert league_db("2025") == root / "2025" / "generated" / "browser" / "league.db"
+
+
+def test_season_ready_production_needs_both_files(monkeypatch, tmp_path):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    (tmp_path / "2026").mkdir()
+    assert season_ready("2026") is False
+    (tmp_path / "2026" / "player_bursts.csv").write_text("playerId\n1\n")
+    assert season_ready("2026") is False  # CSV alone isn't enough
+    (tmp_path / "2026" / "player_bursts.csv").unlink()
+    (tmp_path / "2026" / "league.db").write_bytes(b"x")
+    assert season_ready("2026") is False  # league.db alone isn't enough
+    (tmp_path / "2026" / "player_bursts.csv").write_text("playerId\n1\n")
+    assert season_ready("2026") is True
+
+
+def test_season_ready_local_dev_needs_only_league_db(monkeypatch, tmp_path):
+    import runtime_paths
+    monkeypatch.delenv("DATA_DIR", raising=False)
+    monkeypatch.setattr(runtime_paths, "data_root", lambda: tmp_path)
+    assert season_ready("2026") is False
+    db = tmp_path / "2026" / "generated" / "browser" / "league.db"
+    db.parent.mkdir(parents=True)
+    db.write_bytes(b"x")
+    assert season_ready("2026") is True

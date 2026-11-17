@@ -234,7 +234,7 @@ Expected: all pass.
 - Consumes: existing `league_db`, `player_bursts_csv`, `_runtime_mode`.
 - Produces: `runtime_paths.season_ready(season: str) -> bool`.
 
-- [ ] **Step 1: Write the failing test** (append; add `season_ready` to the file's `from runtime_paths import ...` line)
+- [x] **Step 1: Write the failing test** (append; add `season_ready` to the file's `from runtime_paths import ...` line)
 
 ```python
 def test_season_ready_production_needs_both_files(monkeypatch, tmp_path):
@@ -261,12 +261,12 @@ def test_season_ready_local_dev_needs_only_league_db(monkeypatch, tmp_path):
     assert season_ready("2026") is True
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `python -m pytest v2/browser/tests/test_runtime_paths.py -v`
 Expected: ERROR at collection, `ImportError: cannot import name 'season_ready'` (the file's existing tests also error until Step 3)
 
-- [ ] **Step 3: Write the implementation** (append to `v2/browser/runtime_paths.py`)
+- [x] **Step 3: Write the implementation** (append to `v2/browser/runtime_paths.py`)
 
 ```python
 def season_ready(season: str) -> bool:
@@ -282,12 +282,12 @@ def season_ready(season: str) -> bool:
     return league_db(season).exists()
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `python -m pytest v2/browser/tests/test_runtime_paths.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Checkpoint**
+- [x] **Step 5: Checkpoint**
 
 Run: `python -m pytest v2/ -q -m "not requires_data"`
 Expected: all pass.

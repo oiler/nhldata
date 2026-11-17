@@ -64,3 +64,16 @@ def goalies_db() -> Path:
     if _runtime_mode():
         return data_root() / "goalies.db"
     return data_root() / "generated" / "browser" / "goalies.db"
+
+
+def season_ready(season: str) -> bool:
+    """True when the season has data to show.
+
+    Production: tools/sync-runtime-data.sh ships a non-default season only
+    after its files pass every check, so both files being present means the
+    season is verified. Local dev needs only league.db; burst columns show
+    em dashes without the Edge CSV.
+    """
+    if _runtime_mode():
+        return league_db(season).exists() and player_bursts_csv(season).exists()
+    return league_db(season).exists()
