@@ -305,7 +305,7 @@ Expected: all pass.
 - Consumes: `seasons.SEASONS`, `seasons.DEFAULT_SEASON`.
 - Produces: `db.player_meta(pid: int, seasons=SEASONS) -> pd.Series | None` with fields `firstName, lastName, currentTeamAbbrev, position`. `league_query(..., season=DEFAULT_SEASON)` and `all_teams(season=DEFAULT_SEASON)` defaults.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # v2/browser/tests/test_player_meta.py
@@ -349,12 +349,12 @@ def test_player_meta_unknown_player(monkeypatch, tmp_path):
     assert player_meta(999) is None
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `python -m pytest v2/browser/tests/test_player_meta.py -v`
 Expected: ERROR at collection, `ImportError: cannot import name 'player_meta'` (the file's existing tests also error until Step 3)
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 In `v2/browser/db.py`, add `from seasons import DEFAULT_SEASON, SEASONS` under the existing imports, change `def league_query(sql: str, params=(), season: str = "2025")` to `season: str = DEFAULT_SEASON`, change `def all_teams(season: str = "2025")` to `season: str = DEFAULT_SEASON`, then append:
 
@@ -388,12 +388,12 @@ In `v2/browser/pages/player.py`, delete the `_META_SQL` constant, change the imp
         pos_code = "D" if m["position"] == "D" else "F"
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `python -m pytest v2/browser/tests/test_player_meta.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Checkpoint**
+- [x] **Step 5: Checkpoint**
 
 Run: `python -m pytest v2/ -q -m "not requires_data"`
 Expected: all pass.
