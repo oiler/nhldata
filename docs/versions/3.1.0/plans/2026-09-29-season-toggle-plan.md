@@ -1412,7 +1412,7 @@ Two decisions in this task:
 - **`dbc.RadioItems` in a `fieldset`, not `dcc.RadioItems`.** Dash 4's `dcc.RadioItems` renders an unnamed `role="listbox"` with native radios nested in `role="option"`, and it takes no ARIA props. `dbc.RadioItems` renders native radios, and a `fieldset` and `legend` give the group its accessible name.
 - **The season bar starts hidden.** It keeps `style={"display": "none"}` like `goalie-situation-bar`, and `toggle_season_bar` shows it. That departs from the spec's "loses its hard-coded `display:none`" to avoid a flash on pages that ignore the season.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # v2/browser/tests/test_app_season.py
@@ -1470,12 +1470,12 @@ def test_season_group_has_accessible_name():
     assert _by_id(fieldset, "filter-season")
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `python -m pytest v2/browser/tests/test_app_season.py -v`
 Expected: FAIL with `AttributeError: module 'app' has no attribute 'toggle_season_bar'`
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 In `v2/browser/app.py`:
 
@@ -1595,12 +1595,12 @@ Narrowing the eyebrow rule to `.filter-bar-label` also stops it from uppercasing
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `python -m pytest v2/browser/tests/test_app_season.py v2/browser/tests/test_smoke.py -v -m "not requires_data"`
 Expected: PASS
 
-- [ ] **Step 5: Checkpoint**
+- [x] **Step 5: Checkpoint**
 
 Run: `python -m pytest v2/ -q -m "not requires_data"`
 Expected: all pass.

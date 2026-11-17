@@ -91,13 +91,49 @@ body {
   gap: 2rem;
   align-items: center;
 }
-.filter-bar label {
+.filter-bar {
+  /* Dash 4 dcc controls read these tokens; the default is purple #7f4bc4. */
+  --Dash-Fill-Interactive-Strong: var(--navy);
+  --Dash-Text-Strong: var(--text);
+}
+.filter-bar .filter-bar-label {
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--text-3);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-right: 0.5rem;
+}
+.season-fieldset {
+  display: flex;
+  align-items: center;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+.season-fieldset legend {
+  float: left;
+  width: auto;
+  margin: 0 0.5rem 0 0;
+  padding: 0;
+}
+.season-options .form-check-label {
+  color: var(--text);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.season-options .form-check-input:checked {
+  background-color: var(--navy);
+  border-color: var(--navy);
+}
+.season-options .form-check-input:focus {
+  border-color: var(--navy);
+  box-shadow: 0 0 0 1px #00205B, 0 0 0 3px rgba(0, 32, 91, 0.15);
+}
+.filter-bar .dash-dropdown-content .dash-options-list-option { font-size: 0.9rem; }
+@media (max-width: 639px) {
+  .season-options .form-check { display: inline-flex; align-items: center; min-height: 40px; }
 }
 
 /* ---- Page content ---- */

@@ -3,9 +3,7 @@ import dash
 from dash import html, dcc, callback, Input, Output
 import dash_bootstrap_components as dbc
 
-# 2024 temporarily disabled until all pages handle it; re-add to SEASONS to restore.
-SEASONS = ["2025"]
-DEFAULT_SEASON = "2025"
+from seasons import DEFAULT_SEASON, SEASONS, normalize_season, season_label
 
 app = dash.Dash(
     __name__,
@@ -55,9 +53,9 @@ from canonical_host import install as install_canonical_host
 install_canonical_host(server)
 
 app.layout = html.Div([
-    # Shared state — memory (not session) while only one season is available, so
-    # users who previously selected 2024 don't keep a stale value in browser
-    # session storage. Switch back to "session" when SEASONS grows again.
+    # Shared season state. store-season is memory-only; it follows the
+    # filter-season radio, whose session persistence carries the choice across
+    # full page loads (DataTable links reload the page).
     dcc.Store(id="store-season", storage_type="memory", data=DEFAULT_SEASON),
     dcc.Location(id="url", refresh=False),
 
@@ -79,30 +77,28 @@ app.layout = html.Div([
         ),
     ], className="app-header"),
 
-    # Filter bar — hidden while only one season is available. The RadioItems
-    # stays in the tree so callbacks that Input("filter-season", "value") keep
-    # firing with DEFAULT_SEASON. Remove the display:none and restore SEASONS
-    # above to bring the filter back.
+    # Season filter. Starts hidden like goalie-situation-bar; toggle_season_bar
+    # shows it on season-aware pages, which avoids a flash on the others.
     html.Div([
-        html.Div([
-            html.Label("Season"),
-            dcc.RadioItems(
+        html.Fieldset([
+            html.Legend("Season", className="filter-bar-label"),
+            dbc.RadioItems(
                 id="filter-season",
-                options=[{"label": s, "value": s} for s in SEASONS],
+                options=[{"label": season_label(s), "value": s} for s in SEASONS],
                 value=DEFAULT_SEASON,
                 inline=True,
-                inputStyle={"marginRight": "4px"},
-                labelStyle={"marginRight": "16px", "fontWeight": "normal",
-                            "fontSize": "0.9rem", "color": "#212529"},
+                persistence=True,
+                persistence_type="session",
+                class_name="season-options",
             ),
-        ], style={"display": "flex", "alignItems": "center"}),
-    ], className="filter-bar", style={"display": "none"}),
+        ], className="season-fieldset"),
+    ], id="season-bar", className="filter-bar", style={"display": "none"}),
 
     # Goalie situation filter — visible only on goalie-bearing pages (toggled
     # below). Session-persisted so the choice follows the user across views.
     html.Div([
         html.Div([
-            html.Label("Situations"),
+            html.Label("Situations", className="filter-bar-label"),
             dcc.Dropdown(
                 id="goalie-situation",
                 options=[{"label": "All situations", "value": "all"},
@@ -159,8 +155,7 @@ app.layout = html.Div([
             html.Dt("Max MPH"),
             html.Dd(
                 "Top season skating speed in mph, recorded by the NHL EDGE tracking system. "
-                "A single peak value across all 2025-26 regular-season ice time. "
-                "League average ≈ 22.2; McDavid leads at 24.6."
+                "A single peak value across one season's regular-season ice time."
             ),
             html.Dt("iSA/60"),
             html.Dd(
@@ -301,7 +296,18 @@ app.layout = html.Div([
 
 @callback(Output("store-season", "data"), Input("filter-season", "value"))
 def sync_season(season):
-    return season
+    return normalize_season(season)
+
+
+_SEASON_PAGES = ("/games", "/teams", "/skaters", "/goalies")
+_SEASON_PAGE_PREFIXES = ("/team/", "/player/")
+
+
+@callback(Output("season-bar", "style"), Input("url", "pathname"))
+def toggle_season_bar(pathname):
+    p = pathname or ""
+    show = p in _SEASON_PAGES or p.startswith(_SEASON_PAGE_PREFIXES)
+    return {} if show else {"display": "none"}
 
 
 # The glossary footer lives in the global layout (shows on every page). Hide it on
