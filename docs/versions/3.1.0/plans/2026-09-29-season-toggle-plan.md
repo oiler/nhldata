@@ -1261,7 +1261,7 @@ Expected: all tests pass. The grep returns nothing except `skaters.py` (Task 10 
 
 The spec says `game.py` needs no change, but its "Pages ... don't raise" rule covers it: `game.py` runs `float()` on `AVG(wppi)`, which is `None` while `player_metrics` is empty, so every 2026-27 game page raises in the opening weeks. This task fixes that too.
 
-- [ ] **Step 1: Write the failing test** (add `import burst_data`, `import pages.game as game`, and `import pages.skaters as skaters` to the file's top import block, then append)
+- [x] **Step 1: Write the failing test** (add `import burst_data`, `import pages.game as game`, and `import pages.skaters as skaters` to the file's top import block, then append)
 
 ```python
 def test_skaters_not_ready(monkeypatch, tmp_path):
@@ -1301,12 +1301,12 @@ def test_game_league_mean_wppi_is_none_while_metrics_empty(monkeypatch, tmp_path
     assert game._league_mean_wppi("2026") is None
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `python -m pytest v2/browser/tests/test_season_pages.py -v -k "skaters or game"`
 Expected: FAIL. The skaters callback returns "No data found for this range.", and `skaters.attach_bursts_and_age` and `game._league_mean_wppi` don't exist.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 In `v2/browser/pages/skaters.py`:
 
@@ -1386,12 +1386,12 @@ def _league_mean_wppi(season):
 3. In the game wPPI+ block, replace the two lines that build `league_mean_df` and `league_mean_wppi` with `league_mean_wppi = _league_mean_wppi(season)`, and replace `players_df["ppi_plus"] = players_df["ppi_plus"].round(1)` with `players_df["ppi_plus"] = pd.to_numeric(players_df["ppi_plus"], errors="coerce").round(1)`.
 4. Give the `PPI+` and `Game wPPI+` columns `"format": Format(precision=1, scheme=Scheme.fixed).nully("—")`.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `python -m pytest v2/browser/tests/test_season_pages.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Checkpoint**
+- [x] **Step 5: Checkpoint**
 
 Run: `python -m pytest v2/ -q -m "not requires_data"` and `grep -rn '"2025"' v2/browser/pages/`
 Expected: all pass; grep returns nothing.

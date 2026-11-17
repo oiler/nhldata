@@ -2,14 +2,23 @@
 import math
 
 import dash
+import pandas as pd
 from dash import html, dash_table
 from dash.dash_table import FormatTemplate
+from dash.dash_table.Format import Format, Scheme
 
 from db import league_query
 from table_style import table_styles
 from utils import seconds_to_mmss
 
 dash.register_page(__name__, path_template="/game/<game_id>", name="Game")
+
+
+def _league_mean_wppi(season):
+    """Season mean wPPI, or None while player_metrics is empty (a season's opening weeks)."""
+    df = league_query("SELECT AVG(wppi) AS mean_wppi FROM player_metrics", season=season)
+    v = df.iloc[0]["mean_wppi"] if not df.empty else None
+    return float(v) if v is not None and pd.notna(v) else None
 
 _META_SQL = """
 SELECT gameId, gameDate, awayTeam_abbrev, homeTeam_abbrev,
@@ -82,8 +91,8 @@ def _make_position_table(df, pos="F"):
     col_label = "Line" if pos == "F" else "Pair"
     columns.append({"name": col_label,      "id": "line_number",      "type": "numeric"})
     columns.append({"name": "Dep Score",    "id": "deployment_score", "type": "numeric"})
-    columns.append({"name": "PPI+",         "id": "ppi_plus",         "type": "numeric"})
-    columns.append({"name": "Game wPPI+",   "id": "game_wppi_plus",   "type": "numeric"})
+    columns.append({"name": "PPI+",         "id": "ppi_plus",         "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed).nully("—")})
+    columns.append({"name": "Game wPPI+",   "id": "game_wppi_plus",   "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed).nully("—")})
     display_cols.extend(["line_number", "deployment_score", "ppi_plus", "game_wppi_plus"])
 
     return html.Div(
@@ -193,15 +202,14 @@ def layout(game_id=None):
     # Compute game wPPI+: (ppi_plus × toi_seconds) / league_mean_wppi × 100
     # Uses same league mean as the seasonal metric — only the toi_seconds differs (this game vs season avg).
     if not players_df.empty:
-        league_mean_df = league_query("SELECT AVG(wppi) AS mean_wppi FROM player_metrics", season=season)
-        league_mean_wppi = float(league_mean_df.iloc[0]["mean_wppi"]) if not league_mean_df.empty else None
+        league_mean_wppi = _league_mean_wppi(season)
         if league_mean_wppi and league_mean_wppi > 0:
             players_df["game_wppi_plus"] = (
                 (players_df["ppi_plus"] * players_df["toi_seconds"]) / league_mean_wppi * 100
             ).round(1)
         else:
             players_df["game_wppi_plus"] = None
-        players_df["ppi_plus"] = players_df["ppi_plus"].round(1)
+        players_df["ppi_plus"] = pd.to_numeric(players_df["ppi_plus"], errors="coerce").round(1)
 
     # Player tables by team
     if players_df.empty:

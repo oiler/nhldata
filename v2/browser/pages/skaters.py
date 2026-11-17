@@ -1,43 +1,40 @@
 # v2/browser/pages/skaters.py
-from datetime import date
-
 import dash
 import pandas as pd
 from dash import html, dash_table, callback, Input, Output
 from dash.dash_table import FormatTemplate
 from dash.dash_table.Format import Format, Scheme
 
-from burst_data import load_bursts
+from burst_data import bursts_for, preload_ready_seasons
 from db import league_query
-from filters import make_filter_bar, register_home_away_callback, register_season_callback, compute_deployment_metrics
+from filters import make_filter_bar, register_home_away_callback, register_season_callback, compute_deployment_metrics, season_not_ready
 from metrics import events_per60, points_per100_shots
+from seasons import SEASONS, normalize_season
 from table_style import table_styles
-from utils import seconds_to_mmss
+from utils import age_in_season, seconds_to_mmss
 
 dash.register_page(__name__, path="/skaters", name="Skaters")
 register_home_away_callback("skaters")
 register_season_callback("skaters")
 
-# NHL convention: integer age as of Sept 15 of the season's start year.
-_AGE_CUTOFFS = {"2025": date(2025, 9, 15)}
+# Production loads every ready season's bursts at import, so a present-but-empty
+# CSV fails boot and the deploy fails loudly. On this single-machine app that
+# means production is down until a rollback, which is why the sync script and
+# the Dockerfile guard check the files first.
+preload_ready_seasons(SEASONS)
 
 
-def _age_on(birth_date_str, cutoff: date):
-    if not birth_date_str or pd.isna(birth_date_str):
-        return None
-    birth = date.fromisoformat(birth_date_str)
-    age = cutoff.year - birth.year
-    if (cutoff.month, cutoff.day) < (birth.month, birth.day):
-        age -= 1
-    return age
+def attach_bursts_and_age(grouped, season):
+    """Join the season's own Edge bursts and compute Age from birthDate at the season's cutoff."""
+    out = grouped.join(bursts_for(season)[["bursts_per_60", "speed_max_mph"]])
+    out["age"] = out["birthDate"].apply(lambda b: age_in_season(b, season))
+    return out
 
-
-_BURSTS_DF = load_bursts("2025").set_index("playerId")
 
 _COMP_SQL = """
 SELECT c.playerId,
        COALESCE(p.firstName || ' ' || p.lastName, 'Player ' || c.playerId) AS playerName,
-       c.position, p.shootsCatches, c.team, c.gameId, c.toi_seconds, c.total_toi_seconds,
+       c.position, p.shootsCatches, p.birthDate, c.team, c.gameId, c.toi_seconds, c.total_toi_seconds,
        c.pct_any_elite_fwd, c.pct_any_elite_def,
        c.comp_fwd, c.comp_def, c.deployment_score, c.line_number,
        g.gameDate, g.homeTeam_abbrev, g.awayTeam_abbrev
@@ -66,7 +63,7 @@ def layout():
                style={"fontSize": "0.85rem", "color": "#6c757d", "textDecoration": "none",
                       "display": "inline-block", "marginBottom": "0.5rem"}),
         make_filter_bar("skaters", include_home_away=True),
-        html.Div(id="skaters-content"),
+        html.Div(id="skaters-content", **{"aria-live": "polite"}),
     ])
 
 
@@ -78,7 +75,10 @@ def layout():
     Input("store-season", "data"),
 )
 def update_skaters(date_start, date_end, home_away, season):
-    season = season or "2025"
+    season = normalize_season(season)
+    not_ready = season_not_ready(season)
+    if not_ready:
+        return not_ready
     if not date_start or not date_end:
         return html.P("Select a date range.")
 
@@ -100,6 +100,7 @@ def update_skaters(date_start, date_end, home_away, season):
         teams_raw=("team", lambda x: ",".join(sorted(x.unique()))),
         position=("position", "first"),
         shoots=("shootsCatches", "first"),
+        birthDate=("birthDate", "first"),
         games_played=("gameId", "nunique"),
         total_toi=("toi_seconds", "sum"),
         total_all_toi=("total_toi_seconds", "sum"),
@@ -157,12 +158,7 @@ def update_skaters(date_start, date_end, home_away, season):
         if col not in grouped.columns:
             grouped[col] = None
 
-    grouped = grouped.join(_BURSTS_DF)
-    cutoff = _AGE_CUTOFFS.get(season)
-    if cutoff is not None:
-        grouped["age"] = grouped["birth_date"].apply(lambda b: _age_on(b, cutoff))
-    else:
-        grouped["age"] = None
+    grouped = attach_bursts_and_age(grouped, season)
 
     df = grouped.reset_index()
     df = df.sort_values("total_points", ascending=False)
@@ -185,7 +181,7 @@ def update_skaters(date_start, date_end, home_away, season):
         {"name": "Team",         "id": "team",               "filter_options": _ci},
         {"name": "Shoots",      "id": "shoots",              "filter_options": _ci},
         {"name": "Pos",          "id": "position",           "filter_options": _ci},
-        {"name": "Age",          "id": "age",                "type": "numeric"},
+        {"name": "Age",          "id": "age",                "type": "numeric", "format": Format().nully("—")},
         {"name": "GP",           "id": "games_played",       "type": "numeric"},
         {"name": "G",     "id": "total_goals",   "type": "numeric"},
         {"name": "A",     "id": "total_assists",  "type": "numeric"},
@@ -194,14 +190,14 @@ def update_skaters(date_start, date_end, home_away, season):
         {"name": "iSA/60", "id": "ishots_per60", "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
         {"name": "P/100iSA", "id": "p_per100_ranked", "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed)},
         {"name": "5v5 TOI/GP",   "id": "toi_display",        "filter_options": _ci},
-        {"name": "tTOI%",        "id": "avg_toi_share", "type": "numeric", "format": FormatTemplate.percentage(1)},
+        {"name": "tTOI%",        "id": "avg_toi_share", "type": "numeric", "format": FormatTemplate.percentage(1).nully("—")},
         {"name": "iTOI%",        "id": "avg_itoi_pct", "type": "numeric", "format": FormatTemplate.percentage(1)},
-        {"name": "PPI+",  "id": "ppi_plus",  "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
-        {"name": "wPPI+", "id": "wppi_plus", "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
-        {"name": "SB/a60", "id": "bursts_per_60", "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed)},
-        {"name": "Max MPH", "id": "speed_max_mph", "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed)},
+        {"name": "PPI+",  "id": "ppi_plus",  "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed).nully("—")},
+        {"name": "wPPI+", "id": "wppi_plus", "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed).nully("—")},
+        {"name": "SB/a60", "id": "bursts_per_60", "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed).nully("—")},
+        {"name": "Max MPH", "id": "speed_max_mph", "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed).nully("—")},
         {"name": "DPL",  "id": "avg_line",  "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed)},
-        {"name": "DPS+", "id": "dps_plus",  "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
+        {"name": "DPS+", "id": "dps_plus",  "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed).nully("—")},
     ]
     display_cols = [
         "player_link", "team", "shoots", "position", "age", "games_played",

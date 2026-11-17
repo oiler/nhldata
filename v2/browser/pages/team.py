@@ -123,11 +123,11 @@ def _make_position_table(df, pos="F"):
         {"name": "P",     "id": "total_points",   "type": "numeric"},
         {"name": "P/60",  "id": "p_per_60",       "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed)},
         {"name": "5v5 TOI/GP",   "id": "toi_display"},
-        {"name": "tTOI%",        "id": "avg_toi_share", "type": "numeric", "format": FormatTemplate.percentage(1)},
+        {"name": "tTOI%",        "id": "avg_toi_share", "type": "numeric", "format": FormatTemplate.percentage(1).nully("—")},
         {"name": "iTOI%",        "id": "avg_itoi_pct", "type": "numeric", "format": FormatTemplate.percentage(1)},
-        {"name": "PPI",   "id": "ppi",       "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed)},
-        {"name": "PPI+",  "id": "ppi_plus",  "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
-        {"name": "wPPI+", "id": "wppi_plus", "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)},
+        {"name": "PPI",   "id": "ppi",       "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed).nully("—")},
+        {"name": "PPI+",  "id": "ppi_plus",  "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed).nully("—")},
+        {"name": "wPPI+", "id": "wppi_plus", "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed).nully("—")},
     ]
     display_cols = [
         "player_link", "games_played",
@@ -137,11 +137,11 @@ def _make_position_table(df, pos="F"):
     ]
     if pos == "F":
         columns.append({"name": "DPL",  "id": "avg_line",            "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed)})
-        columns.append({"name": "DPS+", "id": "fwd_deployment_rate", "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)})
+        columns.append({"name": "DPS+", "id": "fwd_deployment_rate", "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed).nully("—")})
         display_cols.extend(["avg_line", "fwd_deployment_rate"])
     if pos == "D":
         columns.append({"name": "DPL",  "id": "avg_line",        "type": "numeric", "format": Format(precision=2, scheme=Scheme.fixed)})
-        columns.append({"name": "DPS+", "id": "deployment_rate", "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed)})
+        columns.append({"name": "DPS+", "id": "deployment_rate", "type": "numeric", "format": Format(precision=1, scheme=Scheme.fixed).nully("—")})
         display_cols.extend(["avg_line", "deployment_rate"])
 
     return html.Div(

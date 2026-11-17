@@ -7,11 +7,14 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+import burst_data
 import app  # noqa: F401 — registers pages so they can be imported
 import pages.elites as elites
+import pages.game as game
 import pages.games as games
 import pages.goalies as goalies
 import pages.player as player
+import pages.skaters as skaters
 import pages.team as team
 import pages.teams as teams
 
@@ -76,3 +79,40 @@ def test_elites_normalizes_query_string_season(monkeypatch):
     for bad in ("../x", "2024", None):
         elites.layout(season=bad)
     assert set(seen) == {"2025"}
+
+
+def test_skaters_not_ready(monkeypatch, tmp_path):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    assert skaters.update_skaters("2026-10-01", "2026-10-31", "all", "2026").children == NOT_READY
+
+
+def test_attach_bursts_and_age_uses_the_seasons_own_bursts(monkeypatch, tmp_path):
+    monkeypatch.delenv("DATA_DIR", raising=False)
+    pd.DataFrame({"playerId": [1], "bursts_per_60": [3.0], "speed_max_mph": [23.0],
+                  "birth_date": ["2000-01-01"]}).to_csv(tmp_path / "2025.csv", index=False)
+    monkeypatch.setattr(burst_data, "player_bursts_csv", lambda s: tmp_path / f"{s}.csv")
+    burst_data.bursts_for.cache_clear()
+    grouped = pd.DataFrame({"birthDate": ["2000-09-16", None, ""]},
+                           index=pd.Index([1, 2, 3], name="playerId"))
+
+    out26 = skaters.attach_bursts_and_age(grouped, "2026")  # no 2026 CSV
+    assert out26["bursts_per_60"].isna().all()
+    assert out26["speed_max_mph"].isna().all()
+    assert out26.loc[1, "age"] == 25
+    assert pd.isna(out26.loc[2, "age"]) and pd.isna(out26.loc[3, "age"])
+
+    out25 = skaters.attach_bursts_and_age(grouped, "2025")
+    assert out25.loc[1, "speed_max_mph"] == 23.0
+    assert out25.loc[1, "age"] == 24
+    burst_data.bursts_for.cache_clear()
+
+
+def test_game_league_mean_wppi_is_none_while_metrics_empty(monkeypatch, tmp_path):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    db = tmp_path / "2026" / "league.db"
+    db.parent.mkdir()
+    conn = sqlite3.connect(db)
+    conn.execute("CREATE TABLE player_metrics (playerId INTEGER, wppi REAL)")
+    conn.commit()
+    conn.close()
+    assert game._league_mean_wppi("2026") is None
