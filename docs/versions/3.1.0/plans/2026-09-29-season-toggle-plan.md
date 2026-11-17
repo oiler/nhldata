@@ -20,6 +20,7 @@
 - Run tests from the repo root with `python -m pytest`. Browser test files add `v2/browser` to `sys.path` the way existing test files do.
 - Pages can be imported in tests only after `import app` (it registers the page registry). Dash callbacks are directly callable in tests.
 - Git: trunk-based, as `AGENTS.md` section "Project rules" says. Build in the main checkout on `master`. Commit each task once its tests pass, and push it. Each commit leaves `master` working, because the 08:00 orchestrator runs from this checkout. Never deploy without oiler's approval.
+- Review: Tasks 6, 8, and 12 change the database build and the deploy guard. Before pushing each of them, run an independent review in a fresh-context subagent on the task's diff, and fix or report its findings. Other tasks push once their tests pass.
 - Don't touch `v2/browser/runtime_data/` contents except through `tools/sync-runtime-data.sh`.
 - The early-season `build_league_db.py` fix (empty `player_metrics` and `constants`) is committed to master in Task 0. Don't redo it.
 - Test runs in Tasks 1–12 use `python -m pytest v2/ -q -m "not requires_data"`, the CI command, so each pushed commit passes CI. Task 13 rebuilds the data and runs the full suite.
@@ -604,6 +605,13 @@ Expected: PASS (all, including the two early-season tests already there)
 
 Run: `python -m pytest v2/ -q -m "not requires_data"`
 Expected: all pass.
+
+- [ ] **Step 6: Rebuild both seasons' databases**
+
+From Task 8 on, the sync refuses a `league.db` without `players.birthDate`. Rebuild now, after this task's commit, so a deploy stays possible during the rest of the build. Back up first.
+
+Run: `cp data/2025/generated/browser/league.db "$TMPDIR/league-2025-pre-birthdate.db" && python v2/browser/build_league_db.py 2025 && python v2/browser/build_league_db.py 2026`
+Expected: both end with `Done.`, and `sqlite3 data/2025/generated/browser/league.db "select count(birthDate) from players"` is close to the row count. If the 2025 build fails, restore the backup.
 
 ---
 
