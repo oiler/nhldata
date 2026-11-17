@@ -6,7 +6,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from verify_runtime_data import burst_coverage, verify_burst_csv
+from verify_runtime_data import burst_coverage, main, verify_birthdates, verify_burst_csv, verify_tables
 
 
 def _make_db(path, player_ids):
@@ -69,3 +69,92 @@ def test_verify_fails_low_coverage_stale_file(tmp_path):
     ok, msg = verify_burst_csv(csv, db, min_overlap=0.8)
     assert not ok
     assert "coverage" in msg.lower()
+
+
+_BROWSER_TABLES = ["games", "points_5v5", "events_5v5", "onice_5v5", "elite_forwards",
+                   "elite_defensemen", "player_metrics", "constants"]
+
+
+def _add_browser_tables(path, skip=()):
+    con = sqlite3.connect(path)
+    for t in _BROWSER_TABLES:
+        if t not in skip:
+            con.execute(f"CREATE TABLE {t} (x INTEGER)")
+    con.commit()
+    con.close()
+
+
+def _make_players(path, rows, with_column=True):
+    con = sqlite3.connect(path)
+    if with_column:
+        con.execute("CREATE TABLE players (playerId INTEGER, birthDate TEXT)")
+        con.executemany("INSERT INTO players VALUES (?, ?)", rows)
+    else:
+        con.execute("CREATE TABLE players (playerId INTEGER)")
+        con.executemany("INSERT INTO players VALUES (?)", [(r[0],) for r in rows])
+    con.commit()
+    con.close()
+
+
+def test_birthdates_ok(tmp_path):
+    db = _make_db(tmp_path / "l.db", list(range(20)))
+    _make_players(db, [(i, "2000-01-01") for i in range(20)])
+    ok, _ = verify_birthdates(db)
+    assert ok
+
+
+def test_birthdates_missing_column(tmp_path):
+    db = _make_db(tmp_path / "l.db", [1, 2])
+    _make_players(db, [(1, None), (2, None)], with_column=False)
+    ok, msg = verify_birthdates(db)
+    assert not ok
+    assert "birthDate" in msg
+
+
+def test_birthdates_low_coverage(tmp_path):
+    db = _make_db(tmp_path / "l.db", list(range(20)))
+    _make_players(db, [(i, "2000-01-01") for i in range(18)] + [(18, None), (19, "")])
+    ok, msg = verify_birthdates(db)
+    assert not ok
+    assert "90.0%" in msg
+
+
+def test_tables_all_present(tmp_path):
+    db = _make_db(tmp_path / "l.db", [1])
+    _make_players(db, [(1, "2000-01-01")])
+    _add_browser_tables(db)
+    ok, _ = verify_tables(db)
+    assert ok
+
+
+def test_tables_missing_one(tmp_path):
+    db = _make_db(tmp_path / "l.db", [1])
+    _make_players(db, [(1, "2000-01-01")])
+    _add_browser_tables(db, skip=("points_5v5",))
+    ok, msg = verify_tables(db)
+    assert not ok
+    assert "points_5v5" in msg
+
+
+def test_main_passes_complete_db(tmp_path):
+    db = _make_db(tmp_path / "l.db", [1, 2])
+    _make_players(db, [(1, "2000-01-01"), (2, "2000-01-01")])
+    _add_browser_tables(db)
+    csv = _make_csv(tmp_path / "b.csv", [1, 2])
+    assert main([str(csv), str(db)]) == 0
+
+
+def test_main_fails_when_birthdates_fail(tmp_path):
+    db = _make_db(tmp_path / "l.db", [1, 2])
+    _make_players(db, [(1, None), (2, None)], with_column=False)
+    _add_browser_tables(db)
+    csv = _make_csv(tmp_path / "b.csv", [1, 2])
+    assert main([str(csv), str(db)]) == 1
+
+
+def test_main_fails_on_partial_db(tmp_path):
+    db = _make_db(tmp_path / "l.db", [1, 2])
+    _make_players(db, [(1, "2000-01-01"), (2, "2000-01-01")])
+    _add_browser_tables(db, skip=("player_metrics",))
+    csv = _make_csv(tmp_path / "b.csv", [1, 2])
+    assert main([str(csv), str(db)]) == 1

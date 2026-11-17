@@ -888,7 +888,7 @@ Expected: all pass.
 - Consumes: a `league.db` with `competition(playerId, position)` and `players(playerId, birthDate)`.
 - Produces: `verify_tables(db_path) -> tuple[bool, str]` and `verify_birthdates(db_path, min_coverage=0.95) -> tuple[bool, str]`; `main()` fails when any check fails and runs `verify_tables` first. CLI unchanged: `verify_runtime_data.py <burst_csv> <league_db> [min_overlap]`. Task 12's sync script relies on the `FAIL:` lines naming the check.
 
-- [ ] **Step 1: Write the failing test** (add `verify_birthdates, verify_tables, main` to the file's existing `from verify_runtime_data import ...` line, then append)
+- [x] **Step 1: Write the failing test** (add `verify_birthdates, verify_tables, main` to the file's existing `from verify_runtime_data import ...` line, then append)
 
 ```python
 _BROWSER_TABLES = ["games", "points_5v5", "events_5v5", "onice_5v5", "elite_forwards",
@@ -980,12 +980,12 @@ def test_main_fails_on_partial_db(tmp_path):
     assert main([str(csv), str(db)]) == 1
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `python -m pytest v2/browser/tests/test_verify_runtime_data.py -v`
 Expected: ERROR at collection, `ImportError: cannot import name 'verify_birthdates'` (the file's existing tests also error until Step 3)
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 In `v2/browser/verify_runtime_data.py`, replace the module docstring (lines 1-11) with:
 
@@ -1075,12 +1075,12 @@ Replace the body of `main` after `min_overlap = ...`:
     return 0 if all(ok for ok, _ in results) else 1
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `python -m pytest v2/browser/tests/test_verify_runtime_data.py -v`
 Expected: PASS, existing tests included. Don't loosen a check to make a test pass.
 
-- [ ] **Step 5: Checkpoint**
+- [x] **Step 5: Checkpoint**
 
 Run: `python -m pytest v2/ -q -m "not requires_data"`
 Expected: all pass.
