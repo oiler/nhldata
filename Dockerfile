@@ -34,11 +34,13 @@ WORKDIR /app
 # Only the browser subtree is needed at runtime
 COPY --chown=app:app v2/browser/ /app/
 
-# runtime_data/2024/ and /2025/ are gitignored — they're built locally and
-# baked in by tools/sync-runtime-data.sh. Any build from a bare git checkout
+# runtime_data/2024/, /2025/, and /2026/ are gitignored — they're built locally
+# and baked in by tools/sync-runtime-data.sh. Any build from a bare git checkout
 # (a CI runner, a fresh clone) silently produces an image whose skaters page
-# raises at import, which crash-loops the machine on deploy. Fail the *build*
-# instead, before the image is ever pushed.
+# raises at import (it preloads every ready season's bursts in production),
+# which crash-loops the machine on deploy. Fail the *build* instead, before the
+# image is ever pushed. Only required files are listed: optional seasons
+# (2026) may be absent, and the browser then shows them as not available.
 RUN set -eu; \
     fail=0; \
     for f in runtime_data/2024/league.db \
@@ -55,6 +57,14 @@ RUN set -eu; \
         echo "Run ./tools/sync-runtime-data.sh from the repo root, then deploy." >&2; \
         exit 1; \
     fi
+
+# Each shipped league.db must carry players.birthDate (the skaters Age column
+# reads it). A runtime_data/ copied without a fresh sync fails here, not in prod.
+RUN set -eu; \
+    for db in /app/runtime_data/2025/league.db /app/runtime_data/2026/league.db; do \
+        [ -e "$db" ] || continue; \
+        python -c "import sqlite3,sys; c={r[1] for r in sqlite3.connect(sys.argv[1]).execute('PRAGMA table_info(players)')}; sys.exit(0 if 'birthDate' in c else 'ERROR: players.birthDate missing in '+sys.argv[1]+' - rebuild league.db and rerun tools/sync-runtime-data.sh')" "$db"; \
+    done
 
 # The runtime DBs live alongside the app; DATA_DIR points the app at them
 ENV DATA_DIR=/app/runtime_data \

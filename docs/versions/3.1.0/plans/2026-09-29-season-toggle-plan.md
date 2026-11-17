@@ -1619,7 +1619,7 @@ Expected: all pass.
 
 This task turns the spec's four manual sync runs into a permanent test. The deploy guard is a high-risk boundary (the `coding-defaults` skill, "Write tests where they pay off"), and the `SYNC_SRC`/`SYNC_DST` overrides exist only so the test can point the script at fixture trees. Update the spec's Testing section to match when you next edit it.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # v2/browser/tests/test_sync_runtime_data.py
@@ -1757,7 +1757,7 @@ def test_required_season_failure_is_fatal_and_keeps_last_good_copy(tmp_path):
     assert (dst / "2025/league.db").read_bytes() == b"last good"
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Never run this test in the main checkout before Step 3. The old script ignores `SYNC_SRC`/`SYNC_DST`, so there it would overwrite the real `runtime_data/`. Run it in a throwaway worktree, which has no `data/`. There the old script creates empty `runtime_data/2024/` and `2025/` directories (gitignored) and fails at its first `cp`.
 
@@ -1772,7 +1772,7 @@ git worktree remove --force "$TMPDIR/nhl-sync-red"
 
 Expected: all seven FAIL. The required-season tests fail on `"required season 2025" in r.stderr`, because the old script exits at `cp` with a different message.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 Replace `tools/sync-runtime-data.sh` with:
 
@@ -1920,16 +1920,16 @@ RUN set -eu; \
 
 In `.gitignore`, add `v2/browser/runtime_data/2026/` after the `2025/` line.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `python -m pytest v2/browser/tests/test_sync_runtime_data.py -v`
 Expected: PASS (7 tests)
 
-Then check the required-season guard: temporarily change `exit 1` in the required-season loop to `true`, rerun, and confirm `test_required_season_failure_is_fatal_and_keeps_last_good_copy` goes red. Restore the line.
+Then check the required-season guard: temporarily change `exit 1` in the required-season loop to `continue`, rerun, and confirm both required-season tests go red. Restore the line. (Changing it to `true`, as this step first said, survives: the next `mv` fails under `set -e` and exits non-zero anyway, so that mutation can't show the tests pin the exit.)
 
 Check the Dockerfile guard's Python one-liner locally: run it against a `league.db` with and without a `birthDate` column (for example, the Task 8 test fixtures), and confirm it exits 0 and 1 respectively.
 
-- [ ] **Step 5: Checkpoint**
+- [x] **Step 5: Checkpoint**
 
 Run: `python -m pytest v2/ -q -m "not requires_data"` and `git check-ignore -v v2/browser/runtime_data/2026/league.db`
 Expected: all pass; `check-ignore` prints the `.gitignore` line.
