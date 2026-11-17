@@ -4,7 +4,7 @@ The first milestone in `ROADMAP.md`. It lets the browser switch between 2025-26 
 
 v3.1.0 also carries the work merged to `master` since v3.0.0: the goalie 5v5 situation cut, 5v5 goalie time on ice, the fix for the 2026-07-29 production outage, the switch of the daily pipeline to 2026-27, and the daily run's catch-up on missed games. `CHANGELOG.md` section "Unreleased" lists them.
 
-Tasks 0 to 12 of the season-toggle plan are built and on `master`. Task 13's machine-led steps passed on 2026-11-17; its hand checks (Step 6) and the deploy are open. On 2026-11-17 the plan was updated to build without superpowers, on `master` by trunk-based development (D50), and to add a 2026-27 Edge run before the sync (D51).
+Tasks 0 to 12 of the season-toggle plan are built and on `master`. Task 13's machine-led steps and oiler's hand checks passed on 2026-11-17. The runbook update (Step 7) and the deploy are open. On 2026-11-17 the plan was updated to build without superpowers, on `master` by trunk-based development (D50), and to add a 2026-27 Edge run before the sync (D51).
 
 ## This folder
 
@@ -49,9 +49,12 @@ Task 13 of the season-toggle plan, "Rebuild and verify in the running app." Step
   - In production mode against `runtime_data/`, the app preloaded both seasons' bursts. Skaters, games, team, and player pages rendered for both seasons, Age had no gaps, and 2026-27 SB/a60 was blank for the one skater without Edge data.
 - **Changed:** Independent reviews of Tasks 6, 8, and 12 found no bugs. The Task 8 review led to tests for each check's condition. The Task 12 review led the sync to stage every required file before replacing any. The plan's Task 12 section records the difference.
 
-### Human test, Step 6
+### Human test, Step 6, 2026-11-17
 
-Not run yet.
+- **Run by:** oiler, in local dev.
+- **Result:** Passed. oiler confirmed the season toggle works locally.
+- **Found:** Nothing reported.
+- **Changed:** Nothing.
 
 ## Close-out
 

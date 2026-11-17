@@ -1982,7 +1982,7 @@ Expected: exit 0, `runtime_data/2026/` holds both files, and the last line is `S
 Run: `DATA_DIR=$PWD/v2/browser/runtime_data python v2/browser/app.py`, then open `http://127.0.0.1:8050`.
 Expected: the app boots. `/skaters` shows Age on 2025-26, and on 2026-27 it shows Age, SB/a60, and Max MPH. Every season-aware page shows 2026-27 data.
 
-- [ ] **Step 6: Manual checks in local dev**
+- [x] **Step 6: Manual checks in local dev**
 
 Run: `cd v2/browser && python app.py`, then open `http://127.0.0.1:8050`.
 
