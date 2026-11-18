@@ -35,3 +35,11 @@ A patch release, requested by oiler on 2026-11-18. The browser opens on 2026-27 
 ### Human test
 
 Not run yet.
+
+### Deploy, 2026-11-18
+
+- **Run by:** Claude, from the repo root, after oiler's own `fly deploy` failed outside it (no `fly.toml` there).
+- **Result:** Passed. Fly release v29 is live, and the health check passes.
+- **Found:** The live layout opens with the season radio and store on 2026. The sync ended `Seasons in image: 2026 (required), 2025 (optional)`.
+- **Changed:** Nothing. To roll back: `fly deploy --image registry.fly.io/nhl-browser:deployment-01M7QK1G8CPZR3JYPG716NRNFC` (release v28).
+
