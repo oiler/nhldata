@@ -1,5 +1,8 @@
 # v3.1.1: Default to 2026-27
 
+**Created:** 2026-11-18 15:40
+**Last modified:** 2026-11-18 18:39
+
 A patch release, requested by oiler on 2026-11-18. The browser opens on 2026-27 instead of 2025-26. This is step 3 of the season-toggle spec's "Rollover next season" section (`docs/versions/3.1.0/specs/2026-09-29-season-toggle-design.md`).
 
 ## What the release changes
