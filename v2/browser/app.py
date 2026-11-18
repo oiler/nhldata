@@ -149,14 +149,20 @@ app.layout = html.Div([
             html.Dd(
                 "Speed Bursts per all-situation 60 — count of NHL EDGE skating bursts above 20 mph "
                 "per 60 minutes of total ice time (all strengths). A pure speed-attribute metric; "
-                "high values indicate explosive skaters. Top-line forwards typically sit in the 5–10 range; "
-                "defensemen usually 1–4."
+                "high values indicate explosive skaters. Among 2025-26 skaters with 500+ minutes, "
+                "forwards had a median near 5 and the top 10% above 10.7; defensemen had a median "
+                "near 1.7 and the top 10% above 3.5. Computed from season totals, so it doesn't "
+                "change with the date filter."
             ),
             html.Dt("Max MPH"),
             html.Dd(
                 "Top season skating speed in mph, recorded by the NHL EDGE tracking system. "
                 "A single peak value across one season's regular-season ice time."
             ),
+            html.Dt("G, A, P"),
+            html.Dd("5v5 goals, assists, and points."),
+            html.Dt("P/60"),
+            html.Dd("5v5 points per 60 minutes of 5v5 ice time."),
             html.Dt("iSA/60"),
             html.Dd(
                 "Individual shot attempts per 60 minutes of 5v5 ice time — shots on goal, "
@@ -183,10 +189,48 @@ app.layout = html.Div([
             ),
             html.Dt("5v5 TOI/GP"),
             html.Dd("Average 5-on-5 time on ice per game played."),
+            html.Dt("5v5 TOI"),
+            html.Dd("5-on-5 time on ice in one game."),
+            html.Dt("Line / Pair"),
+            html.Dd(
+                "The forward line (1–4) or defense pair a skater played on in one game, detected from "
+                "the 5v5 combinations that played together most. 1 is the top unit."
+            ),
+            html.Dt("Dep Score"),
+            html.Dd(
+                "Raw deployment score for one game, the input to DPS+. Each 5v5 second adds points for "
+                "the opposition faced: a defenseman gets 12 minus the line numbers of the three opposing "
+                "forwards, and a forward gets 8 minus the pair numbers of the two opposing defensemen. "
+                "More ice time against top units gives a higher score."
+            ),
             html.Dt("DPS+"),
-            html.Dd("Deployment Score Plus — a defenseman's raw deployment score indexed to the league average (100 = average). The raw score accumulates points each 5v5 second based on the opposing forward line faced (line 1 opponents score highest). DPS+ normalizes across the league so 110 means a defenseman faces 10% tougher forward deployment than average."),
+            html.Dd("Deployment Score Plus — a skater's raw deployment score (Dep Score) indexed to the league average for their position (100 = average). For a defenseman the raw score reflects the opposing forward lines faced; for a forward, the opposing defense pairs. 110 means 10% tougher deployment than average."),
             html.Dt("DPL"),
-            html.Dd("Deployment Line — a forward's average line assignment (1–4) across games played, where line 1 is the top line. Lower values indicate higher deployment; 1.0 means exclusively used as a first-line forward, 4.0 exclusively as a fourth-liner."),
+            html.Dd("Deployment Line — a skater's average line (forwards) or pair (defensemen) across games played, where 1 is the top unit. Lower values indicate higher deployment; 1.0 means used only on the top unit."),
+        ], className="glossary"),
+        html.H6("Teams and games", className="glossary-subheading"),
+        html.Dl([
+            html.Dt("P%"),
+            html.Dd(
+                "Points percentage — standings points (2 for a win, 1 for an overtime or shootout loss) "
+                "divided by the maximum possible, 2 per game played."
+            ),
+            html.Dt("RW"),
+            html.Dd("Regulation wins — wins decided in the first three periods."),
+            html.Dt("5v5 GF, GA, GD"),
+            html.Dd("Goals for, goals against, and goal differential with both goalies in at 5v5 (situation 1551)."),
+            html.Dt("FWD, DEF, Team PPI"),
+            html.Dd("Average PPI of a team's forwards, defensemen, or all skaters in one game, weighted by their 5v5 ice time."),
+            html.Dt("FWD, DEF, Team wPPI"),
+            html.Dd("Average season PPI+ of a team's forwards, defensemen, or all skaters, weighted by their 5v5 ice time in one game."),
+            html.Dt("Team Heaviness, OPP Heaviness"),
+            html.Dd("Team PPI for a team and for its opponent in one game, on the team page's game log."),
+            html.Dt("Game wPPI+"),
+            html.Dd(
+                "A skater's wPPI+ for one game: PPI+ times that game's 5v5 ice time, divided by the "
+                "league mean wPPI, times 100. It uses the season's league mean, so it compares directly "
+                "with season wPPI+."
+            ),
         ], className="glossary"),
         html.H6("Goalies", className="glossary-subheading"),
         html.P(

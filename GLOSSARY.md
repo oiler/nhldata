@@ -76,6 +76,6 @@ McDavid recorded 681 bursts over 113,088 seconds of all-situation ice time:
 SB/a60 = 681 × 3600 / 113,088 = 21.68
 ```
 
-Typical full-season top-line forwards sit in the 5–10 range. Top-pair defensemen are usually 1–4 (their deployment limits explosive skating). Small-sample call-ups can post very high SB/a60 values from short stints — interpret with care for players below ~500 minutes of TOI.
+Among 2025-26 skaters with at least 500 minutes, forwards had a median of 5.18 (middle half 3.2–7.6, top 10% above 10.7) and defensemen a median of 1.66 (middle half 1.1–2.6, top 10% above 3.5). Small-sample call-ups can post very high SB/a60 values from short stints — interpret with care for players below ~500 minutes of TOI.
 
 **Why this metric is filter-stable:** unlike most columns on the skaters leaderboard, SB/a60 is computed from season totals. When the page is date-filtered, the rest of the row updates but this column continues to reflect the player's full-season skating attribute.
