@@ -4,7 +4,7 @@ The first milestone in `ROADMAP.md`. It lets the browser switch between 2025-26 
 
 v3.1.0 also carries the fix for 14 Dependabot alerts, added at high priority on 2026-11-17 and folded in before the deploy instead of shipping as v3.1.1. It also carries the work merged to `master` since v3.0.0: the goalie 5v5 situation cut, 5v5 goalie time on ice, the fix for the 2026-07-29 production outage, the switch of the daily pipeline to 2026-27, and the daily run's catch-up on missed games. `CHANGELOG.md` section "Unreleased" lists them.
 
-Tasks 0 to 12 of the season-toggle plan are built and on `master`. Task 13's machine-led steps and oiler's hand checks passed on 2026-11-17. Deployed to Fly on 2026-11-18 as release v28. Closed out on 2026-11-18. oiler's runbook update (Step 7) and the tag are open. On 2026-11-17 the plan was updated to build without superpowers, on `master` by trunk-based development (D50), and to add a 2026-27 Edge run before the sync (D51).
+Tasks 0 to 12 of the season-toggle plan are built and on `master`. Task 13's machine-led steps and oiler's hand checks passed on 2026-11-17. Deployed to Fly on 2026-11-18 as release v28. Closed out and tagged on 2026-11-18. oiler's runbook update (Step 7) is open. On 2026-11-17 the plan was updated to build without superpowers, on `master` by trunk-based development (D50), and to add a 2026-27 Edge run before the sync (D51).
 
 ## This folder
 
@@ -71,4 +71,4 @@ Task 13 of the season-toggle plan, "Rebuild and verify in the running app." Step
 - [x] The version added to `CHANGELOG.md`
 - [x] The milestone's row and log entry added to `docs/history.md`
 - [x] The milestone removed from `ROADMAP.md`, so the next milestone is first in its list
-- [ ] The release commit tagged by oiler: the commit that adds the version to `CHANGELOG.md`
+- [x] The release commit tagged, with a GitHub Release: `v3.1.0` on `d48a1eb`

@@ -43,3 +43,6 @@ Not run yet.
 - **Found:** The live layout opens with the season radio and store on 2026. The sync ended `Seasons in image: 2026 (required), 2025 (optional)`.
 - **Changed:** Nothing. To roll back: `fly deploy --image registry.fly.io/nhl-browser:deployment-01M7QK1G8CPZR3JYPG716NRNFC` (release v28).
 
+## Close-out
+
+A patch release skips the close-out. Tagged `v3.1.1` on `a3fd115`, the commit that adds the version to `CHANGELOG.md`, with a GitHub Release.

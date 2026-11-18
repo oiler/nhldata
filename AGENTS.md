@@ -56,7 +56,7 @@ NHL game data analytics: a data pipeline that turns public NHL API data into sec
 - **Python, not R.** Use Python tools and libraries for everything.
 - **Git.** Trunk-based development (D50, 2026-11-17). Work one change at a time on `master`. Claude commits each change once the tests pass, and pushes it to `hub`. Each commit leaves `master` working, because the 08:00 pipeline runs from this checkout: don't leave a change half-done across 08:00.
 - **Deploys.** Pause for oiler's approval before every Fly deploy. A push doesn't deploy: `fly-deploy.yml` runs only by hand.
-- **Releases.** A release's close-out uses the document steps in `docs/versions/README.md`. oiler tags releases.
+- **Releases.** A release's close-out uses the document steps in `docs/versions/README.md`. Claude tags each release with an annotated tag and publishes a GitHub Release whose notes are the version's `CHANGELOG.md` section (oiler, 2026-11-18).
 - Never capitalize "oiler".
 
 ### Situation timelines

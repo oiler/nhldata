@@ -66,7 +66,7 @@ Rulings: <the DECISIONS.md entries that govern this release, when the project ha
 - [ ] The version added to `CHANGELOG.md`
 - [ ] The milestone's row and log entry added to `docs/history.md`
 - [ ] The milestone removed from `ROADMAP.md`, so the next milestone is first in its list
-- [ ] The release commit tagged by oiler: the commit that adds the version to `CHANGELOG.md`
+- [ ] The release commit tagged, with a GitHub Release: the commit that adds the version to `CHANGELOG.md`
 ```
 
 ## Closing out a release
