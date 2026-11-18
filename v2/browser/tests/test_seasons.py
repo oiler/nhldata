@@ -9,7 +9,7 @@ from seasons import DEFAULT_SEASON, SEASONS, age_cutoff, normalize_season, seaso
 
 def test_seasons_and_default():
     assert SEASONS == ["2025", "2026"]
-    assert DEFAULT_SEASON == "2025"
+    assert DEFAULT_SEASON == "2026"
 
 
 def test_normalize_season_keeps_known_values():

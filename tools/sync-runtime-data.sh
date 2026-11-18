@@ -11,8 +11,8 @@
 # never out of both lists.
 #
 # Run after rebuilding any of the source DBs/CSVs:
-#   python v2/browser/build_league_db.py 2025
 #   python v2/browser/build_league_db.py 2026
+#   python v2/browser/build_league_db.py 2025
 #   python v2/browser/build_edm_db.py
 #   python v2/browser/build_goalies_db.py
 #   ./tools/sync-runtime-data.sh
@@ -29,8 +29,8 @@ if [[ -n "${SYNC_SRC:-}${SYNC_DST:-}" ]]; then
 fi
 echo "sync: $SRC -> $DST"
 
-REQUIRED_SEASONS=("2025")
-OPTIONAL_SEASONS=("2026")
+REQUIRED_SEASONS=("2026")
+OPTIONAL_SEASONS=("2025")
 
 # Everything is staged under one temp dir and checked there. runtime_data/
 # changes only after every required check passes, so a failed sync leaves the
@@ -112,12 +112,13 @@ mv "$OTHER/2024/league.db" "$DST/2024/league.db"
 mv "$OTHER/2025/edm.db"    "$DST/2025/edm.db"
 mv "$OTHER/goalies.db"     "$DST/goalies.db"
 
-# 4. Optional seasons: any earlier copy is removed first, so a stale season
-# never ships beside a failed one.
+# 4. Optional seasons: any earlier copy of the season's two files is removed
+# first, so a stale season never ships beside a failed one. Only those files:
+# the folder can hold required files too (2025/edm.db).
 shipped=""
 skipped=""
 for season in ${OPTIONAL_SEASONS[@]+"${OPTIONAL_SEASONS[@]}"}; do
-    rm -rf "${DST:?}/$season"
+    rm -f "${DST:?}/$season/league.db" "${DST:?}/$season/player_bursts.csv"
     if result="$(stage_season "$season")"; then
         mkdir -p "$DST/$season"
         mv "$result/league.db" "$result/player_bursts.csv" "$DST/$season/"

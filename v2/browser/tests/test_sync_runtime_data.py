@@ -7,6 +7,8 @@ import pandas as pd
 
 REPO = Path(__file__).resolve().parents[3]
 SCRIPT = REPO / "tools" / "sync-runtime-data.sh"
+# The tiers in tools/sync-runtime-data.sh. REQ is the default season.
+REQ, OPT = "2026", "2025"
 _OTHER_TABLES = ["games", "points_5v5", "events_5v5", "onice_5v5", "elite_forwards",
                  "elite_defensemen", "player_metrics", "constants"]
 
@@ -31,29 +33,30 @@ def _bursts(path, ids):
                   "birth_date": "2000-01-01"}).to_csv(path, index=False)
 
 
-def _src(tmp, league_2026=True, bursts_2026="full", birth_2025=True, birth_2026=True):
-    """bursts_2026: "full", "none" (file absent), "header" (header only), or a list of ids."""
+def _src(tmp, league_opt=True, bursts_opt="full", birth_req=True, birth_opt=True):
+    """bursts_opt: "full", "none" (file absent), "header" (header only), or a list of ids."""
     src = tmp / "data"
     ids = list(range(10))
     _league_db(src / "2024/generated/browser/league.db", ids)
-    _league_db(src / "2025/generated/browser/league.db", ids, birth=birth_2025)
+    _league_db(src / f"{REQ}/generated/browser/league.db", ids, birth=birth_req)
+    _bursts(src / f"{REQ}/generated/edge/player_bursts.csv", ids)
+    (src / "2025/generated/browser").mkdir(parents=True, exist_ok=True)
     (src / "2025/generated/browser/edm.db").write_bytes(b"x" * 10)
-    _bursts(src / "2025/generated/edge/player_bursts.csv", ids)
     g = src / "generated/browser/goalies.db"
     g.parent.mkdir(parents=True)
     con = sqlite3.connect(g)
     pd.DataFrame({"situation": ["all", "5v5"]}).to_sql("goalie_seasons", con, index=False)
     con.close()
-    if league_2026:
-        _league_db(src / "2026/generated/browser/league.db", ids, birth=birth_2026)
-    csv_2026 = src / "2026/generated/edge/player_bursts.csv"
-    if bursts_2026 == "full":
-        _bursts(csv_2026, ids)
-    elif bursts_2026 == "header":
-        csv_2026.parent.mkdir(parents=True, exist_ok=True)
-        csv_2026.write_text("playerId,bursts_per_60,speed_max_mph,birth_date\n")
-    elif isinstance(bursts_2026, list):
-        _bursts(csv_2026, bursts_2026)
+    if league_opt:
+        _league_db(src / f"{OPT}/generated/browser/league.db", ids, birth=birth_opt)
+    csv_opt = src / f"{OPT}/generated/edge/player_bursts.csv"
+    if bursts_opt == "full":
+        _bursts(csv_opt, ids)
+    elif bursts_opt == "header":
+        csv_opt.parent.mkdir(parents=True, exist_ok=True)
+        csv_opt.write_text("playerId,bursts_per_60,speed_max_mph,birth_date\n")
+    elif isinstance(bursts_opt, list):
+        _bursts(csv_opt, bursts_opt)
     return src
 
 
@@ -64,86 +67,106 @@ def _run(src, dst):
 
 
 def _warning_line(stderr):
-    lines = [l for l in stderr.splitlines() if l.startswith("WARNING: 2026 not synced")]
+    lines = [l for l in stderr.splitlines() if l.startswith(f"WARNING: {OPT} not synced")]
     assert len(lines) == 1, stderr
     return lines[0]
+
+
+def _opt_absent(dst):
+    """The optional season's files are gone. Its folder may stay: it also holds edm.db."""
+    return not (dst / OPT / "league.db").exists() and not (dst / OPT / "player_bursts.csv").exists()
+
+
+def _stale_opt(dst):
+    (dst / OPT).mkdir(parents=True)
+    (dst / OPT / "league.db").write_bytes(b"stale")
+    (dst / OPT / "player_bursts.csv").write_bytes(b"stale")
 
 
 def test_optional_season_synced_when_passing(tmp_path):
     dst = tmp_path / "rt"
     r = _run(_src(tmp_path), dst)
     assert r.returncode == 0, r.stderr
-    assert (dst / "2026/league.db").exists() and (dst / "2026/player_bursts.csv").exists()
-    assert "Seasons in image: 2025 (required), 2026 (optional)" in r.stdout
+    assert (dst / OPT / "league.db").exists() and (dst / OPT / "player_bursts.csv").exists()
+    assert f"Seasons in image: {REQ} (required), {OPT} (optional)" in r.stdout
 
 
 def test_optional_season_bursts_missing_removes_stale_copy(tmp_path):
     dst = tmp_path / "rt"
-    (dst / "2026").mkdir(parents=True)
-    (dst / "2026/league.db").write_bytes(b"stale")
-    r = _run(_src(tmp_path, bursts_2026="none"), dst)
+    _stale_opt(dst)
+    r = _run(_src(tmp_path, bursts_opt="none"), dst)
     assert r.returncode == 0, r.stderr
     assert "missing" in _warning_line(r.stderr)
-    assert not (dst / "2026").exists()
-    assert "skipped: 2026" in r.stdout
+    assert _opt_absent(dst)
+    assert f"skipped: {OPT}" in r.stdout
+
+
+def test_optional_season_failure_keeps_edm_db(tmp_path):
+    dst = tmp_path / "rt"
+    r = _run(_src(tmp_path, bursts_opt="none"), dst)
+    assert r.returncode == 0, r.stderr
+    assert (dst / "2025/edm.db").stat().st_size > 0
 
 
 def test_optional_season_low_coverage_names_check(tmp_path):
     dst = tmp_path / "rt"
-    (dst / "2026").mkdir(parents=True)
-    (dst / "2026/league.db").write_bytes(b"stale")
-    r = _run(_src(tmp_path, bursts_2026=[0, 1]), dst)
+    _stale_opt(dst)
+    r = _run(_src(tmp_path, bursts_opt=[0, 1]), dst)
     assert r.returncode == 0, r.stderr
     assert "burst coverage" in _warning_line(r.stderr)
-    assert not (dst / "2026").exists()
+    assert _opt_absent(dst)
 
 
 def test_optional_season_header_only_csv_names_check(tmp_path):
     dst = tmp_path / "rt"
-    r = _run(_src(tmp_path, bursts_2026="header"), dst)
+    r = _run(_src(tmp_path, bursts_opt="header"), dst)
     assert r.returncode == 0, r.stderr
     assert "empty burst CSV" in _warning_line(r.stderr)
-    assert not (dst / "2026").exists()
+    assert _opt_absent(dst)
 
 
 def test_optional_season_without_birthdates_names_check(tmp_path):
     dst = tmp_path / "rt"
-    r = _run(_src(tmp_path, birth_2026=False), dst)
+    r = _run(_src(tmp_path, birth_opt=False), dst)
     assert r.returncode == 0, r.stderr
     assert "birthDate" in _warning_line(r.stderr)
-    assert not (dst / "2026").exists()
+    assert _opt_absent(dst)
 
 
 def test_required_season_without_birthdates_is_fatal(tmp_path):
-    r = _run(_src(tmp_path, birth_2025=False), tmp_path / "rt")
+    dst = tmp_path / "rt"
+    (dst / REQ).mkdir(parents=True)
+    (dst / REQ / "league.db").write_bytes(b"last good")
+    r = _run(_src(tmp_path, birth_req=False), dst)
     assert r.returncode != 0
     assert "birthDate" in r.stderr
+    assert (dst / REQ / "league.db").read_bytes() == b"last good"
 
 
 def test_required_season_failure_is_fatal_and_keeps_last_good_copy(tmp_path):
     src = _src(tmp_path)
-    (src / "2025/generated/edge/player_bursts.csv").unlink()
+    (src / f"{REQ}/generated/edge/player_bursts.csv").unlink()
     dst = tmp_path / "rt"
-    (dst / "2025").mkdir(parents=True)
-    (dst / "2025/league.db").write_bytes(b"last good")
+    (dst / REQ).mkdir(parents=True)
+    (dst / REQ / "league.db").write_bytes(b"last good")
     r = _run(src, dst)
     assert r.returncode != 0
-    assert "required season 2025" in r.stderr
-    assert (dst / "2025/league.db").read_bytes() == b"last good"
+    assert f"required season {REQ}" in r.stderr
+    assert (dst / REQ / "league.db").read_bytes() == b"last good"
 
 
 def test_required_and_other_files_arrive(tmp_path):
     dst = tmp_path / "rt"
     r = _run(_src(tmp_path), dst)
     assert r.returncode == 0, r.stderr
-    for f in ["2025/league.db", "2025/player_bursts.csv", "2025/edm.db",
+    for f in [f"{REQ}/league.db", f"{REQ}/player_bursts.csv", "2025/edm.db",
               "2024/league.db", "goalies.db"]:
         assert (dst / f).stat().st_size > 0, f
 
 
 def _last_good(dst):
-    (dst / "2025").mkdir(parents=True)
-    (dst / "2025/league.db").write_bytes(b"last good")
+    (dst / REQ).mkdir(parents=True)
+    (dst / REQ / "league.db").write_bytes(b"last good")
     (dst / "goalies.db").write_bytes(b"last good goalies")
 
 
@@ -155,7 +178,7 @@ def test_missing_edm_db_is_fatal_and_leaves_runtime_data_unchanged(tmp_path):
     r = _run(src, dst)
     assert r.returncode != 0
     assert "edm.db" in r.stderr
-    assert (dst / "2025/league.db").read_bytes() == b"last good"
+    assert (dst / REQ / "league.db").read_bytes() == b"last good"
     assert not (dst / "2025/edm.db").exists()
 
 
@@ -171,24 +194,25 @@ def test_single_cut_goalies_db_is_fatal_and_leaves_runtime_data_unchanged(tmp_pa
     r = _run(src, dst)
     assert r.returncode != 0
     assert "goalies.db" in r.stderr
-    assert (dst / "2025/league.db").read_bytes() == b"last good"
+    assert (dst / REQ / "league.db").read_bytes() == b"last good"
     assert (dst / "goalies.db").read_bytes() == b"last good goalies"
 
 
 def test_required_failure_leaves_optional_season_alone(tmp_path):
-    src = _src(tmp_path, birth_2025=False)
+    src = _src(tmp_path, birth_req=False)
     dst = tmp_path / "rt"
-    (dst / "2026").mkdir(parents=True)
-    (dst / "2026/league.db").write_bytes(b"earlier 2026")
+    (dst / OPT).mkdir(parents=True)
+    (dst / OPT / "league.db").write_bytes(b"earlier")
     r = _run(src, dst)
     assert r.returncode != 0
-    assert (dst / "2026/league.db").read_bytes() == b"earlier 2026"
+    assert (dst / OPT / "league.db").read_bytes() == b"earlier"
 
 
 def test_optional_season_zero_byte_csv_names_check(tmp_path):
     src = _src(tmp_path)
-    (src / "2026/generated/edge/player_bursts.csv").write_bytes(b"")
-    r = _run(src, tmp_path / "rt")
+    (src / f"{OPT}/generated/edge/player_bursts.csv").write_bytes(b"")
+    dst = tmp_path / "rt"
+    r = _run(src, dst)
     assert r.returncode == 0, r.stderr
     assert "empty" in _warning_line(r.stderr)
-    assert not (tmp_path / "rt/2026").exists()
+    assert _opt_absent(dst)

@@ -33,14 +33,14 @@ def test_season_bar_hidden_elsewhere():
 
 def test_sync_season_normalizes():
     assert app.sync_season("2026") == "2026"
-    assert app.sync_season("2019") == "2025"
-    assert app.sync_season(None) == "2025"
+    assert app.sync_season("2019") == "2026"
+    assert app.sync_season(None) == "2026"
 
 
 def test_filter_labels_and_persistence():
     (r,) = _by_id(app.app.layout, "filter-season")
     assert [o["label"] for o in r.options] == ["2025-26", "2026-27"]
-    assert r.value == "2025"
+    assert r.value == "2026"
     assert r.persistence is True and r.persistence_type == "session"
 
 

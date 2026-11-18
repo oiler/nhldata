@@ -4,10 +4,17 @@ Planned work, in order. When a milestone finishes, it moves to `docs/history.md`
 
 The project is past its first release: `docs/history.md` lists the releases through v3.1.0. This file holds only the work that's planned next.
 
-- **Current milestone:** Restructure the code into browser, pipeline, and research.
+- **Current milestone:** Default to 2026-27 (v3.1.1).
 - **Order:** set by oiler on 2026-11-17 (Decision Queue D37 and D40). The season toggle ships on the current code layout, the code restructure follows as its own release, and the daily pipeline moves machines after that. The Dependabot fix, added at high priority on 2026-11-17, was folded into v3.1.0 the same day.
 
 ## Milestones
+
+### Default to 2026-27 (v3.1.1)
+
+The browser opens on 2026-27, and the deploy guard requires 2026-27 and treats 2025-26 as optional. Requested by oiler on 2026-11-18.
+
+- **Release folder:** `docs/versions/3.1.1/`
+- **Depends on:** nothing.
 
 ### Restructure the code into browser, pipeline, and research
 

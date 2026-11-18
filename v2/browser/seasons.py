@@ -7,7 +7,7 @@ import from app.py, because app.py loads the pages.
 from datetime import date
 
 SEASONS = ["2025", "2026"]
-DEFAULT_SEASON = "2025"
+DEFAULT_SEASON = "2026"
 
 
 def normalize_season(value) -> str:

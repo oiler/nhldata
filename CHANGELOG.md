@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
+### Changed
+- The browser opens on 2026-27. The deploy now requires 2026-27 and treats
+  2025-26 as optional, so a failing 2025-26 check leaves it out of the image
+  with a warning instead of blocking the deploy.
+
+### Fixed
+- A failing optional season no longer deletes the other files in its
+  `runtime_data/` folder, such as `2025/edm.db`.
 
 ## [3.1.0] - 2026-11-18
 ### Security

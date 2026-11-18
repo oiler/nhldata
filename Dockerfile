@@ -40,13 +40,13 @@ COPY --chown=app:app v2/browser/ /app/
 # raises at import (it preloads every ready season's bursts in production),
 # which crash-loops the machine on deploy. Fail the *build* instead, before the
 # image is ever pushed. Only required files are listed: optional seasons
-# (2026) may be absent, and the browser then shows them as not available.
+# (2025) may be absent, and the browser then shows them as not available.
 RUN set -eu; \
     fail=0; \
     for f in runtime_data/2024/league.db \
-             runtime_data/2025/league.db \
+             runtime_data/2026/league.db \
+             runtime_data/2026/player_bursts.csv \
              runtime_data/2025/edm.db \
-             runtime_data/2025/player_bursts.csv \
              runtime_data/goalies.db; do \
         if [ ! -s "/app/$f" ]; then \
             echo "ERROR: runtime data missing or empty: $f" >&2; \

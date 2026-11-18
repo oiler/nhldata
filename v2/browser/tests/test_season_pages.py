@@ -78,7 +78,7 @@ def test_elites_normalizes_query_string_season(monkeypatch):
     monkeypatch.setattr(elites, "league_query", fake_query)
     for bad in ("../x", "2024", None):
         elites.layout(season=bad)
-    assert set(seen) == {"2025"}
+    assert set(seen) == {"2026"}
 
 
 def test_skaters_not_ready(monkeypatch, tmp_path):
