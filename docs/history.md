@@ -11,6 +11,7 @@ Finished milestones, and a dated log of what happened along the way. `ROADMAP.md
 | Goalies in the browser | 3.0.0 | 2026-07-19 | `docs/versions/3.0.0/` |
 | Season toggle | 3.1.0 | 2026-11-18 | `docs/versions/3.1.0/` |
 | Default to 2026-27 | 3.1.1 | 2026-11-18 | `docs/versions/3.1.1/` |
+| Glossary entries | 3.1.2 | 2026-11-18 | `docs/versions/3.1.2/` |
 
 Work from January to June 2026 predates version tags: the timeline generator, the fetcher, the competition score, the browser app, the orchestrator, the elite models, deployment metrics, Edge bursts, the Fly.io deploy, and the frontend redesign. Its designs and plans are in `docs/plans/`, named by date.
 

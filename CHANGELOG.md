@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
+
+## [3.1.2] - 2026-11-18
 ### Added
 - Glossary entries for G/A/P, P/60, 5v5 TOI, Line/Pair, Dep Score, and a
   "Teams and games" section: P%, RW, 5v5 GF/GA/GD, team PPI and wPPI,
