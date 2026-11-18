@@ -4,7 +4,7 @@ The first milestone in `ROADMAP.md`. It lets the browser switch between 2025-26 
 
 v3.1.0 also carries the fix for 14 Dependabot alerts, added at high priority on 2026-11-17 and folded in before the deploy instead of shipping as v3.1.1. It also carries the work merged to `master` since v3.0.0: the goalie 5v5 situation cut, 5v5 goalie time on ice, the fix for the 2026-07-29 production outage, the switch of the daily pipeline to 2026-27, and the daily run's catch-up on missed games. `CHANGELOG.md` section "Unreleased" lists them.
 
-Tasks 0 to 12 of the season-toggle plan are built and on `master`. Task 13's machine-led steps and oiler's hand checks passed on 2026-11-17. The runbook update (Step 7) and the deploy are open. On 2026-11-17 the plan was updated to build without superpowers, on `master` by trunk-based development (D50), and to add a 2026-27 Edge run before the sync (D51).
+Tasks 0 to 12 of the season-toggle plan are built and on `master`. Task 13's machine-led steps and oiler's hand checks passed on 2026-11-17. Deployed to Fly on 2026-11-18 as release v28. oiler's runbook update (Step 7) and the close-out are open. On 2026-11-17 the plan was updated to build without superpowers, on `master` by trunk-based development (D50), and to add a 2026-27 Edge run before the sync (D51).
 
 ## This folder
 
@@ -55,6 +55,15 @@ Task 13 of the season-toggle plan, "Rebuild and verify in the running app." Step
 - **Result:** Passed. oiler confirmed the season toggle works locally.
 - **Found:** Nothing reported.
 - **Changed:** Nothing.
+
+### Deploy, 2026-11-18
+
+- **Run by:** Claude, with oiler's approval.
+- **Result:** Passed. Fly release v28 is live at https://app.nhldata.org/. The health check passed three seconds after boot.
+- **Found:**
+  - The sync, run after the 08:00 pipeline, ended `Seasons in image: 2025 (required), 2026 (optional)`.
+  - The live layout has the season filter with 2026-27. A live 2026-27 skaters query returned 779 skaters, all with Age and 775 with SB/a60.
+- **Changed:** Nothing. To roll back: `fly deploy --image registry.fly.io/nhl-browser:deployment-01KZV69MQ5QNKP3AVVKD125C2A` (release v27).
 
 ## Close-out
 
