@@ -2,7 +2,7 @@
 
 The first milestone in `ROADMAP.md`. It lets the browser switch between 2025-26 and 2026-27, shows "not available yet" for a season without verified data, and keeps the deploy guard strict for the default season only.
 
-v3.1.0 also carries the work merged to `master` since v3.0.0: the goalie 5v5 situation cut, 5v5 goalie time on ice, the fix for the 2026-07-29 production outage, the switch of the daily pipeline to 2026-27, and the daily run's catch-up on missed games. `CHANGELOG.md` section "Unreleased" lists them.
+v3.1.0 also carries the fix for 14 Dependabot alerts, added at high priority on 2026-11-17 and folded in before the deploy instead of shipping as v3.1.1. It also carries the work merged to `master` since v3.0.0: the goalie 5v5 situation cut, 5v5 goalie time on ice, the fix for the 2026-07-29 production outage, the switch of the daily pipeline to 2026-27, and the daily run's catch-up on missed games. `CHANGELOG.md` section "Unreleased" lists them.
 
 Tasks 0 to 12 of the season-toggle plan are built and on `master`. Task 13's machine-led steps and oiler's hand checks passed on 2026-11-17. The runbook update (Step 7) and the deploy are open. On 2026-11-17 the plan was updated to build without superpowers, on `master` by trunk-based development (D50), and to add a 2026-27 Edge run before the sync (D51).
 

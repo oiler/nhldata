@@ -6,10 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
+### Security
+- Closed 14 Dependabot alerts (2 critical, 6 high, 6 moderate) in `certifi`,
+  `anyio`, `urllib3`, and `soupsieve`. `uv.lock` now resolves the patched
+  versions, the image's `requirements.txt` raises the `urllib3` floor to 2.8.0
+  and adds `certifi>=2026.10.18`, and `pyproject.toml` requires Python 3.11.5+,
+  which the patched `soupsieve` needs.
+
 ### Changed
 - The daily pipeline fetches and builds 2026-27 (since 2026-09-29).
 
 ### Fixed
+- A season's first weeks no longer break pages: the build creates every table
+  and column the pages read before any 5v5 goal or elite exists, and the game
+  page shows em dashes while season metrics are empty.
 - `league.db` builds before any skater reaches 5 games played. Early in a
   season the build stopped with `no such table: player_metrics`.
 - Missing goalie time on ice shows as an em dash instead of a wrong per-60.
@@ -22,6 +32,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   - `fly-deploy.yml` is `workflow_dispatch`-only; deploys are local-only.
 
 ### Added
+- A season filter on the games, teams, team, skaters, player, and goalies
+  pages, with 2025-26 and 2026-27. It opens on 2025-26 and keeps the selected
+  season across page loads in the same tab. A season without verified data
+  says "<season> data isn't available yet."
+- 2026-27 Edge speed bursts (SB/a60 and Max MPH) on the skaters page, from a
+  manual Edge run on 2026-11-17. Each season shows its own bursts.
+- Age comes from each player's birth date, so it shows with or without Edge
+  data. Missing numbers show as an em dash and still sort numerically.
+- The deploy sync ships 2025-26 as required and 2026-27 as optional: a failing
+  2026-27 is left out with a warning instead of blocking the deploy. A failing
+  required file now leaves `runtime_data/` unchanged.
 - Goalie pages have a situation dropdown: all situations or strict 5v5. The
   goalies list, the goalie page, the team goalie section, and the glossary
   follow it. Deployed 2026-07-21.
