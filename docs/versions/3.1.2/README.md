@@ -1,7 +1,7 @@
 # v3.1.2: Glossary entries
 
 **Created:** 2026-11-18 18:48
-**Last modified:** 2026-11-18 18:48
+**Last modified:** 2026-11-18 18:49
 
 A patch release, approved by oiler on 2026-11-18. It adds glossary entries for columns that had none and corrects three existing entries. No data or behavior changes.
 
@@ -20,6 +20,13 @@ A patch release, approved by oiler on 2026-11-18. It adds glossary entries for c
 - **Result:** Passed. 397 tests passed with the CI selection.
 - **Found:** Each new definition was checked against the code that computes it.
 - **Changed:** Nothing.
+
+### Deploy, 2026-11-18
+
+- **Run by:** Claude, with oiler's approval.
+- **Result:** Passed. Fly release v30 is live, and the health check passes.
+- **Found:** The live layout carries the new "Teams and games" section, the Dep Score entry, and the corrected SB/a60 ranges. The sync ended `Seasons in image: 2026 (required), 2025 (optional)`.
+- **Changed:** Nothing. To roll back: `fly deploy --image registry.fly.io/nhl-browser:deployment-01M7RAYWDTFA4HJKWTDSX516Z7` (release v29).
 
 ## Close-out
 
