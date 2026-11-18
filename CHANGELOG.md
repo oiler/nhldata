@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
+
+## [3.1.0] - 2026-11-18
 ### Security
 - Closed 14 Dependabot alerts (2 critical, 6 high, 6 moderate) in `certifi`,
   `anyio`, `urllib3`, and `soupsieve`. `uv.lock` now resolves the patched

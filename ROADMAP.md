@@ -2,23 +2,12 @@
 
 Planned work, in order. When a milestone finishes, it moves to `docs/history.md`.
 
-The project is past its first release: `docs/history.md` lists the releases through v3.0.0. This file holds only the work that's planned next.
+The project is past its first release: `docs/history.md` lists the releases through v3.1.0. This file holds only the work that's planned next.
 
-- **Current milestone:** Season toggle (v3.1.0).
+- **Current milestone:** Restructure the code into browser, pipeline, and research.
 - **Order:** set by oiler on 2026-11-17 (Decision Queue D37 and D40). The season toggle ships on the current code layout, the code restructure follows as its own release, and the daily pipeline moves machines after that. The Dependabot fix, added at high priority on 2026-11-17, was folded into v3.1.0 the same day.
 
 ## Milestones
-
-### Season toggle (v3.1.0)
-
-Let the browser switch between 2025-26 and 2026-27, show "not available yet" for a season without verified data, and keep the deploy guard strict for the default season only. The deployed browser shows no 2026-27 data until this ships, because `tools/sync-runtime-data.sh` copies only 2024 and 2025.
-
-v3.1.0 also carries the fix for 14 Dependabot alerts (2026-11-17) and what's merged since v3.0.0: the goalie 5v5 situation cut, 5v5 goalie time on ice, the fix for the 2026-07-29 production outage, and the switch of the daily pipeline to 2026-27. `CHANGELOG.md` section "Unreleased" lists them.
-
-- **Release folder:** `docs/versions/3.1.0/`
-- **Spec:** `docs/versions/3.1.0/specs/2026-09-29-season-toggle-design.md`
-- **Plan:** `docs/versions/3.1.0/plans/2026-09-29-season-toggle-plan.md`. Task 0 is done.
-- **Depends on:** nothing.
 
 ### Restructure the code into browser, pipeline, and research
 
