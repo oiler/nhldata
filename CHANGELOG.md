@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
+### Added
+- Glossary entries for G/A/P, P/60, 5v5 TOI, Line/Pair, Dep Score, and a
+  "Teams and games" section: P%, RW, 5v5 GF/GA/GD, team PPI and wPPI,
+  heaviness, and Game wPPI+.
+
+### Fixed
+- The SB/a60 glossary entry gives typical ranges from 2025-26 data, and the
+  DPS+ and DPL entries cover both forwards and defensemen.
+
+## [3.1.1] - 2026-11-18
 ### Changed
 - The browser opens on 2026-27. The deploy now requires 2026-27 and treats
   2025-26 as optional, so a failing 2025-26 check leaves it out of the image
