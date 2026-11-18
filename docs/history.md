@@ -10,6 +10,7 @@ Finished milestones, and a dated log of what happened along the way. `ROADMAP.md
 | Skater shot stats (iSA/60 and P/100iSA) | 2.3.0 | 2026-06-22 | `docs/versions/2.3.0/` |
 | Goalies in the browser | 3.0.0 | 2026-07-19 | `docs/versions/3.0.0/` |
 | Season toggle | 3.1.0 | 2026-11-18 | `docs/versions/3.1.0/` |
+| Default to 2026-27 | 3.1.1 | 2026-11-18 | `docs/versions/3.1.1/` |
 
 Work from January to June 2026 predates version tags: the timeline generator, the fetcher, the competition score, the browser app, the orchestrator, the elite models, deployment metrics, Edge bursts, the Fly.io deploy, and the frontend redesign. Its designs and plans are in `docs/plans/`, named by date.
 
@@ -33,3 +34,4 @@ The goalie evaluation research (phases P0 to P6, the freeze-value study, and the
 - 2026-11-17: The daily run now fetches every finished game that isn't on disk, not only yesterday's, and one game without shift reports no longer stops a fetch range (Decision Queue D35).
 - 2026-11-17: Project documents moved to the project-scaffold-ai layout. `AGENTS.md`, `PROJECT.md`, `ROADMAP.md`, this file, `docs/context/`, and `docs/versions/` were added, and existing specs, plans, and reviews moved by `git mv` (D37 to D42). Research documents moved to `research/goalies/docs/` and `research/shooters/docs/` (D46).
 - 2026-11-18: v3.1.0, the season toggle. The browser switches between 2025-26 and 2026-27, the deploy sync ships seasons in required and optional tiers, and 14 Dependabot alerts were closed. Built on `master` without superpowers, by trunk-based development (D50). Deployed as Fly release v28.
+- 2026-11-18: v3.1.1, the browser opens on 2026-27, and 2026-27 became the required deploy season. Deployed as Fly release v29. Claude took over release tagging.
