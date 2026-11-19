@@ -21,6 +21,13 @@ Everything not promised yet. An item gains authority only when it moves into `RO
 
 ---
 
+### Declare the pipeline's dependencies in `pyproject.toml`
+
+- `pyproject.toml` lists `requests`, `beautifulsoup4`, `lxml`, and `anthropic`, but not `pandas` or `numpy`, which the pipeline and research code import. The pipeline works only because the pyenv 3.11.6 environment already has them.
+- Found during the v3.2.0 restructure design (2026-11-18). The restructure's editable install uses `--no-deps`, so it doesn't change this.
+
+---
+
 ### Detect NHL Play-by-Play Data Corrections
 
 **Problem:** Our 5v5 goal counts occasionally differ by 1-2 goals from NHL.com official stats (e.g., LAK 5v5 GF: 113 vs NHL's 114 for 2025 season). The NHL likely makes post-game corrections to play-by-play data, but we only download each game once.

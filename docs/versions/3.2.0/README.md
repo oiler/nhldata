@@ -1,12 +1,13 @@
 # v3.2.0: Restructure the code into browser, pipeline, and research
 
 **Created:** 2026-11-18 19:26
+**Last modified:** 2026-11-18 19:58
 
 The current milestone in `ROADMAP.md`. It replaces `v1/`, `v2/`, and `tools/` with three top-level folders, `browser/`, `pipeline/`, and `research/`, installed as one editable package. Nothing a user of the browser or the pipeline sees changes: the same pages, the same data files in the same places, and the same 08:00 run.
 
 Rulings: Decision Queue D43 to D45 (folders, package, `metrics.py`, goalies), D50 (trunk-based on `master`), and D53 (the restructure goes before the Edge refresh).
 
-**Status:** design for discussion. No code has moved. The open questions are D54 to D56 in the Decision Queue, and each section that depends on one says so.
+**Status:** design for discussion. No code has moved. oiler accepted D54 to D56 on 2026-11-18. A review by a second session the same day changed the order of work, the install steps, the rollback, and the human test. D57 is open: whether the browser should keep its own data-path lookup instead of importing `pipeline.paths`.
 
 ## What the release changes
 
@@ -60,13 +61,16 @@ The coupling section of `docs/context/2026-09-05-project-scaffold-ai-migration-r
 - The editable install goes into all three environments that run code, because each has its own site-packages:
   - pyenv 3.11.6, which the 08:00 job runs: `~/.pyenv/versions/3.11.6/bin/python -m pip install -e . --no-deps`.
   - The `uv` environment: `uv sync`.
-  - CI: `pip install -e . --no-deps` after `requirements.txt`.
+  - CI: `pip install -e . --no-deps` after `requirements.txt`, in the same commit that removes the `sys.path` inserts, because the tests depend on it from then on.
   - The Docker image doesn't need it: gunicorn runs from `/app` with the app on the path, as it does today.
 - `--no-deps` keeps the install from changing package versions in the pyenv environment the pipeline depends on.
+- The move renames the packages, so the move commit reruns the editable install in pyenv and `uv`. CI installs fresh on every run.
 
 ### Browser imports (D54)
 
 Two ways to treat the browser's own imports:
+
+Either way, the switch is its own commit after the move, with its own image check, because Dash renames every page module and that's the riskiest change in the release.
 
 - **Package imports** (recommended). `from browser.db import …` everywhere, the 18 test `sys.path` inserts go, the image copies `browser/` to `/app/browser/`, and gunicorn runs `browser.app:server`. Dash then names pages `browser.pages.skaters` and so on. The risk is a page imported under two names, for example `pages.notes` and `browser.pages.notes`, which registers its callbacks twice and fails at startup; a test that imports the app and checks the page registry catches it.
 - **Flat imports, unchanged.** The browser keeps `from db import …` and its test path inserts, and the image layout stays as it is. The pipeline still imports `browser.metrics` by package, so one test session can hold `metrics` and `browser.metrics` as two module objects. That's harmless for `metrics.py`, which is pure functions, but it leaves the path hack the restructure exists to remove.
@@ -76,7 +80,8 @@ Two ways to treat the browser's own imports:
 - `pipeline/paths.py` provides `repo_root()`, `data_dir()`, and `season_dir(season)`, as functions, not module constants, so tests can redirect them.
 - `data_dir()` returns `$NHL_DATA_DIR` when it's set, and `repo_root() / "data"` otherwise. `repo_root()` is the one remaining `parents[N]` lookup, and a test asserts that it finds `pyproject.toml`. `NHL_DATA_DIR` is the hook the Linux move needs to put `data/` somewhere else. It's a new name because the browser already uses `DATA_DIR` for the image's flat layout.
 - Every working-directory-relative path and every `__file__` root in pipeline and research code calls the helper instead. This is the one behavior change in the release: a script started from outside the repository root now finds `data/` instead of writing a new `data/` wherever it was started.
-- `browser/runtime_paths.py` keeps its two modes. In local mode it imports `pipeline.paths` inside the function that needs it, never at module level, so the image, which has no `pipeline/`, never runs that import. A test imports `browser.runtime_paths` with `DATA_DIR` set and `pipeline` blocked, to prove it.
+- `browser/runtime_paths.py` keeps its two modes. In local mode it imports `pipeline.paths` inside the function that needs it, never at module level, so the image, which has no `pipeline/`, never runs that import. A test imports `browser.runtime_paths` with `DATA_DIR` set and `pipeline` blocked, to prove it. This is D55 as accepted.
+- D57 asks whether to change that: the browser keeps its own root lookup, gated behind local mode as it is today, and never imports the pipeline. That removes the browser's dependency on the pipeline and the special test, at the cost of a second `parents[N]` lookup, which `test_runtime_paths.py` would check by asserting that the root holds `pyproject.toml`.
 - The competition test that depends on the working directory (`test_compute_competition.py`, near line 173) redirects `data_dir()` to a temporary folder instead.
 
 ### Scheduler, deploy, and CI
@@ -84,7 +89,7 @@ Two ways to treat the browser's own imports:
 - `pipeline/orchestrator/config.py` builds `SCRIPTS` from the new paths.
 - `run.sh` and the plist name `pipeline/orchestrator/run.sh`. The repository and pyenv paths stay hard-coded; the Linux move replaces both files.
 - Claude copies the new plist over the installed one and reloads it with `launchctl bootout` and `launchctl bootstrap`, in the same sitting as the move commit.
-- `Dockerfile`: the `COPY` source, the `requirements.txt` path, and (with D54's recommendation) the `/app/browser/` layout, `DATA_DIR`, and the gunicorn target. The runtime-file guard keeps every check it has.
+- `Dockerfile`: the move changes the `COPY` source and the `requirements.txt` path only, so the image's layout stays the same. The D54 commit, if D54 goes to package imports, changes the layout to `/app/browser/`, `DATA_DIR`, and the gunicorn target. The runtime-file guard keeps every check it has.
 - `.dockerignore`: `pipeline/`, `research/`, `browser/tests/`, `browser/verify_runtime_data.py`, and `browser/sync-runtime-data.sh` replace the `v1/`, `tools/`, and `v2/browser/…` lines.
 - `.gitignore`: the `runtime_data/` lines move to `browser/runtime_data/`.
 - `tests.yml`: the install step adds the editable install, the cache path changes, the test command changes, and the `requires_data` deselection stays.
@@ -95,12 +100,27 @@ Two ways to treat the browser's own imports:
 Each step is one commit on `master`, with the full test suite passing, and each leaves the 08:00 run working. Steps 4 and 5 happen in one sitting, finished before 08:00.
 
 1. Remove the unused `v1/` files and the empty `v2/browser/league.db`, after the `resources/` comparison.
-2. Add the path helper in the current layout and convert every data-path site to it. Then run one full daily pipeline run by hand, to prove the logic change before anything moves.
-3. Add the package build, install it editable in all three environments, and replace the `sys.path` inserts with `v2.`-prefixed package imports. Still no files move.
-4. The move: `git mv` into the new folders, rewrite the imports to the new package names, update every path in the "Scheduler, deploy, and CI" section, reinstall the editable package in pyenv (the package names change), reinstall the plist, and update `AGENTS.md`'s file map, `README.md`, `docs/commands.md`, and the paths in `PATHWAYS.md` and `BACKLOG.md`. `AGENTS.md` asks for its map to change in the same commit as the move. Dated documents keep their old paths.
-5. Verify, as the "Human test" section lists.
+2. Add the path helper in the current layout and convert every pipeline and research data-path site to it. Then run one full daily pipeline run by hand, to prove the logic change before anything moves.
+3. Add the package build, install it editable in pyenv, `uv`, and CI (`tests.yml`), and replace the pipeline and research `sys.path` inserts with `v2.`-prefixed package imports. Still no files move.
+4. The move: `git mv` into the new folders and rewrite the pipeline and research imports to the new package names. The browser keeps its flat imports and today's image layout. The same commit:
+   - Updates every path in the "Scheduler, deploy, and CI" section.
+   - Reruns the editable install in pyenv and `uv`, and reinstalls and reloads the plist.
+   - Updates `AGENTS.md`'s file map, `README.md`, `docs/commands.md`, and the paths in `PATHWAYS.md` and `BACKLOG.md`. `AGENTS.md` asks for its map to change in the same commit as the move. Dated documents keep their old paths.
+   - Updates the sync command in the gitignored `docs/fly-deploy-runbook.md`, which git doesn't track, so no commit carries that edit.
+5. Verify the move, as steps 1 to 6 of the "Human test" section list.
+6. The D54 switch, if D54 goes to package imports, as its own commit, verified by step 7 of the "Human test" section.
 
-Separating the logic changes (steps 2 and 3) from the move (step 4) lets `git log --follow` show step 4 as renames with import edits only.
+Separating the logic changes (steps 2 and 3) and the browser switch (step 6) from the move (step 4) lets `git log --follow` show step 4 as renames with import and path edits only.
+
+### Rolling back the move
+
+A `git revert` of step 4 alone leaves the new plist installed and the editable package installed under the new names, so the 08:00 run fails. A rollback does all three, in order:
+
+1. `git revert` the move commit, and push it.
+2. Copy `v2/orchestrator/com.nhl.orchestrator.plist` over `~/Library/LaunchAgents/com.nhl.orchestrator.plist`, then `launchctl bootout gui/$(id -u)/com.nhl.orchestrator` and `launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.nhl.orchestrator.plist`.
+3. Rerun the editable install in pyenv (`~/.pyenv/versions/3.11.6/bin/python -m pip install -e . --no-deps`) and `uv sync`.
+
+Then `launchctl kickstart gui/$(id -u)/com.nhl.orchestrator` confirms the restored job runs.
 
 ### What this release doesn't do
 
@@ -110,14 +130,16 @@ Separating the logic changes (steps 2 and 3) from the move (step 4) lets `git lo
 
 ## Human test
 
-Claude runs steps 1 to 5. oiler runs step 6.
+Claude runs steps 1 to 7. oiler runs step 8.
 
 1. Before step 4, build the current image as `nhl-browser:pre-3.2.0` and save its file list (`find /app -type f | sort`) and the checksums of `runtime_data/`.
 2. `python -m pytest -v` passes with the same test count as before the move, plus the moved shooters test. CI on the move commit passes.
-3. `python pipeline/orchestrator/runner.py` completes a full daily run from the repository root, and its log in `data/2026/logs/` matches the previous day's steps. `launchctl print gui/$(id -u)/com.nhl.orchestrator` shows the new `run.sh` path.
-4. `./browser/sync-runtime-data.sh` ends with the same `Seasons in image` line as v3.1.2.
-5. Build the new image. Its file list matches step 1's apart from the path prefix, and the `runtime_data/` checksums match. Run it locally and check `/healthz` and one page of each type.
-6. The next morning, oiler checks that the 08:00 run succeeded from launchd.
+3. `python pipeline/orchestrator/runner.py` completes a full daily run from the repository root, and its log in `data/2026/logs/` matches the previous day's steps.
+4. After reloading the plist, `launchctl print gui/$(id -u)/com.nhl.orchestrator` shows the new `run.sh` path, and `launchctl kickstart gui/$(id -u)/com.nhl.orchestrator` runs the job through launchd the same evening. With the morning's games already processed, the run finds nothing pending and sends its notification. That proves the launchd environment, not only a shell.
+5. `./browser/sync-runtime-data.sh` ends with the same `Seasons in image` line as v3.1.2.
+6. Build the moved image. Its file list matches step 1's apart from the files the move adds or removes, and the `runtime_data/` checksums match. Run it locally and check `/healthz` and one page of each type.
+7. After the D54 commit, build the image again. Its file list matches step 6's under the new `/app/browser/` prefix, the app registers each page once, and `/healthz` and one page of each type load.
+8. The next morning, oiler checks that the 08:00 run succeeded from launchd.
 
 Record each result under "Results."
 
