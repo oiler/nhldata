@@ -5,13 +5,11 @@ Usage: python3 v2/goalies/report_p6.py
 """
 
 import json
-import sys
 from pathlib import Path
 
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(ROOT))
 from v2.goalies.portability import paired_bootstrap_dr  # noqa: E402
 
 VAL = ROOT / "data" / "generated" / "goalies" / "validation"

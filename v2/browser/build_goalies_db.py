@@ -15,8 +15,6 @@ import pandas as pd
 
 REPO = Path(__file__).resolve().parents[2]
 
-import sys
-sys.path.insert(0, str(REPO))
 from v2.goalies.cut import load_shots, load_toi  # noqa: E402
 
 SITUATIONS = ("all", "5v5")

@@ -1,13 +1,13 @@
 # v3.2.0: Restructure the code into browser, pipeline, and research
 
 **Created:** 2026-11-18 19:26
-**Last modified:** 2026-11-18 19:58
+**Last modified:** 2026-11-20 14:40
 
 The current milestone in `ROADMAP.md`. It replaces `v1/`, `v2/`, and `tools/` with three top-level folders, `browser/`, `pipeline/`, and `research/`, installed as one editable package. Nothing a user of the browser or the pipeline sees changes: the same pages, the same data files in the same places, and the same 08:00 run.
 
 Rulings: Decision Queue D43 to D45 (folders, package, `metrics.py`, goalies), D50 (trunk-based on `master`), and D53 (the restructure goes before the Edge refresh).
 
-**Status:** design for discussion. No code has moved. oiler accepted D54 to D56 on 2026-11-18. A review by a second session the same day changed the order of work, the install steps, the rollback, and the human test. D57 is open: whether the browser should keep its own data-path lookup instead of importing `pipeline.paths`.
+**Status:** in progress. Steps 1 and 2 of "Order of work" are done. oiler accepted D54 to D56 on 2026-11-18. A review by a second session the same day changed the order of work, the install steps, the rollback, and the human test. oiler accepted D57 on 2026-11-19: the browser keeps its own data-path lookup. On 2026-11-20 the package install moved ahead of the path helper, because the pipeline scripts run as subprocesses and can import a shared helper only once the package is installed.
 
 ## What the release changes
 
@@ -80,8 +80,7 @@ Either way, the switch is its own commit after the move, with its own image chec
 - `pipeline/paths.py` provides `repo_root()`, `data_dir()`, and `season_dir(season)`, as functions, not module constants, so tests can redirect them.
 - `data_dir()` returns `$NHL_DATA_DIR` when it's set, and `repo_root() / "data"` otherwise. `repo_root()` is the one remaining `parents[N]` lookup, and a test asserts that it finds `pyproject.toml`. `NHL_DATA_DIR` is the hook the Linux move needs to put `data/` somewhere else. It's a new name because the browser already uses `DATA_DIR` for the image's flat layout.
 - Every working-directory-relative path and every `__file__` root in pipeline and research code calls the helper instead. This is the one behavior change in the release: a script started from outside the repository root now finds `data/` instead of writing a new `data/` wherever it was started.
-- `browser/runtime_paths.py` keeps its two modes. In local mode it imports `pipeline.paths` inside the function that needs it, never at module level, so the image, which has no `pipeline/`, never runs that import. A test imports `browser.runtime_paths` with `DATA_DIR` set and `pipeline` blocked, to prove it. This is D55 as accepted.
-- D57 asks whether to change that: the browser keeps its own root lookup, gated behind local mode as it is today, and never imports the pipeline. That removes the browser's dependency on the pipeline and the special test, at the cost of a second `parents[N]` lookup, which `test_runtime_paths.py` would check by asserting that the root holds `pyproject.toml`.
+- `browser/runtime_paths.py` keeps its two modes and its own root lookup, gated behind local mode as it is today, and never imports the pipeline (D57). Dependencies then run one way, from the pipeline to the browser. `test_runtime_paths.py` gains an assertion that the root it finds holds `pyproject.toml`.
 - The competition test that depends on the working directory (`test_compute_competition.py`, near line 173) redirects `data_dir()` to a temporary folder instead.
 
 ### Scheduler, deploy, and CI
@@ -89,7 +88,7 @@ Either way, the switch is its own commit after the move, with its own image chec
 - `pipeline/orchestrator/config.py` builds `SCRIPTS` from the new paths.
 - `run.sh` and the plist name `pipeline/orchestrator/run.sh`. The repository and pyenv paths stay hard-coded; the Linux move replaces both files.
 - Claude copies the new plist over the installed one and reloads it with `launchctl bootout` and `launchctl bootstrap`, in the same sitting as the move commit.
-- `Dockerfile`: the move changes the `COPY` source and the `requirements.txt` path only, so the image's layout stays the same. The D54 commit, if D54 goes to package imports, changes the layout to `/app/browser/`, `DATA_DIR`, and the gunicorn target. The runtime-file guard keeps every check it has.
+- `Dockerfile`: the move changes the `COPY` source and the `requirements.txt` path only, so the image's layout stays the same. The D54 commit changes the layout to `/app/browser/`, `DATA_DIR`, and the gunicorn target. The runtime-file guard keeps every check it has.
 - `.dockerignore`: `pipeline/`, `research/`, `browser/tests/`, `browser/verify_runtime_data.py`, and `browser/sync-runtime-data.sh` replace the `v1/`, `tools/`, and `v2/browser/…` lines.
 - `.gitignore`: the `runtime_data/` lines move to `browser/runtime_data/`.
 - `tests.yml`: the install step adds the editable install, the cache path changes, the test command changes, and the `requires_data` deselection stays.
@@ -100,15 +99,15 @@ Either way, the switch is its own commit after the move, with its own image chec
 Each step is one commit on `master`, with the full test suite passing, and each leaves the 08:00 run working. Steps 4 and 5 happen in one sitting, finished before 08:00.
 
 1. Remove the unused `v1/` files and the empty `v2/browser/league.db`, after the `resources/` comparison.
-2. Add the path helper in the current layout and convert every pipeline and research data-path site to it. Then run one full daily pipeline run by hand, to prove the logic change before anything moves.
-3. Add the package build, install it editable in pyenv, `uv`, and CI (`tests.yml`), and replace the pipeline and research `sys.path` inserts with `v2.`-prefixed package imports. Still no files move.
+2. Add the package build, install it editable in pyenv, `uv`, and CI (`tests.yml`), and replace the pipeline and research `sys.path` inserts with `v2.`-prefixed package imports. Still no files move.
+3. Add the path helper in the current layout and convert every pipeline and research data-path site to it. Then run one full daily pipeline run by hand, to prove the logic change before anything moves.
 4. The move: `git mv` into the new folders and rewrite the pipeline and research imports to the new package names. The browser keeps its flat imports and today's image layout. The same commit:
    - Updates every path in the "Scheduler, deploy, and CI" section.
    - Reruns the editable install in pyenv and `uv`, and reinstalls and reloads the plist.
    - Updates `AGENTS.md`'s file map, `README.md`, `docs/commands.md`, and the paths in `PATHWAYS.md` and `BACKLOG.md`. `AGENTS.md` asks for its map to change in the same commit as the move. Dated documents keep their old paths.
    - Updates the sync command in the gitignored `docs/fly-deploy-runbook.md`, which git doesn't track, so no commit carries that edit.
 5. Verify the move, as steps 1 to 6 of the "Human test" section list.
-6. The D54 switch, if D54 goes to package imports, as its own commit, verified by step 7 of the "Human test" section.
+6. The D54 switch to package imports, as its own commit, verified by step 7 of the "Human test" section.
 
 Separating the logic changes (steps 2 and 3) and the browser switch (step 6) from the move (step 4) lets `git log --follow` show step 4 as renames with import and path edits only.
 

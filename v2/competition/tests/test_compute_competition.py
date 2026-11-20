@@ -1,13 +1,11 @@
 # v2/competition/tests/test_compute_competition.py
 import csv
-import sys
 from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from compute_competition import build_lookups
+from v2.competition.compute_competition import build_lookups
 
 
 def test_build_lookups_positions():
@@ -60,7 +58,7 @@ def test_build_lookups_unknown_position_defaults_to_forward():
     assert positions[998] == "F", "Missing positionCode should default to F"
 
 
-from compute_competition import compute_game_toi, compute_total_toi
+from v2.competition.compute_competition import compute_game_toi, compute_total_toi
 
 
 def test_compute_total_toi_counts_all_situations():
@@ -119,7 +117,7 @@ def test_compute_game_toi_ignores_non_5v5():
     assert toi.get(1) == 1
 
 
-from compute_competition import score_game
+from v2.competition.compute_competition import score_game
 
 
 def test_score_game_single_row():
@@ -162,7 +160,7 @@ def test_score_game_skips_non_5v5():
     assert abs(result[5]["comp_fwd"] - (10 + 10 + 10) / 3) < 0.001
 
 
-from compute_competition import run_game
+from v2.competition.compute_competition import run_game
 
 
 @pytest.mark.requires_data
@@ -250,7 +248,7 @@ def test_run_game_produces_output():
         "Expected at least one player with non-zero weighted_team_heaviness"
 
 
-from compute_competition import build_top_competition
+from v2.competition.compute_competition import build_top_competition
 
 
 def test_build_top_competition_top6_fwd_top4_def():
@@ -298,7 +296,7 @@ def test_build_top_competition_fewer_than_threshold():
     assert top["EDM"]["top_def"] == set()
 
 
-from compute_competition import score_game_pct
+from v2.competition.compute_competition import score_game_pct
 
 
 def test_score_game_pct_single_row():
@@ -354,7 +352,7 @@ def test_score_game_pct_skips_non_5v5():
     assert abs(result[1]["pct_vs_top_fwd"] - 2/3) < 0.001
 
 
-from compute_competition import load_player_physicals, compute_heaviness
+from v2.competition.compute_competition import load_player_physicals, compute_heaviness
 
 
 @pytest.mark.requires_data
@@ -386,7 +384,7 @@ def test_compute_heaviness_zero_height_returns_zero():
     assert compute_heaviness(0, 200) == 0.0
 
 
-from compute_competition import compute_team_heaviness
+from v2.competition.compute_competition import compute_team_heaviness
 
 
 def test_compute_team_heaviness_toi_weighted_average():
@@ -449,7 +447,7 @@ def test_compute_team_heaviness_two_teams():
     assert abs(result["CGY"]["fwd"] - 240 / 76) < 0.0001
 
 
-from compute_competition import assign_forward_lines
+from v2.competition.compute_competition import assign_forward_lines
 
 
 def test_greedy_line_detection_standard():
@@ -486,7 +484,7 @@ def test_greedy_line_detection_11_forwards():
     assert result[10] == 4 and result[11] == 4
 
 
-from compute_competition import compute_deployment_scores
+from v2.competition.compute_competition import compute_deployment_scores
 
 
 def test_deployment_score_pure_line1():
@@ -552,7 +550,7 @@ def test_deployment_score_mixed():
     assert scores.get(11) == 1500
 
 
-from compute_competition import assign_defense_pairs
+from v2.competition.compute_competition import assign_defense_pairs
 
 
 def test_assign_defense_pairs_top_pair_gets_pair1():
@@ -607,7 +605,7 @@ def test_assign_defense_pairs_requires_at_least_2_dmen():
     assert result[22] == 4
 
 
-from compute_competition import compute_forward_deployment_scores
+from v2.competition.compute_competition import compute_forward_deployment_scores
 
 
 def test_compute_forward_deployment_scores_basic():

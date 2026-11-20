@@ -10,6 +10,18 @@ dependencies = [
     "anthropic>=0.40.0",
 ]
 
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+# The code installs as an editable package, so scripts and tests import it by
+# package name with no sys.path setup. Only folders with an __init__.py count;
+# data/ and the docs folders are never scanned as packages.
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["v2", "v2.*"]
+namespaces = false
+
 [tool.uv]
 dev-dependencies = []
 

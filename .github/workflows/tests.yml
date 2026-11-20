@@ -34,6 +34,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r v2/browser/requirements.txt pytest anthropic
+          # The code imports itself by package name (pyproject.toml), so install
+          # it editable. --no-deps: the pins above are the dependency set.
+          pip install -e . --no-deps
 
       - name: Run tests
         run: python -m pytest v2/ -q -m "not requires_data"

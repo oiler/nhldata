@@ -9,7 +9,6 @@ from pathlib import Path
 
 import pandas as pd
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 from v2.goalies.extract import extract_goalie_shots  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent.parent

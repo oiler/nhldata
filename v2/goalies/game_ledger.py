@@ -7,14 +7,12 @@ difficulty percentile — never collapsed into one number.
 Usage: python3 v2/goalies/game_ledger.py
 """
 
-import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(ROOT))
 from v2.goalies.gsax_baseline import blind_shot_xg  # noqa: E402
 from v2.goalies.leverage import leverage_weight_vectorized  # noqa: E402
 from v2.goalies.cut import gen_dir, load_shots, parse_situation  # noqa: E402

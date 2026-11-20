@@ -6,13 +6,11 @@ repeatability must be judged against this, not against raw save%).
 Usage: python3 v2/goalies/gsax_baseline.py
 """
 
-import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 from v2.goalies.features import STRUCTURE_COLS, build_features  # noqa: E402
 from v2.goalies.irls import fit_penalized_logistic, predict_proba  # noqa: E402
 from v2.goalies.cut import gen_dir, load_shots, parse_situation  # noqa: E402

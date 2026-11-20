@@ -11,8 +11,6 @@ import sys
 from datetime import date, timedelta
 from pathlib import Path
 
-# Allow running as `python v2/orchestrator/runner.py` (not just -m)
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from v2.orchestrator.agent import run_agent
 from v2.orchestrator.config import SEASON

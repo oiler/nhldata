@@ -8,14 +8,12 @@ Usage: python3 v2/goalies/toi_5v5.py
 """
 
 import csv
-import sys
 from collections import Counter
 from pathlib import Path
 
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(ROOT))
 from v2.goalies.cut import STRICT_5V5, gen_dir  # noqa: E402
 
 SEASONS = ("2021", "2022", "2023", "2024", "2025")

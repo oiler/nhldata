@@ -9,14 +9,12 @@ Usage (Task 5 adds the CLI): python3 v2/goalies/portability.py
 """
 
 import json
-import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(ROOT))
 from v2.goalies.cut import gen_dir, load_shots, parse_situation  # noqa: E402
 from v2.goalies.difficulty import fit_layer  # noqa: E402
 from v2.goalies.gsax_baseline import blind_shot_xg  # noqa: E402

@@ -12,14 +12,12 @@ Usage: python3 v2/goalies/freeze_value.py
 """
 
 import json
-import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(ROOT))
 from v2.goalies.features import STRUCTURE_COLS, build_features  # noqa: E402
 from v2.goalies.gsax_baseline import blind_shot_xg  # noqa: E402
 from v2.goalies.portability import weighted_r  # noqa: E402

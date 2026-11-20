@@ -8,12 +8,10 @@ repeatability correlations, which chained priors would mechanically inflate.
 Usage: python3 v2/goalies/build_terms.py
 """
 
-import sys
 from pathlib import Path
 
 import pandas as pd
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 from v2.goalies.difficulty import LAYERS, fit_layer  # noqa: E402
 from v2.goalies.cut import gen_dir, load_shots, parse_situation  # noqa: E402
 
