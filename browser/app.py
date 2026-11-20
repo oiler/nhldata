@@ -3,10 +3,20 @@ import dash
 from dash import html, dcc, callback, Input, Output
 import dash_bootstrap_components as dbc
 
-from seasons import DEFAULT_SEASON, SEASONS, normalize_season, season_label
+from browser.seasons import DEFAULT_SEASON, SEASONS, normalize_season, season_label
 
+# Dash loads each page straight into sys.modules as browser.pages.<name>
+# without importing the parent package, so import it here: then
+# `import browser.pages.<name>` finds the loaded page instead of failing.
+import browser.pages  # noqa: E402,F401
+
+# Name the app after its package, not this module: Dash 4 prefixes page module
+# names with the app's name only when that name is a package. With "browser",
+# pages load as browser.pages.<name>, the same name their own imports use, so
+# no page is imported (and its callbacks registered) twice. The root folder,
+# and with it pages/ and assets/, is browser/ either way.
 app = dash.Dash(
-    __name__,
+    "browser",
     use_pages=True,
     suppress_callback_exceptions=True,
     external_stylesheets=[dbc.themes.BOOTSTRAP],
@@ -41,15 +51,15 @@ app.index_string = """<!DOCTYPE html>
   </body>
 </html>"""
 
-from healthz import healthz_bp
+from browser.healthz import healthz_bp
 server.register_blueprint(healthz_bp)
 
 import os
 if os.environ.get("DASH_ENABLE_SECURITY_HEADERS") == "1":
-    from security import install as install_security
+    from browser.security import install as install_security
     install_security(server)
 
-from canonical_host import install as install_canonical_host
+from browser.canonical_host import install as install_canonical_host
 install_canonical_host(server)
 
 app.layout = html.Div([

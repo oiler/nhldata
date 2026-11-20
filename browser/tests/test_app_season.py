@@ -1,11 +1,5 @@
-import sys
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-import app
-
-
+from browser import app
 def _find(node, pred, out=None):
     out = [] if out is None else out
     if pred(node):

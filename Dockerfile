@@ -31,8 +31,9 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 WORKDIR /app
 
-# Only the browser subtree is needed at runtime
-COPY --chown=app:app browser/ /app/
+# Only the browser package is needed at runtime. It keeps its package name, so
+# gunicorn imports it as browser.app from /app.
+COPY --chown=app:app browser/ /app/browser/
 
 # runtime_data/2024/, /2025/, and /2026/ are gitignored — they're built locally
 # and baked in by browser/sync-runtime-data.sh. Any build from a bare git checkout
@@ -48,7 +49,7 @@ RUN set -eu; \
              runtime_data/2026/player_bursts.csv \
              runtime_data/2025/edm.db \
              runtime_data/goalies.db; do \
-        if [ ! -s "/app/$f" ]; then \
+        if [ ! -s "/app/browser/$f" ]; then \
             echo "ERROR: runtime data missing or empty: $f" >&2; \
             fail=1; \
         fi; \
@@ -61,13 +62,13 @@ RUN set -eu; \
 # Each shipped league.db must carry players.birthDate (the skaters Age column
 # reads it). A runtime_data/ copied without a fresh sync fails here, not in prod.
 RUN set -eu; \
-    for db in /app/runtime_data/2025/league.db /app/runtime_data/2026/league.db; do \
+    for db in /app/browser/runtime_data/2025/league.db /app/browser/runtime_data/2026/league.db; do \
         [ -e "$db" ] || continue; \
         python -c "import sqlite3,sys; c={r[1] for r in sqlite3.connect(sys.argv[1]).execute('PRAGMA table_info(players)')}; sys.exit(0 if 'birthDate' in c else 'ERROR: players.birthDate missing in '+sys.argv[1]+' - rebuild league.db and rerun browser/sync-runtime-data.sh')" "$db"; \
     done
 
 # The runtime DBs live alongside the app; DATA_DIR points the app at them
-ENV DATA_DIR=/app/runtime_data \
+ENV DATA_DIR=/app/browser/runtime_data \
     DASH_ENABLE_SECURITY_HEADERS=1 \
     PORT=8080
 
@@ -80,4 +81,4 @@ CMD ["gunicorn", \
      "--timeout", "120", \
      "--access-logfile", "-", \
      "--error-logfile", "-", \
-     "app:server"]
+     "browser.app:server"]

@@ -1,15 +1,11 @@
 # browser/tests/test_deployment_metrics.py
 """Tests for filters.compute_deployment_metrics()."""
 
-import sys
-from pathlib import Path
 
 import pandas as pd
 import pytest
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from filters import compute_deployment_metrics
+from browser.filters import compute_deployment_metrics
 
 
 def _make_comp(rows):

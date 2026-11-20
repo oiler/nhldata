@@ -17,8 +17,8 @@ from pathlib import Path
 
 import pandas as pd
 
-from runtime_paths import is_runtime_mode, player_bursts_csv, season_ready
-from seasons import DEFAULT_SEASON
+from browser.runtime_paths import is_runtime_mode, player_bursts_csv, season_ready
+from browser.seasons import DEFAULT_SEASON
 
 logger = logging.getLogger(__name__)
 

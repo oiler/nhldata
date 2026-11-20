@@ -1,13 +1,9 @@
-import sys
-from pathlib import Path
 
 import pandas as pd
 import pytest
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-import burst_data
-from burst_data import load_bursts, BURST_COLUMNS, bursts_for, preload_ready_seasons
+from browser import burst_data
+from browser.burst_data import load_bursts, BURST_COLUMNS, bursts_for, preload_ready_seasons
 
 _SOURCE_COLS = ["playerId", "name", "position", "speed_max_mph", "birth_date", "bursts_per_60"]
 _VALID_ROW = {

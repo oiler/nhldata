@@ -3,11 +3,11 @@ import dash
 from dash import html, dash_table, callback, Input, Output
 from dash.dash_table.Format import Format, Scheme
 
-from db import goalies_query
-from metrics import gsax_per60, xga_per60
-from seasons import normalize_season, season_label
-from table_style import table_styles
-from utils import seconds_to_mmss
+from browser.db import goalies_query
+from browser.metrics import gsax_per60, xga_per60
+from browser.seasons import normalize_season, season_label
+from browser.table_style import table_styles
+from browser.utils import seconds_to_mmss
 
 dash.register_page(__name__, path="/goalies", name="Goalies")
 

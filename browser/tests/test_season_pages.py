@@ -1,22 +1,18 @@
 import sqlite3
-import sys
-from pathlib import Path
 
 import pandas as pd
 import pytest
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-import burst_data
-import app  # noqa: F401 — registers pages so they can be imported
-import pages.elites as elites
-import pages.game as game
-import pages.games as games
-import pages.goalies as goalies
-import pages.player as player
-import pages.skaters as skaters
-import pages.team as team
-import pages.teams as teams
+from browser import burst_data
+from browser import app  # noqa: F401 — registers pages so they can be imported
+import browser.pages.elites as elites
+import browser.pages.game as game
+import browser.pages.games as games
+import browser.pages.goalies as goalies
+import browser.pages.player as player
+import browser.pages.skaters as skaters
+import browser.pages.team as team
+import browser.pages.teams as teams
 
 NOT_READY = "2026-27 data isn't available yet."
 

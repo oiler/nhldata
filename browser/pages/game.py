@@ -7,9 +7,9 @@ from dash import html, dash_table
 from dash.dash_table import FormatTemplate
 from dash.dash_table.Format import Format, Scheme
 
-from db import league_query
-from table_style import table_styles
-from utils import seconds_to_mmss
+from browser.db import league_query
+from browser.table_style import table_styles
+from browser.utils import seconds_to_mmss
 
 dash.register_page(__name__, path_template="/game/<game_id>", name="Game")
 

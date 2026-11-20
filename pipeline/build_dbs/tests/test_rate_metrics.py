@@ -161,7 +161,7 @@ def test_count_5v5_events_counts_individual_shot_attempts():
 
 
 def test_points_per100_shots_ratio_and_floor():
-    from metrics import points_per100_shots
+    from browser.metrics import points_per100_shots
 
     points = pd.DataFrame([
         {"gameId": 1, "playerId": 1, "points": 10},

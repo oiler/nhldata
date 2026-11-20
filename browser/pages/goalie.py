@@ -4,9 +4,9 @@ import pandas as pd
 from dash import html, dash_table, dcc, callback, Input, Output
 from dash.dash_table.Format import Format, Scheme
 
-from db import goalies_query
-from table_style import table_styles
-from utils import seconds_to_mmss
+from browser.db import goalies_query
+from browser.table_style import table_styles
+from browser.utils import seconds_to_mmss
 
 dash.register_page(__name__, path_template="/goalie/<goalie_id>", name="Goalie")
 

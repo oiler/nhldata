@@ -2,8 +2,8 @@
 import sqlite3
 import pandas as pd
 
-from runtime_paths import league_db, edm_db, goalies_db
-from seasons import DEFAULT_SEASON, SEASONS
+from browser.runtime_paths import league_db, edm_db, goalies_db
+from browser.seasons import DEFAULT_SEASON, SEASONS
 
 
 def query(season: str, sql: str) -> pd.DataFrame:

@@ -126,7 +126,7 @@ def main() -> None:
             "EXPLAINED (ratified 2026-07-15): the difficulty<->perf_z correlation "
             f"(+{r_pz_full:.2f} all / +{r_pz_sub:.2f} toi>=3000) is a sort-on-own-prediction "
             "artifact, not a difficulty-adjustment defect. Three-test evidence "
-            "(pipeline/goalies probe, see .superpowers/sdd/probe-xg-calibration.md): "
+            "(v2/goalies probe, see .superpowers/sdd/probe-xg-calibration.md): "
             "(1) shot-level reliability is near-diagonal -- top predicted-xg decile is "
             "0.204 vs observed 0.191 (~7% relative), and the deviation is non-monotone "
             "across deciles, ruling out a real game-level compression defect at this "

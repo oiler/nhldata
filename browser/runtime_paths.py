@@ -35,8 +35,8 @@ def is_runtime_mode() -> bool:
 def data_root() -> Path:
     if _runtime_mode():
         return Path(os.environ["DATA_DIR"])
-    # parents[1] is only safe when the file sits in the repo's browser/ folder; in the
-    # Docker image it sits at /app/runtime_paths.py with only two parents,
+    # parents[1] is the repo root only in a checkout. In the Docker image the
+    # file sits at /app/browser/runtime_paths.py, where parents[1] is /app,
     # which is why this lookup is gated behind the runtime-mode branch.
     return Path(__file__).resolve().parents[1] / "data"
 

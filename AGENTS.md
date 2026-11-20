@@ -32,7 +32,7 @@ NHL game data analytics: a data pipeline that turns public NHL API data into sec
 - `data/`: raw and generated data, one folder per season. Gitignored.
 - `Dockerfile`, `fly.toml`, `.github/`: deployment to Fly.io and the test workflow.
 
-The code installs as one editable package (`pyproject.toml`), so code imports by package name: `from pipeline.paths import data_dir`, `from research.goalies.cut import load_shots`. After a fresh clone, or after a package moves, run `python -m pip install -e . --no-deps` in the pyenv 3.11.6 environment the 08:00 job uses, and `uv sync`. The browser imports its own modules flat until the D54 switch to package imports. Update this map in the same change as any move.
+The code installs as one editable package (`pyproject.toml`), so code imports by package name: `from browser.db import query`, `from pipeline.paths import data_dir`, `from research.goalies.cut import load_shots`. After a fresh clone, or after a package moves, run `python -m pip install -e . --no-deps` in the pyenv 3.11.6 environment the 08:00 job uses, and `uv sync`. Update this map in the same change as any move.
 
 ## Commands
 

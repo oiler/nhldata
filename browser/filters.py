@@ -3,9 +3,9 @@
 
 import pandas as pd
 from dash import html, dcc, callback, Input, Output, ctx
-from db import league_query
-from runtime_paths import season_ready
-from seasons import DEFAULT_SEASON, normalize_season, season_label
+from browser.db import league_query
+from browser.runtime_paths import season_ready
+from browser.seasons import DEFAULT_SEASON, normalize_season, season_label
 
 
 def season_date_range(season: str = DEFAULT_SEASON) -> tuple[str, str]:

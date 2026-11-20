@@ -5,13 +5,13 @@ from dash import html, dash_table, callback, Input, Output, dcc
 from dash.dash_table import FormatTemplate
 from dash.dash_table.Format import Format, Scheme
 
-from db import league_query, player_meta
-from filters import make_filter_bar, register_home_away_callback, register_season_callback, compute_deployment_metrics, season_not_ready
-from seasons import normalize_season
-from metrics import carryover_per_player, events_per60, corsi_per60, points_per100_shots
-from runtime_paths import player_bursts_csv
-from table_style import table_styles
-from utils import seconds_to_mmss
+from browser.db import league_query, player_meta
+from browser.filters import make_filter_bar, register_home_away_callback, register_season_callback, compute_deployment_metrics, season_not_ready
+from browser.seasons import normalize_season
+from browser.metrics import carryover_per_player, events_per60, corsi_per60, points_per100_shots
+from browser.runtime_paths import player_bursts_csv
+from browser.table_style import table_styles
+from browser.utils import seconds_to_mmss
 
 dash.register_page(__name__, path_template="/player/<player_id>", name="Player")
 register_home_away_callback("player")

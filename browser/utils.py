@@ -3,7 +3,7 @@ from datetime import date
 
 import pandas as pd
 
-from seasons import age_cutoff
+from browser.seasons import age_cutoff
 
 
 def seconds_to_mmss(seconds) -> str:

@@ -86,7 +86,7 @@ fly deploy --remote-only
 ### Local dev
 
 `runtime_paths.py` falls back to the legacy `data/<season>/generated/...` layout
-when `DATA_DIR` is unset, so `cd pipeline/browser && python app.py` Just Works without
+when `DATA_DIR` is unset, so `python browser/app.py` Just Works without
 any env vars.
 
 ### First-time setup on a fresh clone

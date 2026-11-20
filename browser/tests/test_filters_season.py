@@ -1,10 +1,6 @@
 import sqlite3
-import sys
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from filters import season_date_range, season_not_ready
+from browser.filters import season_date_range, season_not_ready
 
 
 def test_fallback_range_for_missing_db(monkeypatch, tmp_path):

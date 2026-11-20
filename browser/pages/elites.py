@@ -4,9 +4,9 @@ import pandas as pd
 from dash import html, dash_table
 from dash.dash_table.Format import Format, Scheme
 
-from db import league_query
-from seasons import normalize_season
-from table_style import table_styles
+from browser.db import league_query
+from browser.seasons import normalize_season
+from browser.table_style import table_styles
 
 dash.register_page(__name__, path="/elites", name="Elites")
 

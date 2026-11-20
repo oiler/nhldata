@@ -1,13 +1,13 @@
 # v3.2.0: Restructure the code into browser, pipeline, and research
 
 **Created:** 2026-11-18 19:26
-**Last modified:** 2026-11-20 16:30
+**Last modified:** 2026-11-20 17:05
 
 The current milestone in `ROADMAP.md`. It replaces `v1/`, `v2/`, and `tools/` with three top-level folders, `browser/`, `pipeline/`, and `research/`, installed as one editable package. Nothing a user of the browser or the pipeline sees changes: the same pages, the same data files in the same places, and the same 08:00 run.
 
 Rulings: Decision Queue D43 to D45 (folders, package, `metrics.py`, goalies), D50 (trunk-based on `master`), and D53 (the restructure goes before the Edge refresh).
 
-**Status:** in progress. Steps 1 to 5 of "Order of work" are done. oiler accepted D54 to D56 on 2026-11-18. A review by a second session the same day changed the order of work, the install steps, the rollback, and the human test. oiler accepted D57 on 2026-11-19: the browser keeps its own data-path lookup. On 2026-11-20 the package install moved ahead of the path helper, because the pipeline scripts run as subprocesses and can import a shared helper only once the package is installed.
+**Status:** in progress. Steps 1 to 6 of "Order of work" are done; human test step 8 (the 08:00 run) and the close-out remain. oiler accepted D54 to D56 on 2026-11-18. A review by a second session the same day changed the order of work, the install steps, the rollback, and the human test. oiler accepted D57 on 2026-11-19: the browser keeps its own data-path lookup. On 2026-11-20 the package install moved ahead of the path helper, because the pipeline scripts run as subprocesses and can import a shared helper only once the package is installed.
 
 ## What the release changes
 
@@ -20,7 +20,9 @@ Rulings: Decision Queue D43 to D45 (folders, package, `metrics.py`, goalies), D5
 | `research/shooters/` | The off-wing scripts and their test, from `tools/` |
 | `resources/Rules Delayed Penalties.md`, `resources/Coincidental Penalty Logic.md` | Rule 26 and the coincidental-penalty notes, from `v1/timelines/` |
 | `pyproject.toml` | A setuptools build for the three packages, and `testpaths` |
-| `Dockerfile`, `.dockerignore`, `.gitignore`, `.github/workflows/` | The new paths |
+| `Dockerfile`, `.dockerignore`, `.gitignore`, `.github/workflows/` | The new paths. The image copies `browser/` to `/app/browser/`, and gunicorn runs `browser.app:server` (D54). |
+| `browser/app.py` | Dash takes the name `browser`, so pages load as `browser.pages.*`; `browser.pages` is imported before Dash loads them (D54) |
+| `browser/tests/test_page_registry.py` | New: each page registers once, under `browser.pages.*` |
 | `pipeline/orchestrator/run.sh`, `com.nhl.orchestrator.plist` | The new runner path |
 | `AGENTS.md`, `README.md`, `ROADMAP.md`, `BACKLOG.md`, `docs/commands.md`, `docs/data-limitations.md`, `docs/team-deployment-analysis.md`, `resources/TEST_GAMES.md` | The new paths |
 | Removed | The rest of `v1/`, the empty `v2/browser/league.db`, and `tools/` |
@@ -191,6 +193,18 @@ Record each result under "Results."
   - Step 6: the moved image's file list matches the baseline apart from the expected changes: it adds `__init__.py` and drops `build_goalies_db.py` and `test_rate_metrics.py`, which moved to `pipeline/`. Only `2026/league.db` differs from the baseline's `runtime_data/`, because the sync picked up games played since 2026-11-18, and every runtime file in the image matches the local sync. Run locally, both images return byte-identical responses for `/healthz`, `/`, `/games`, `/skaters`, `/teams`, `/team/EDM`, a player, a game, `/goalies`, a goalie, `/elites`, `/_dash-layout`, and `/_dash-dependencies`, with no errors in the logs.
   - The design expected the `runtime_data/` checksums to match the baseline exactly. That holds only when no games are played between the two syncs.
 - **Changed:** Nothing.
+
+### Human test step 7, the D54 switch, 2026-11-20
+
+- **Run by:** Claude.
+- **Result:** Passed. 438 tests pass, and each of `browser/`, `pipeline/`, and `research/` passes on its own, which shows no test depends on another folder's path setup.
+- **Found:**
+  - With `dash.Dash(__name__)`, Dash 4 named the pages `pages.*`, because it prefixes page modules with the app's name only when that name is a package. `pages/note.py` imports `browser.pages.notes`, so `notes` registered twice: 13 registry entries for 12 pages, the failure the design predicted. Naming the app `"browser"` fixes it, with the same root folder and `assets/`.
+  - Dash loads page modules straight into `sys.modules` without importing `browser.pages`, so `import browser.pages.elites` failed in `test_season_pages.py`. `app.py` now imports `browser.pages` first.
+  - A function-level `from metrics import` in `pipeline/build_dbs/tests/test_rate_metrics.py` had worked only because the browser tests' `sys.path` inserts leaked into the session. It now imports `browser.metrics`.
+  - The rewrite of moved paths had also changed a printed label in `research/goalies/report_p4p5.py` and an example command in `README.md`; both are corrected.
+  - The new image's file list matches the moved image's under `/app/browser/`, its `runtime_data/` checksums match, and run locally both images return byte-identical responses for every route checked in step 6, including `/_dash-layout` and `/_dash-dependencies`, with no errors in the logs.
+- **Changed:** `browser/app.py`, as described in the first two findings.
 
 ## Close-out
 

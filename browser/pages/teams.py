@@ -4,10 +4,10 @@ import dash
 from dash import html, dash_table, callback, Input, Output
 from dash.dash_table.Format import Format, Scheme
 
-from db import league_query
-from filters import make_filter_bar, register_home_away_callback, register_season_callback, season_not_ready
-from seasons import normalize_season
-from table_style import table_styles
+from browser.db import league_query
+from browser.filters import make_filter_bar, register_home_away_callback, register_season_callback, season_not_ready
+from browser.seasons import normalize_season
+from browser.table_style import table_styles
 
 dash.register_page(__name__, path="/teams", name="Teams")
 register_home_away_callback("teams")

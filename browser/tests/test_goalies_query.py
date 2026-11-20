@@ -1,16 +1,10 @@
 import sqlite3
-import sys
-from pathlib import Path
 
 import pandas as pd
 import pytest
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-import db
-import runtime_paths
-
-
+from browser import db
+from browser import runtime_paths
 def test_goalies_query_parameterized_and_missing_db(tmp_path, monkeypatch):
     # missing file -> empty frame, no exception
     monkeypatch.setattr(runtime_paths, "goalies_db", lambda: tmp_path / "absent.db")

@@ -1,12 +1,8 @@
 # browser/tests/test_table_style.py
 """Tests for the shared DataTable styling in table_style.py."""
 
-import sys
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from table_style import (
+from browser.table_style import (
     STYLE_CELL_CONDITIONAL,
     STYLE_HEADER,
     STYLE_HEADER_CONDITIONAL,

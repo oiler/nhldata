@@ -5,11 +5,11 @@ from dash import html, dash_table, callback, Input, Output, dcc
 from dash.dash_table import FormatTemplate
 from dash.dash_table.Format import Format, Scheme
 
-from db import league_query, goalies_query
-from filters import make_filter_bar, register_home_away_callback, register_season_callback, compute_deployment_metrics, season_not_ready
-from seasons import normalize_season, season_label
-from table_style import table_styles
-from utils import seconds_to_mmss
+from browser.db import league_query, goalies_query
+from browser.filters import make_filter_bar, register_home_away_callback, register_season_callback, compute_deployment_metrics, season_not_ready
+from browser.seasons import normalize_season, season_label
+from browser.table_style import table_styles
+from browser.utils import seconds_to_mmss
 
 dash.register_page(__name__, path_template="/team/<abbrev>", name="Team")
 register_home_away_callback("team")

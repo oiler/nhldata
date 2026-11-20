@@ -1,10 +1,6 @@
-import sys
 from datetime import date
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from seasons import DEFAULT_SEASON, SEASONS, age_cutoff, normalize_season, season_label
+from browser.seasons import DEFAULT_SEASON, SEASONS, age_cutoff, normalize_season, season_label
 
 
 def test_seasons_and_default():

@@ -1,9 +1,5 @@
 # browser/tests/test_utils.py
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from utils import age_in_season, seconds_to_mmss
+from browser.utils import age_in_season, seconds_to_mmss
 
 
 def test_zero():

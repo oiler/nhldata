@@ -1,11 +1,7 @@
-import sys
-from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from runtime_paths import league_db, edm_db, player_bursts_csv, data_root, season_ready
+from browser.runtime_paths import league_db, edm_db, player_bursts_csv, data_root, season_ready
 
 
 def test_data_root_uses_env_var(monkeypatch, tmp_path):
@@ -59,7 +55,7 @@ def test_season_ready_production_needs_both_files(monkeypatch, tmp_path):
 
 
 def test_season_ready_local_dev_needs_only_league_db(monkeypatch, tmp_path):
-    import runtime_paths
+    from browser import runtime_paths
     monkeypatch.delenv("DATA_DIR", raising=False)
     monkeypatch.setattr(runtime_paths, "data_root", lambda: tmp_path)
     assert season_ready("2026") is False

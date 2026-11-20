@@ -5,13 +5,13 @@ from dash import html, dash_table, callback, Input, Output
 from dash.dash_table import FormatTemplate
 from dash.dash_table.Format import Format, Scheme
 
-from burst_data import bursts_for, preload_ready_seasons
-from db import league_query
-from filters import make_filter_bar, register_home_away_callback, register_season_callback, compute_deployment_metrics, season_not_ready
-from metrics import events_per60, points_per100_shots
-from seasons import SEASONS, normalize_season
-from table_style import table_styles
-from utils import age_in_season, seconds_to_mmss
+from browser.burst_data import bursts_for, preload_ready_seasons
+from browser.db import league_query
+from browser.filters import make_filter_bar, register_home_away_callback, register_season_callback, compute_deployment_metrics, season_not_ready
+from browser.metrics import events_per60, points_per100_shots
+from browser.seasons import SEASONS, normalize_season
+from browser.table_style import table_styles
+from browser.utils import age_in_season, seconds_to_mmss
 
 dash.register_page(__name__, path="/skaters", name="Skaters")
 register_home_away_callback("skaters")

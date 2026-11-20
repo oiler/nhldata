@@ -2,7 +2,7 @@
 import dash
 from dash import dcc, html
 
-from pages.notes import NOTES_DIR
+from browser.pages.notes import NOTES_DIR
 
 dash.register_page(__name__, path_template="/notes/<slug>", name="Note")
 
