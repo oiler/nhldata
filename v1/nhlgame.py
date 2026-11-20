@@ -41,6 +41,7 @@ import time
 import re
 import requests
 from pathlib import Path
+from v2.paths import data_dir
 from datetime import datetime, date
 from typing import Dict, List, Tuple, Optional
 
@@ -81,7 +82,7 @@ def construct_game_id(game_number: int) -> str:
 
 def setup_directories(season: str) -> Dict[str, Path]:
     """Create directory structure for the season."""
-    base_path = Path("data") / season
+    base_path = data_dir() / season
     paths = {}
 
     # Create shifts directory (for HTML-scraped data)
@@ -631,7 +632,7 @@ def get_last_saved_game() -> Optional[int]:
     Returns:
         The highest game number found, or None if no games exist.
     """
-    boxscores_dir = Path("data") / SEASON / "boxscores"
+    boxscores_dir = data_dir() / SEASON / "boxscores"
 
     if not boxscores_dir.exists():
         return None
@@ -723,7 +724,7 @@ def download_shifts_only(start_game: int, end_game: int):
     print(f"Rate Limit: {SHIFT_RATE_LIMIT_SECONDS} seconds between requests")
 
     # Setup shifts directory
-    shifts_path = Path("data") / SEASON / "shifts"
+    shifts_path = data_dir() / SEASON / "shifts"
     shifts_path.mkdir(parents=True, exist_ok=True)
     print(f"\nData will be saved to: data/{SEASON}/shifts/")
 

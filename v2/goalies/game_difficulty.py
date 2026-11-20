@@ -7,12 +7,10 @@ Per spec addendum 6b: no idle-gap term (probed null 2026-07-14).
 Usage: python3 v2/goalies/game_difficulty.py
 """
 
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parent.parent.parent
 from v2.goalies.features import CORSI_PREV  # noqa: E402
 from v2.goalies.gsax_baseline import blind_shot_xg  # noqa: E402
 from v2.goalies.cut import gen_dir, load_shots, load_toi, parse_situation  # noqa: E402

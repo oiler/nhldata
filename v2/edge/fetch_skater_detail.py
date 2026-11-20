@@ -15,6 +15,7 @@ import time
 import urllib.error
 import urllib.request
 from pathlib import Path
+from v2.paths import season_dir
 
 from v2.edge.compute_burst_rates import edge_season, list_skater_ids, season_year
 
@@ -31,8 +32,8 @@ RETRY_BACKOFF_SEC = 5
 HTTP_TIMEOUT_SEC  = 15
 
 _YEAR      = season_year()
-DB_PATH    = Path(f"data/{_YEAR}/generated/browser/league.db")
-OUTPUT_DIR = Path(f"data/{_YEAR}/edge/skater_detail")
+DB_PATH    = season_dir(_YEAR) / "generated" / "browser" / "league.db"
+OUTPUT_DIR = season_dir(_YEAR) / "edge" / "skater_detail"
 
 
 def build_url(player_id: int, season: str = SEASON, game_type: int = GAME_TYPE) -> str:

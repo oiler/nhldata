@@ -4,8 +4,10 @@
 import os
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-DATA_DIR = PROJECT_ROOT / "data"
+from v2.paths import data_dir, repo_root
+
+PROJECT_ROOT = repo_root()
+DATA_DIR = data_dir()
 
 # Active season — the only season the daily run fetches for.
 SEASON = os.environ.get("NHL_SEASON", "2026")

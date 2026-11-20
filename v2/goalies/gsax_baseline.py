@@ -6,7 +6,7 @@ repeatability must be judged against this, not against raw save%).
 Usage: python3 v2/goalies/gsax_baseline.py
 """
 
-from pathlib import Path
+from v2.paths import data_dir
 
 import numpy as np
 import pandas as pd
@@ -15,8 +15,7 @@ from v2.goalies.features import STRUCTURE_COLS, build_features  # noqa: E402
 from v2.goalies.irls import fit_penalized_logistic, predict_proba  # noqa: E402
 from v2.goalies.cut import gen_dir, load_shots, parse_situation  # noqa: E402
 
-ROOT = Path(__file__).resolve().parent.parent.parent
-GEN = ROOT / "data" / "generated" / "goalies"
+GEN = data_dir() / "generated" / "goalies"
 SEASONS = ("2021", "2022", "2023", "2024", "2025")
 
 

@@ -25,12 +25,12 @@ Usage: python3 tools/plotting_bias_probe.py
 from __future__ import annotations
 
 import math
-from pathlib import Path
+from v2.paths import data_dir
 
 import numpy as np
 import pandas as pd
 
-SHOTS_CSV = Path(__file__).resolve().parents[1] / "data" / "2025" / "generated" / "offwing" / "shots.csv"
+SHOTS_CSV = data_dir() / "2025" / "generated" / "offwing" / "shots.csv"
 
 
 def _shooter_gap(sub: pd.DataFrame, min_per_wing: int) -> dict | None:

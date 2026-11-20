@@ -7,14 +7,13 @@ This is the load-bearing correction for every downstream repeatability claim.
 Usage: python3 v2/goalies/rink_adjust.py
 """
 
-from pathlib import Path
+from v2.paths import data_dir
 
 import numpy as np
 import pandas as pd
 
 QUANTILES = np.linspace(0.01, 0.99, 99)
-ROOT = Path(__file__).resolve().parent.parent.parent
-GEN = ROOT / "data" / "generated" / "goalies"
+GEN = data_dir() / "generated" / "goalies"
 
 
 def fit_quantile_map(arena_distances: np.ndarray, reference_distances: np.ndarray) -> np.ndarray:

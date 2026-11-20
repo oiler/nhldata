@@ -23,6 +23,7 @@ import sys
 import json
 import csv
 from pathlib import Path
+from v2.paths import data_dir
 from typing import Dict, List, Optional
 
 
@@ -62,7 +63,7 @@ def get_boxscore_files(season: str, start_game: Optional[int] = None,
     Returns:
         Sorted list of boxscore file paths
     """
-    boxscores_dir = Path("data") / season / "boxscores"
+    boxscores_dir = data_dir() / season / "boxscores"
 
     if not boxscores_dir.exists():
         print(f"Error: Directory not found: {boxscores_dir}")
@@ -205,7 +206,7 @@ def main():
 
     if range_mode:
         # Range mode: write individual files per game
-        output_dir = Path("data") / season / "generated" / "flatboxscores"
+        output_dir = data_dir() / season / "generated" / "flatboxscores"
         output_dir.mkdir(parents=True, exist_ok=True)
 
         success_count = 0
@@ -240,7 +241,7 @@ def main():
             print("Error: No games were processed successfully")
             sys.exit(1)
 
-        output_path = Path("data") / season / "generated" / "flatboxscores" / "boxscores.csv"
+        output_path = data_dir() / season / "generated" / "flatboxscores" / "boxscores.csv"
         write_csv(rows, output_path)
 
         print(f"Wrote {len(rows)} games to {output_path}")

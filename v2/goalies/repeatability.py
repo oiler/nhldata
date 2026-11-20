@@ -7,15 +7,14 @@ Anchors (report, don't assert): freeze ~ 0.58+, stopping ~ 0.12.
 Usage: python3 v2/goalies/repeatability.py
 """
 
-from pathlib import Path
+from v2.paths import data_dir
 
 import numpy as np
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parent.parent.parent
 from v2.goalies.portability import weighted_r  # noqa: E402
 
-GEN = ROOT / "data" / "generated" / "goalies"
+GEN = data_dir() / "generated" / "goalies"
 VAL = GEN / "validation"
 SEASONS = ("2021", "2022", "2023", "2024", "2025")
 LAYER_LIST = ("onnet", "freeze", "goal", "rebound")

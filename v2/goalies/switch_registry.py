@@ -11,14 +11,13 @@ Usage: python3 v2/goalies/switch_registry.py
 """
 
 import argparse
-from pathlib import Path
+from v2.paths import data_dir
 
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parent.parent.parent
 from v2.goalies.cut import gen_dir, load_shots, parse_situation  # noqa: E402
 
-GEN = ROOT / "data" / "generated" / "goalies"
+GEN = data_dir() / "generated" / "goalies"
 SEASONS = ("2021", "2022", "2023", "2024", "2025")
 FLOOR = 600
 

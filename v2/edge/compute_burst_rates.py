@@ -12,6 +12,7 @@ import json
 import os
 import sqlite3
 from pathlib import Path
+from v2.paths import season_dir
 
 import pandas as pd
 
@@ -133,9 +134,9 @@ def build_burst_table(db_path: Path, edge_dir: Path) -> pd.DataFrame:
 
 
 _YEAR          = season_year()
-DB_PATH        = Path(f"data/{_YEAR}/generated/browser/league.db")
-EDGE_DIR       = Path(f"data/{_YEAR}/edge/skater_detail")
-OUTPUT_DIR     = Path(f"data/{_YEAR}/generated/edge")
+DB_PATH        = season_dir(_YEAR) / "generated" / "browser" / "league.db"
+EDGE_DIR       = season_dir(_YEAR) / "edge" / "skater_detail"
+OUTPUT_DIR     = season_dir(_YEAR) / "generated" / "edge"
 OUTPUT_CSV     = OUTPUT_DIR / "player_bursts.csv"
 
 

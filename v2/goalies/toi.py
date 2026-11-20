@@ -4,12 +4,11 @@ Usage: python3 v2/goalies/toi.py
 """
 
 import json
-from pathlib import Path
+from v2.paths import data_dir
 
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parent.parent.parent
-GEN = ROOT / "data" / "generated" / "goalies"
+GEN = data_dir() / "generated" / "goalies"
 SEASONS = ("2021", "2022", "2023", "2024", "2025")
 
 
@@ -44,7 +43,7 @@ def extract_goalie_games(box: dict) -> list[dict]:
 def main() -> None:
     for season in SEASONS:
         rows = []
-        for f in sorted((ROOT / "data" / season / "boxscores").glob("*.json")):
+        for f in sorted((data_dir() / season / "boxscores").glob("*.json")):
             rows.extend(extract_goalie_games(json.loads(f.read_text())))
         df = pd.DataFrame(rows).assign(season=season)
         df.to_csv(GEN / f"goalie_games_{season}.csv", index=False)

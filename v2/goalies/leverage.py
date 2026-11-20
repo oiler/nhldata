@@ -7,13 +7,12 @@ Usage: python3 v2/goalies/leverage.py
 """
 
 import json
-from pathlib import Path
+from v2.paths import data_dir
 
 import numpy as np
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parent.parent.parent
-GEN = ROOT / "data" / "generated" / "goalies"
+GEN = data_dir() / "generated" / "goalies"
 SEASONS = ("2021", "2022", "2023", "2024", "2025")
 MIN_CELL = 200
 
@@ -77,7 +76,7 @@ def leverage_weight_vectorized(shots: pd.DataFrame, wp: pd.DataFrame) -> np.ndar
 
 def game_winners(season: str) -> pd.DataFrame:
     rows = []
-    for f in sorted((ROOT / "data" / season / "boxscores").glob("*.json")):
+    for f in sorted((data_dir() / season / "boxscores").glob("*.json")):
         b = json.loads(f.read_text())
         rows.append({"game_id": b["id"], "home_won": b["homeTeam"]["score"] > b["awayTeam"]["score"]})
     return pd.DataFrame(rows)

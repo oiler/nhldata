@@ -6,14 +6,13 @@ plus schedule burden and the arena freeze-timing check (spec addendum 6b).
 Usage: python3 v2/goalies/environment.py
 """
 
-from pathlib import Path
+from v2.paths import data_dir
 
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parent.parent.parent
 from v2.goalies.cut import gen_dir, load_shots, parse_situation  # noqa: E402
 
-GEN = ROOT / "data" / "generated" / "goalies"
+GEN = data_dir() / "generated" / "goalies"
 SEASONS = ("2021", "2022", "2023", "2024", "2025")
 TIP_TYPES = {"tip-in", "deflected"}
 

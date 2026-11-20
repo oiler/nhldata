@@ -10,7 +10,7 @@ Usage:
 import subprocess
 import sys
 import time
-from pathlib import Path
+from v2.paths import data_dir
 
 from v2.orchestrator.config import SCRIPTS
 
@@ -26,7 +26,7 @@ STEPS = [
 
 
 def count_games(season: str) -> int:
-    game_dir = Path("data") / season / "boxscores"
+    game_dir = data_dir() / season / "boxscores"
     if not game_dir.exists():
         return 0
     return len(list(game_dir.glob("*.json")))

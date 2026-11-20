@@ -6,12 +6,12 @@ Usage: python3 v2/goalies/build_shots.py <season>   # e.g. 2021
 import json
 import sys
 from pathlib import Path
+from v2.paths import data_dir
 
 import pandas as pd
 
 from v2.goalies.extract import extract_goalie_shots  # noqa: E402
 
-ROOT = Path(__file__).resolve().parent.parent.parent
 
 
 def build_season(plays_dir: Path) -> pd.DataFrame:
@@ -28,8 +28,8 @@ def build_season(plays_dir: Path) -> pd.DataFrame:
 
 def main() -> None:
     season = sys.argv[1]
-    df = build_season(ROOT / "data" / season / "plays")
-    out_dir = ROOT / "data" / "generated" / "goalies"
+    df = build_season(data_dir() / season / "plays")
+    out_dir = data_dir() / "generated" / "goalies"
     out_dir.mkdir(parents=True, exist_ok=True)
     out = out_dir / f"shots_{season}.csv"
     df.to_csv(out, index=False)

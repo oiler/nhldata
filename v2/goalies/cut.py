@@ -12,11 +12,11 @@ shared — it is a game-state object, not an exposure measure.
 
 import argparse
 from pathlib import Path
+from v2.paths import data_dir
 
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parent.parent.parent
-GEN = ROOT / "data" / "generated" / "goalies"
+GEN = data_dir() / "generated" / "goalies"
 STRICT_5V5 = "1551"
 
 

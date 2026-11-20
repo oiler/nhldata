@@ -5,19 +5,18 @@ Usage: python3 v2/goalies/report_p4p5.py
 """
 
 import json
-from pathlib import Path
+from v2.paths import data_dir
 
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parent.parent.parent
-GEN = ROOT / "data" / "generated" / "goalies"
+GEN = data_dir() / "generated" / "goalies"
 SEASONS = ("2021", "2022", "2023", "2024", "2025")
 
 
 def _goalie_name(goalie_id: int) -> str:
     """Best-effort name lookup from the per-player JSON files (no new infra)."""
     for season in SEASONS:
-        f = ROOT / "data" / season / "players" / f"{goalie_id}.json"
+        f = data_dir() / season / "players" / f"{goalie_id}.json"
         if f.exists():
             d = json.loads(f.read_text())
             first = d.get("firstName", {}) or {}

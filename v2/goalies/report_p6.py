@@ -5,14 +5,13 @@ Usage: python3 v2/goalies/report_p6.py
 """
 
 import json
-from pathlib import Path
+from v2.paths import data_dir
 
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parent.parent.parent
 from v2.goalies.portability import paired_bootstrap_dr  # noqa: E402
 
-VAL = ROOT / "data" / "generated" / "goalies" / "validation"
+VAL = data_dir() / "generated" / "goalies" / "validation"
 K_GRID = (250, 500, 1000, 2000, 4000)
 
 # Anchors from the P3 gate (research/goalies/docs/2026-06-11-goalie-evaluation-design.md

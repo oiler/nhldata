@@ -9,17 +9,17 @@ Output:  data/generated/browser/goalies.db
 import json
 import sqlite3
 from pathlib import Path
+from v2.paths import data_dir
 
 import numpy as np
 import pandas as pd
 
-REPO = Path(__file__).resolve().parents[2]
 
 from v2.goalies.cut import load_shots, load_toi  # noqa: E402
 
 SITUATIONS = ("all", "5v5")
-GOALIES = REPO / "data" / "generated" / "goalies"
-OUT = REPO / "data" / "generated" / "browser" / "goalies.db"
+GOALIES = data_dir() / "generated" / "goalies"
+OUT = data_dir() / "generated" / "browser" / "goalies.db"
 SEASONS = ("2021", "2022", "2023", "2024", "2025")
 MIN_SAVES_FOR_PCT = 500
 _NAME_CACHE: dict[int, str] = {}
@@ -96,7 +96,7 @@ def _name(season: str, goalie_id: int) -> str:
     if goalie_id not in _NAME_CACHE:
         # Try the given season first, then other seasons in SEASONS order
         search_order = (season,) + tuple(s for s in SEASONS if s != season)
-        _NAME_CACHE[goalie_id] = resolve_name(goalie_id, search_order, REPO / "data")
+        _NAME_CACHE[goalie_id] = resolve_name(goalie_id, search_order, data_dir())
     return _NAME_CACHE[goalie_id]
 
 

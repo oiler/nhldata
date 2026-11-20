@@ -6,15 +6,14 @@ priors would mechanically inflate repeatability.
 Usage: python3 v2/goalies/gate_p3.py
 """
 
-from pathlib import Path
+from v2.paths import data_dir
 
 import numpy as np
 import pandas as pd
 
 from v2.goalies.difficulty import LAYERS, fit_layer, layer_frame  # noqa: E402
 
-ROOT = Path(__file__).resolve().parent.parent.parent
-GEN = ROOT / "data" / "generated" / "goalies"
+GEN = data_dir() / "generated" / "goalies"
 SEASONS = ("2021", "2022", "2023", "2024", "2025")
 
 

@@ -161,18 +161,19 @@ def test_score_game_skips_non_5v5():
 
 
 from v2.competition.compute_competition import run_game
+from v2.paths import data_dir
 
 
 @pytest.mark.requires_data
 def test_run_game_produces_output():
-    """Integration test using real 2025 game data.
+    """Integration test using real 2025 game data from the repo's data/ tree.
 
-    NOTE: This test must be run from the project root (the directory containing data/)
-    because DATA_DIR = Path("data") is relative to the working directory.
+    compute_competition finds data/ through v2.paths, so the working directory
+    doesn't matter.
     """
     game_number = 1
     season = "2025"
-    output_path = Path("data/2025/generated/competition/2025020001.csv")
+    output_path = data_dir() / "2025" / "generated" / "competition" / "2025020001.csv"
 
     # Clean up before test
     if output_path.exists():

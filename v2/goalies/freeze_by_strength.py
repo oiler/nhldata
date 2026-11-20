@@ -9,17 +9,16 @@ Usage: python3 v2/goalies/freeze_by_strength.py
 """
 
 import json
-from pathlib import Path
+from v2.paths import data_dir
 
 import numpy as np
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parent.parent.parent
 from v2.goalies.features import STRUCTURE_COLS, build_features  # noqa: E402
 from v2.goalies.freeze_value import (_load_saves_and_shots, ridge_linear,  # noqa: E402
                                      window_xga)
 
-VAL = ROOT / "data" / "generated" / "goalies" / "validation"
+VAL = data_dir() / "generated" / "goalies" / "validation"
 
 
 def freeze_strength_design(saves: pd.DataFrame) -> np.ndarray:

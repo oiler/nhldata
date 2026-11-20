@@ -8,15 +8,14 @@ repeatability correlations, which chained priors would mechanically inflate.
 Usage: python3 v2/goalies/build_terms.py
 """
 
-from pathlib import Path
+from v2.paths import data_dir
 
 import pandas as pd
 
 from v2.goalies.difficulty import LAYERS, fit_layer  # noqa: E402
 from v2.goalies.cut import gen_dir, load_shots, parse_situation  # noqa: E402
 
-ROOT = Path(__file__).resolve().parent.parent.parent
-GEN = ROOT / "data" / "generated" / "goalies"
+GEN = data_dir() / "generated" / "goalies"
 SEASONS = ("2021", "2022", "2023", "2024", "2025")
 
 

@@ -16,6 +16,7 @@ Output:
 import json
 import csv
 from pathlib import Path
+from v2.paths import data_dir
 from typing import Dict, List, Tuple, Set
 
 
@@ -23,7 +24,7 @@ from typing import Dict, List, Tuple, Set
 # CONFIGURATION
 # ============================================================================
 SEASON = "2025"
-PLAYS_DIR = Path("data") / SEASON / "plays"
+PLAYS_DIR = data_dir() / SEASON / "plays"
 OUTPUT_CSV = Path("resources") / "game_analysis.csv"
 TOP_N_CONSOLE = 40
 

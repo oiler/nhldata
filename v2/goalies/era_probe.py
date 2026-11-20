@@ -8,16 +8,15 @@ Usage: python3 v2/goalies/era_probe.py
 """
 
 import json
-from pathlib import Path
+from v2.paths import data_dir
 
 import numpy as np
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parent.parent.parent
 from v2.goalies.features import STRUCTURE_COLS, build_features  # noqa: E402
 from v2.goalies.irls import fit_penalized_logistic  # noqa: E402
 
-GEN = ROOT / "data" / "generated" / "goalies"
+GEN = data_dir() / "generated" / "goalies"
 VAL = GEN / "validation"
 SEASONS = ("2021", "2022", "2023", "2024", "2025")
 ERA_B = {2023, 2024, 2025}

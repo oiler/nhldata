@@ -19,6 +19,7 @@ import json
 import csv
 import sys
 from pathlib import Path
+from v2.paths import data_dir
 from typing import Dict, List, Set, Any
 
 
@@ -26,7 +27,7 @@ from typing import Dict, List, Set, Any
 # CONFIGURATION
 # ============================================================================
 
-DATA_DIR = Path("data")
+DATA_DIR = data_dir()
 GAME_TYPE = "02"  # Regular season
 
 # Core fields to appear first in column order

@@ -18,6 +18,8 @@ def test_data_root_falls_back_to_repo_layout(monkeypatch):
     root = data_root()
     assert root.name == "data"
     assert root.is_absolute()
+    # The parents[N] lookup must land on the repository root (D57).
+    assert (root.parent / "pyproject.toml").exists()
 
 
 def test_league_db_path_per_season(monkeypatch, tmp_path):

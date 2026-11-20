@@ -18,9 +18,10 @@ import json
 import sys
 from itertools import combinations as _combinations
 from pathlib import Path
+from v2.paths import data_dir
 from typing import Dict, List, Set, Tuple
 
-DATA_DIR = Path("data")
+DATA_DIR = data_dir()
 SCORED_SITUATIONS = {"1551", "0651", "1560"}
 GAME_TYPE = "02"
 

@@ -20,11 +20,13 @@ import glob
 
 import pandas as pd
 
+from v2.paths import season_dir
+
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
 TEAM_ABBREV = "EDM"
-SEASON_DIR = "data/2025"
+SEASON_DIR = str(season_dir("2025"))
 OUTPUT_DB = os.path.join(SEASON_DIR, "generated", "browser", "edm.db")
 FLAT_BOXSCORES = os.path.join(SEASON_DIR, "generated", "flatboxscores", "boxscores.csv")
 PLAYERS_CSV = os.path.join(SEASON_DIR, "generated", "players", "csv", "players.csv")

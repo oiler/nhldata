@@ -35,9 +35,10 @@ import pandas as pd
 _sys.path.insert(0, str(Path(__file__).parent))
 
 from metrics import compute_wppi_and_toi_share
+from v2.paths import season_dir
 
 _season = _sys.argv[1] if len(_sys.argv) > 1 else "2025"
-SEASON_DIR = f"data/{_season}"
+SEASON_DIR = str(season_dir(_season))
 OUTPUT_DB = os.path.join(SEASON_DIR, "generated", "browser", "league.db")
 COMPETITION_DIR = os.path.join(SEASON_DIR, "generated", "competition")
 PLAYERS_CSV = os.path.join(SEASON_DIR, "generated", "players", "csv", "players.csv")

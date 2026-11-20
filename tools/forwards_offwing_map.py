@@ -18,13 +18,13 @@ Usage: python3 tools/forwards_offwing_map.py  (needs shots.csv from offwing_spli
 from __future__ import annotations
 
 import math
-from pathlib import Path
+from v2.paths import data_dir
 
 import pandas as pd
 
 from offwing_splits import two_prop_z
 
-SHOTS_CSV = Path(__file__).resolve().parents[1] / "data" / "2025" / "generated" / "offwing" / "shots.csv"
+SHOTS_CSV = data_dir() / "2025" / "generated" / "offwing" / "shots.csv"
 
 X_BANDS = ((84, 89, "net-front 84-89"), (74, 84, "low-circles 74-84"),
            (64, 74, "dot-line 64-74"), (54, 64, "top-circles 54-64"))

@@ -13,6 +13,7 @@ Example:
 
 import sys
 from pathlib import Path
+from v2.paths import data_dir as repo_data_dir
 from typing import Dict, List, Tuple
 
 GAME_TYPE = "02"  # Regular season
@@ -187,7 +188,7 @@ def main():
         sys.exit(1)
 
     season = sys.argv[1]
-    data_dir = Path(__file__).parent.parent / "data"
+    data_dir = repo_data_dir()
 
     # Check season directory exists
     season_dir = data_dir / season

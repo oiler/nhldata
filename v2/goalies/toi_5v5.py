@@ -10,10 +10,10 @@ Usage: python3 v2/goalies/toi_5v5.py
 import csv
 from collections import Counter
 from pathlib import Path
+from v2.paths import data_dir
 
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parent.parent.parent
 from v2.goalies.cut import STRICT_5V5, gen_dir  # noqa: E402
 
 SEASONS = ("2021", "2022", "2023", "2024", "2025")
@@ -21,7 +21,7 @@ GOALIE_COLS = ("awayGoalie", "homeGoalie")
 
 
 def timelines_dir(season: str) -> Path:
-    return ROOT / "data" / season / "generated" / "timelines" / "csv"
+    return data_dir() / season / "generated" / "timelines" / "csv"
 
 
 def count_5v5_seconds(rows) -> dict[int, int]:

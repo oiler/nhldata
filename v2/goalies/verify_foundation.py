@@ -4,11 +4,11 @@
 Usage: python3 v2/goalies/verify_foundation.py
 """
 
-from pathlib import Path
+from v2.paths import data_dir
 
 import pandas as pd
 
-GEN = Path(__file__).resolve().parent.parent.parent / "data" / "generated" / "goalies"
+GEN = data_dir() / "generated" / "goalies"
 
 lines = []
 for f in sorted(GEN.glob("shots_*.csv")):

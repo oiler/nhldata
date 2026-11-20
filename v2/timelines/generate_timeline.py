@@ -17,6 +17,7 @@ import json
 import csv
 import sys
 from pathlib import Path
+from v2.paths import data_dir
 from typing import Dict, List, Set, Tuple, Optional
 
 
@@ -24,7 +25,7 @@ from typing import Dict, List, Set, Tuple, Optional
 # CONFIGURATION
 # ============================================================================
 
-DATA_DIR = Path("data")
+DATA_DIR = data_dir()
 
 
 # ============================================================================

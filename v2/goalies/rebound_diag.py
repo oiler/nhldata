@@ -4,16 +4,15 @@
 Usage: python3 v2/goalies/rebound_diag.py
 """
 
-from pathlib import Path
+from v2.paths import data_dir
 
 import numpy as np
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parent.parent.parent
 from v2.goalies.features import STRUCTURE_COLS, build_features  # noqa: E402
 from v2.goalies.irls import fit_penalized_logistic  # noqa: E402
 
-GEN = ROOT / "data" / "generated" / "goalies"
+GEN = data_dir() / "generated" / "goalies"
 df = pd.concat([pd.read_csv(GEN / f"shots_{s}.csv") for s in (2021, 2022, 2023, 2024, 2025)],
                ignore_index=True)
 on = df[df["on_net"]].copy()

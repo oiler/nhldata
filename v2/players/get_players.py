@@ -33,6 +33,7 @@ import csv
 import time
 import requests
 from pathlib import Path
+from v2.paths import data_dir
 from datetime import datetime
 from typing import Dict, List, Optional, Set, Tuple
 
@@ -86,7 +87,7 @@ def get_season_id(season: str) -> str:
 
 def setup_directories(season: str) -> Dict[str, Path]:
     """Create directory structure for player data."""
-    base = Path("data") / season
+    base = data_dir() / season
     paths = {
         "raw": base / "players",
         "json": base / "generated" / "players" / "json",
@@ -108,7 +109,7 @@ def build_team_abbrev_to_id_map(season: str) -> Dict[str, int]:
         Dict mapping team abbreviation to team ID (e.g., {"EDM": 22, "TOR": 10})
     """
     mapping = {}
-    boxscore_csv = Path("data") / season / "generated" / "flatboxscores" / "boxscores.csv"
+    boxscore_csv = data_dir() / season / "generated" / "flatboxscores" / "boxscores.csv"
 
     if not boxscore_csv.exists():
         print(f"\nWARNING: {boxscore_csv} not found!")
@@ -372,8 +373,8 @@ def find_missing_player_ids(season: str) -> List[int]:
     data/{season}/players/{pid}.json.
     """
     import glob
-    comp_dir = Path("data") / season / "generated" / "competition"
-    players_dir = Path("data") / season / "players"
+    comp_dir = data_dir() / season / "generated" / "competition"
+    players_dir = data_dir() / season / "players"
 
     seen: Set[int] = set()
     for path in glob.glob(str(comp_dir / "*.csv")):
