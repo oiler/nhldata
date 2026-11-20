@@ -1,13 +1,13 @@
 # v3.2.0: Restructure the code into browser, pipeline, and research
 
 **Created:** 2026-11-18 19:26
-**Last modified:** 2026-11-20 16:00
+**Last modified:** 2026-11-20 16:30
 
 The current milestone in `ROADMAP.md`. It replaces `v1/`, `v2/`, and `tools/` with three top-level folders, `browser/`, `pipeline/`, and `research/`, installed as one editable package. Nothing a user of the browser or the pipeline sees changes: the same pages, the same data files in the same places, and the same 08:00 run.
 
 Rulings: Decision Queue D43 to D45 (folders, package, `metrics.py`, goalies), D50 (trunk-based on `master`), and D53 (the restructure goes before the Edge refresh).
 
-**Status:** in progress. Steps 1 to 4 of "Order of work" are done. oiler accepted D54 to D56 on 2026-11-18. A review by a second session the same day changed the order of work, the install steps, the rollback, and the human test. oiler accepted D57 on 2026-11-19: the browser keeps its own data-path lookup. On 2026-11-20 the package install moved ahead of the path helper, because the pipeline scripts run as subprocesses and can import a shared helper only once the package is installed.
+**Status:** in progress. Steps 1 to 5 of "Order of work" are done. oiler accepted D54 to D56 on 2026-11-18. A review by a second session the same day changed the order of work, the install steps, the rollback, and the human test. oiler accepted D57 on 2026-11-19: the browser keeps its own data-path lookup. On 2026-11-20 the package install moved ahead of the path helper, because the pipeline scripts run as subprocesses and can import a shared helper only once the package is installed.
 
 ## What the release changes
 
@@ -177,6 +177,20 @@ Record each result under "Results."
   - Rerun from the scratchpad through the moved code, the flatten, timeline, competition, and `league.db` steps for 2026 game 300 again matched the morning run byte for byte.
 - **Changed:** Nothing.
 
+
+### Human test steps 1 to 6, 2026-11-20
+
+- **Run by:** Claude.
+- **Result:** Passed.
+- **Found:**
+  - Step 1: the baseline image `nhl-browser:pre-3.2.0`, built from `0a962f4`, holds 41 files.
+  - Step 2: 436 tests pass locally, and CI passed on the move commit (`deaa2ef`).
+  - Step 3: the step 4 checks stand in for a hand run. The scratchpad run exercises each script the runner calls, and the launchd run in step 4 exercises the runner itself.
+  - Step 4: the installed plist differed from the new one only in the `run.sh` path and a comment. After `launchctl bootout` and `bootstrap`, `launchctl print` shows `pipeline/orchestrator/run.sh`. `launchctl kickstart` ran the job, which found nothing pending through 2026-11-19, sent its notification, and exited 0, with an empty stderr log.
+  - Step 5: `./browser/sync-runtime-data.sh` ended with `Seasons in image: 2026 (required), 2025 (optional)`, the same as v3.1.2.
+  - Step 6: the moved image's file list matches the baseline apart from the expected changes: it adds `__init__.py` and drops `build_goalies_db.py` and `test_rate_metrics.py`, which moved to `pipeline/`. Only `2026/league.db` differs from the baseline's `runtime_data/`, because the sync picked up games played since 2026-11-18, and every runtime file in the image matches the local sync. Run locally, both images return byte-identical responses for `/healthz`, `/`, `/games`, `/skaters`, `/teams`, `/team/EDM`, a player, a game, `/goalies`, a goalie, `/elites`, `/_dash-layout`, and `/_dash-dependencies`, with no errors in the logs.
+  - The design expected the `runtime_data/` checksums to match the baseline exactly. That holds only when no games are played between the two syncs.
+- **Changed:** Nothing.
 
 ## Close-out
 
