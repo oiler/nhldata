@@ -5,37 +5,37 @@
 ### nhlgame.py - Download game data from NHL API
 ```bash
 # Download boxscores, plays, meta for game range
-uv run python v1/nhlgame.py 1 100
+uv run python pipeline/nhlgame.py 1 100
 
 # Download shift data for game range
-uv run python v1/nhlgame.py shifts 1 100
+uv run python pipeline/nhlgame.py shifts 1 100
 
 # Download a single game
-uv run python v1/nhlgame.py 828 828
+uv run python pipeline/nhlgame.py 828 828
 
 # Download today's games
-uv run python v1/nhlgame.py today
+uv run python pipeline/nhlgame.py today
 ```
 
 ## Tools
 
 ### gamecheck.py - Check for missing/empty data files
 ```bash
-uv run python tools/gamecheck.py 2025
+uv run python pipeline/gamecheck.py 2025
 ```
 
 ### flatten_plays.py - Flatten play-by-play data to CSV
 ```bash
 # Single game
-uv run python tools/flatten_plays.py 153 2025
+uv run python pipeline/flatten_plays.py 153 2025
 
 # Range of games
-uv run python tools/flatten_plays.py 1 100 2025
+uv run python pipeline/flatten_plays.py 1 100 2025
 ```
 
 ### discover_test_games.py - Find games with specific scenarios for testing
 ```bash
-uv run python tools/discover_test_games.py
+uv run python pipeline/discover_test_games.py
 ```
 
 ## Timeline Generation
@@ -43,10 +43,10 @@ uv run python tools/discover_test_games.py
 ### generate_timeline.py - Generate second-by-second situation timelines
 ```bash
 # Single game
-uv run python v2/timelines/generate_timeline.py 591 2025
+uv run python pipeline/timelines/generate_timeline.py 591 2025
 
 # Batch mode
-uv run python v2/timelines/generate_timeline.py 1 100 2025
+uv run python pipeline/timelines/generate_timeline.py 1 100 2025
 ```
 
 ## Competition Scores
@@ -56,10 +56,10 @@ Requires timeline and plays data for the game. Outputs `comp_fwd` and `comp_def`
 (mean 5v5 TOI of opposing forwards/defensemen) for every skater.
 ```bash
 # Single game
-uv run python v2/competition/compute_competition.py 1 2025
+uv run python pipeline/competition/compute_competition.py 1 2025
 
 # Range of games
-uv run python v2/competition/compute_competition.py 1 900 2025
+uv run python pipeline/competition/compute_competition.py 1 900 2025
 ```
 Output: `data/{season}/generated/competition/{gameId}.csv`
 
@@ -67,12 +67,12 @@ Output: `data/{season}/generated/competition/{gameId}.csv`
 
 ### Regular DB update — run daily pipeline (fetch yesterday's games, generate, rebuild DB)
 ```bash
-uv run python v2/orchestrator/runner.py
+uv run python pipeline/orchestrator/runner.py
 ```
 
 ### Recalculate and reprocess all games — full season regeneration from raw data
 ```bash
-uv run python v2/orchestrator/sync_season.py 2025
+uv run python pipeline/orchestrator/sync_season.py 2025
 ```
 Runs all generation steps in order: flatten boxscores → flatten plays → fetch players →
 generate timelines → compute competition → backfill players → build league DB.
@@ -80,12 +80,12 @@ Raw data (boxscores, plays, meta, shifts) must already be downloaded.
 
 ### Start the browser app
 ```bash
-uv run python v2/browser/app.py
+uv run python browser/app.py
 ```
 
 ### Fly
 ```bash
 fly deploy --remote-only
 
-./tools/sync-runtime-data.sh 
+./browser/sync-runtime-data.sh 
 ```

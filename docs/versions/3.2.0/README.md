@@ -1,17 +1,29 @@
 # v3.2.0: Restructure the code into browser, pipeline, and research
 
 **Created:** 2026-11-18 19:26
-**Last modified:** 2026-11-20 15:10
+**Last modified:** 2026-11-20 16:00
 
 The current milestone in `ROADMAP.md`. It replaces `v1/`, `v2/`, and `tools/` with three top-level folders, `browser/`, `pipeline/`, and `research/`, installed as one editable package. Nothing a user of the browser or the pipeline sees changes: the same pages, the same data files in the same places, and the same 08:00 run.
 
 Rulings: Decision Queue D43 to D45 (folders, package, `metrics.py`, goalies), D50 (trunk-based on `master`), and D53 (the restructure goes before the Edge refresh).
 
-**Status:** in progress. Steps 1 to 3 of "Order of work" are done. oiler accepted D54 to D56 on 2026-11-18. A review by a second session the same day changed the order of work, the install steps, the rollback, and the human test. oiler accepted D57 on 2026-11-19: the browser keeps its own data-path lookup. On 2026-11-20 the package install moved ahead of the path helper, because the pipeline scripts run as subprocesses and can import a shared helper only once the package is installed.
+**Status:** in progress. Steps 1 to 4 of "Order of work" are done. oiler accepted D54 to D56 on 2026-11-18. A review by a second session the same day changed the order of work, the install steps, the rollback, and the human test. oiler accepted D57 on 2026-11-19: the browser keeps its own data-path lookup. On 2026-11-20 the package install moved ahead of the path helper, because the pipeline scripts run as subprocesses and can import a shared helper only once the package is installed.
 
 ## What the release changes
 
-Filled in as the work lands. The design's file map is in the section "Where each file goes."
+| Path | What it is |
+|---|---|
+| `browser/` | The Dash app, from `v2/browser/`, with `sync-runtime-data.sh` from `tools/` |
+| `pipeline/` | `nhlgame.py` from `v1/`; `timelines/`, `competition/`, `players/`, `edge/`, and `orchestrator/` from `v2/`; the flatten scripts, `gamecheck.py`, and `discover_test_games.py` from `tools/`; the `build_*_db.py` scripts and their tests in `build_dbs/` |
+| `pipeline/paths.py` | New: the one lookup for `data/`, with the `NHL_DATA_DIR` override |
+| `research/goalies/` | The goalie models, from `v2/goalies/`, beside the study's `docs/` |
+| `research/shooters/` | The off-wing scripts and their test, from `tools/` |
+| `resources/Rules Delayed Penalties.md`, `resources/Coincidental Penalty Logic.md` | Rule 26 and the coincidental-penalty notes, from `v1/timelines/` |
+| `pyproject.toml` | A setuptools build for the three packages, and `testpaths` |
+| `Dockerfile`, `.dockerignore`, `.gitignore`, `.github/workflows/` | The new paths |
+| `pipeline/orchestrator/run.sh`, `com.nhl.orchestrator.plist` | The new runner path |
+| `AGENTS.md`, `README.md`, `ROADMAP.md`, `BACKLOG.md`, `docs/commands.md`, `docs/data-limitations.md`, `docs/team-deployment-analysis.md`, `resources/TEST_GAMES.md` | The new paths |
+| Removed | The rest of `v1/`, the empty `v2/browser/league.db`, and `tools/` |
 
 ## Design
 
@@ -154,6 +166,16 @@ Record each result under "Results."
   - Step 3: started from the scratchpad, not the repository root, the orchestrator's flatten, timeline, competition, and `league.db` steps for 2026 game 300 wrote to the repository's `data/`. Each output matched the morning run's byte for byte, and all 10 `league.db` tables matched row for row. The fetcher's and player fetcher's directory functions resolve to the repository's `data/`; they weren't run against the network.
   - During step 2, Claude ran `v2/goalies/gsax_baseline.py --help` as an import check. The script ignores arguments, so it rewrote `data/generated/goalies/gsax_2021.csv` to `gsax_2025.csv`. The rewritten files match `goalies.db` (built 2026-08-11) exactly on xGA, GA, and GSAx for every goalie, so nothing changed.
 - **Changed:** `tools/gamecheck.py` imports the helper as `repo_data_dir`, because a local variable named `data_dir` would shadow it.
+
+### Machine-led tests, step 4, 2026-11-20
+
+- **Run by:** Claude.
+- **Result:** Passed. 436 tests pass: the 407 from before and the 29 shooters tests, which now run. The CI selection runs 431.
+- **Found:**
+  - `v2/browser/test_rate_metrics.py` tests `build_league_db.py`, so it moved to `pipeline/build_dbs/tests/`, not `browser/tests/`.
+  - `browser/runtime_paths.py`'s root lookup changed from `parents[2]` to `parents[1]`; the D57 assertion in `test_runtime_paths.py` checks it.
+  - Rerun from the scratchpad through the moved code, the flatten, timeline, competition, and `league.db` steps for 2026 game 300 again matched the morning run byte for byte.
+- **Changed:** Nothing.
 
 
 ## Close-out

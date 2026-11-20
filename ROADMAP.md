@@ -32,7 +32,7 @@ The 08:00 launchd job runs on a laptop that is often asleep. Fifteen runs betwee
 
 - **Decided (D36, 2026-11-17):** move the scheduled run to an always-on Linux machine, instead of adding retries or changing the time on the laptop.
 - **Work:**
-  - Replace `com.nhl.orchestrator.plist` and the hard-coded paths in `v2/orchestrator/run.sh` with a cron job or systemd timer that takes the repository path from its environment.
+  - Replace `com.nhl.orchestrator.plist` and the hard-coded paths in `pipeline/orchestrator/run.sh` with a cron job or systemd timer that takes the repository path from its environment.
   - Decide where `data/` lives on that machine, and how the laptop reads it for local deploys.
   - Replace `send_notification`, which is a macOS desktop notification.
 - **Depends on:** the code restructure.
@@ -41,7 +41,7 @@ The 08:00 launchd job runs on a laptop that is often asleep. Fifteen runs betwee
 
 **Added:** 2026-09-29
 
-**Problem:** The deployed app (`app.nhldata.org`) reads data baked into the Docker image at build time, and there's no Fly volume. The daily 08:00 orchestrator run updates local data only, so the live site shows the in-progress season (2026-27) only as of the last manual `./tools/sync-runtime-data.sh` + `fly deploy`.
+**Problem:** The deployed app (`app.nhldata.org`) reads data baked into the Docker image at build time, and there's no Fly volume. The daily 08:00 orchestrator run updates local data only, so the live site shows the in-progress season (2026-27) only as of the last manual `./browser/sync-runtime-data.sh` + `fly deploy`.
 
 **Constraints:**
 
@@ -64,7 +64,7 @@ The 08:00 launchd job runs on a laptop that is often asleep. Fifteen runs betwee
 
 **Added:** 2026-09-29
 
-**Problem:** The goalie pipeline covers 2021-22 through 2025-26 only. `SEASONS = ("2021", ..., "2025")` is hard-coded in 10 modules under `v2/goalies/` and in `v2/browser/build_goalies_db.py`. Until it's extended, the browser shows "not yet available" for 2026-27 on `/goalies` and in the team page's goalie section.
+**Problem:** The goalie pipeline covers 2021-22 through 2025-26 only. `SEASONS = ("2021", ..., "2025")` is hard-coded in 10 modules under `research/goalies/` and in `pipeline/build_dbs/build_goalies_db.py`. Until it's extended, the browser shows "not yet available" for 2026-27 on `/goalies` and in the team page's goalie section.
 
 **Decision needed first:** how to score an in-progress season against models fit on 2021–2025. The GSAx baseline, game difficulty, arena adjustments, and freeze pricing were all fit on the five completed seasons.
 
@@ -85,11 +85,11 @@ The 08:00 launchd job runs on a laptop that is often asleep. Fifteen runs betwee
 
 **Added:** 2026-09-29
 
-**Problem:** The Edge burst data (`data/<season>/generated/edge/player_bursts.csv`) behind SB/a60 and Max MPH is built by hand: `NHL_SEASON=<season> python v2/edge/fetch_skater_detail.py`, then `compute_burst_rates.py`. During the season the numbers go stale between manual runs.
+**Problem:** The Edge burst data (`data/<season>/generated/edge/player_bursts.csv`) behind SB/a60 and Max MPH is built by hand: `NHL_SEASON=<season> python pipeline/edge/fetch_skater_detail.py`, then `compute_burst_rates.py`. During the season the numbers go stale between manual runs.
 
 **Want:**
 
-- One command that refreshes Edge data for the active season, runnable on demand (for example, `python v2/orchestrator/runner.py "refresh edge"` or a standalone script).
+- One command that refreshes Edge data for the active season, runnable on demand (for example, `python pipeline/orchestrator/runner.py "refresh edge"` or a standalone script).
 - A monthly schedule (launchd, like the daily orchestrator), kept out of the daily run so about 800 Edge requests don't add a failure mode every morning.
 - The same season guards as the daily run: read `NHL_SEASON`, require the season's `league.db` to exist (the skater list comes from it), and write a log to `data/<season>/logs/`.
 

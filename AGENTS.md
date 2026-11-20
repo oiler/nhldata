@@ -18,26 +18,28 @@ NHL game data analytics: a data pipeline that turns public NHL API data into sec
 - `docs/versions/`: one folder per release, with its record, specs, plans, and reviews. Its `README.md` explains the layout and the close-out. A release that needs a separate spec or plan puts it in `docs/versions/<version>/specs/` or `docs/versions/<version>/plans/`. The project doesn't use superpowers. Artifacts.
 - `docs/context/`: background, such as the kickoff note, analysis write-ups, idea notes, and session logs. Artifacts.
 - `docs/plans/`: specs and plans from January to June 2026 that predate release folders. An archive; don't add to it. Artifacts.
-- `research/<study>/docs/`: a study's design, plans, pre-registration, and reports. `research/goalies/docs/` and `research/shooters/docs/` exist today. New research documents go here, not in `docs/versions/`. Artifacts.
+- `research/<study>/docs/`: a study's design, plans, pre-registration, and reports. New research documents go here, not in `docs/versions/`. Artifacts.
 - `docs/commands.md`, `docs/data-limitations.md`, `docs/elite-classification-model.md`, `docs/team-deployment-analysis.md`, `docs/2024-season-support-status.md`: standing reference documents.
 - `resources/`: reference material, including `Rules Coincidental Penalties.md` (NHL Rule 19 and Table 13), `NHL API Documentation.md`, and `SITUATIONCODE_REFERENCE.md`.
-- `v1/nhlgame.py`: the raw-data fetcher the daily pipeline runs. The rest of `v1/` is the first version of the scripts.
-- `v2/timelines/`, `v2/competition/`, `v2/players/`, `v2/edge/`: pipeline steps that turn raw data into derived data.
-- `v2/orchestrator/`: the daily pipeline runner, scheduled by launchd at 08:00.
-- `v2/browser/`: the Dash app, and the `build_*_db.py` scripts that build its databases.
-- `v2/goalies/`: the goalie research models.
-- `tools/`: utility scripts, including `sync-runtime-data.sh`, which copies built data into the image before a deploy.
+- `browser/`: the Dash app the Docker image ships, with `sync-runtime-data.sh`, which copies built data into `browser/runtime_data/` before a deploy, and `verify_runtime_data.py`, which checks it.
+- `pipeline/`: everything the daily run and a season rebuild run.
+  - `nhlgame.py`: the raw-data fetcher. `flatten_boxscore.py`, `flatten_plays.py`, `gamecheck.py`, and `discover_test_games.py` sit beside it.
+  - `timelines/`, `competition/`, `players/`, `edge/`: steps that turn raw data into derived data.
+  - `build_dbs/`: the `build_*_db.py` scripts that build the browser's databases.
+  - `orchestrator/`: the daily pipeline runner, scheduled by launchd at 08:00.
+  - `paths.py`: the one place pipeline and research code find `data/`. `NHL_DATA_DIR` overrides it.
+- `research/<study>/`: a study's code beside its `docs/`. `research/goalies/` holds the goalie models; `research/shooters/` holds the off-wing scripts.
 - `data/`: raw and generated data, one folder per season. Gitignored.
 - `Dockerfile`, `fly.toml`, `.github/`: deployment to Fly.io and the test workflow.
 
-`ROADMAP.md` schedules a restructure of `v1/`, `v2/`, and `tools/` into `browser/`, `pipeline/`, and `research/`. Until then `research/` holds only documents, and the research code is in `v2/goalies/` and `tools/`. Update this map in the same change.
+The code installs as one editable package (`pyproject.toml`), so code imports by package name: `from pipeline.paths import data_dir`, `from research.goalies.cut import load_shots`. After a fresh clone, or after a package moves, run `python -m pip install -e . --no-deps` in the pyenv 3.11.6 environment the 08:00 job uses, and `uv sync`. The browser imports its own modules flat until the D54 switch to package imports. Update this map in the same change as any move.
 
 ## Commands
 
-- **Tests:** `python -m pytest v2/ -v`. Run it before finishing any change. CI runs `python -m pytest v2/ -q -m "not requires_data"`, because `data/` is gitignored.
-- **Daily pipeline by hand:** `python v2/orchestrator/runner.py`. `NHL_SEASON` selects the season.
-- **Rebuild a season from raw files:** `python v2/orchestrator/sync_season.py <season>`.
-- **Deploy:** `./tools/sync-runtime-data.sh`, then `fly deploy`. Claude deploys only after oiler approves that deploy. Deploy locally only, never from CI.
+- **Tests:** `python -m pytest -v`. Run it before finishing any change. CI runs `python -m pytest -q -m "not requires_data"`, because `data/` is gitignored.
+- **Daily pipeline by hand:** `python pipeline/orchestrator/runner.py`. `NHL_SEASON` selects the season.
+- **Rebuild a season from raw files:** `python pipeline/orchestrator/sync_season.py <season>`.
+- **Deploy:** `./browser/sync-runtime-data.sh`, then `fly deploy`. Claude deploys only after oiler approves that deploy. Deploy locally only, never from CI.
 - `docs/commands.md` lists the rest.
 
 ## Technical stack
@@ -77,7 +79,7 @@ NHL game data analytics: a data pipeline that turns public NHL API data into sec
 
 - Test computations, not callbacks. For each new feature, add a targeted test for the pandas or math logic it touches. Full Dash callback tests aren't needed.
 - Use synthetic data. Build small DataFrames in tests instead of reading real data files. `test_player_metrics.py` and `test_deployment_metrics.py` show the pattern.
-- Shared metric logic lives in `v2/browser/metrics.py`. Both `build_league_db.py` and `filters.py` use the wPPI, wPPI+, and `avg_toi_share` calculation there. Change `metrics.py`; never duplicate metric logic.
+- Shared metric logic lives in `browser/metrics.py`. Both `build_league_db.py` and `filters.py` use the wPPI, wPPI+, and `avg_toi_share` calculation there. Change `metrics.py`; never duplicate metric logic.
 
 ## External references
 

@@ -64,7 +64,7 @@ A multi-page Dash app serves all of the data. Everything is filterable by date r
 
 ## Deployment
 
-The `v2/browser/` app deploys to Fly.io. See `resources/vps-setup-guide-fly.md`
+The `browser/` app deploys to Fly.io. See `resources/vps-setup-guide-fly.md`
 for the platform-level setup and `docs/plans/2026-05-07-fly-deploy.md` for the
 implementation plan.
 
@@ -72,12 +72,12 @@ implementation plan.
 
 ```bash
 # 1. Rebuild source DBs locally
-python v2/browser/build_league_db.py 2024
-python v2/browser/build_league_db.py 2025
-python v2/browser/build_edm_db.py
+python pipeline/build_dbs/build_league_db.py 2024
+python pipeline/build_dbs/build_league_db.py 2025
+python pipeline/build_dbs/build_edm_db.py
 
 # 2. Sync to runtime_data/
-./tools/sync-runtime-data.sh
+./browser/sync-runtime-data.sh
 
 # 3. Deploy
 fly deploy --remote-only
@@ -86,16 +86,16 @@ fly deploy --remote-only
 ### Local dev
 
 `runtime_paths.py` falls back to the legacy `data/<season>/generated/...` layout
-when `DATA_DIR` is unset, so `cd v2/browser && python app.py` Just Works without
+when `DATA_DIR` is unset, so `cd pipeline/browser && python app.py` Just Works without
 any env vars.
 
 ### First-time setup on a fresh clone
 
-`v2/browser/runtime_data/` is gitignored, so a fresh clone won't have the DB
+`browser/runtime_data/` is gitignored, so a fresh clone won't have the DB
 files baked in. Before the first `fly deploy`, run:
 
 ```bash
-./tools/sync-runtime-data.sh
+./browser/sync-runtime-data.sh
 ```
 
 This copies the four runtime files (`league.db` for 2024 and 2025, `edm.db`,

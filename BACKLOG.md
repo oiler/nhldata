@@ -14,8 +14,8 @@ Everything not promised yet. An item gains authority only when it moves into `RO
 
 ### Pipeline follow-ups from the 2026-11-17 catch-up fix
 
-- `v2/orchestrator/tools/fetch.py` accepts a `season` argument and ignores it. The fetcher reads `NHL_SEASON` from the environment.
-- `download_shifts_only` in `v1/nhlgame.py` still stops a range at the first game without shifts. The full-download loop no longer does.
+- `pipeline/orchestrator/tools/fetch.py` accepts a `season` argument and ignores it. The fetcher reads `NHL_SEASON` from the environment.
+- `download_shifts_only` in `pipeline/nhlgame.py` still stops a range at the first game without shifts. The full-download loop no longer does.
 - A game whose shift reports never become available is fetched again every morning. No 2026-27 game is in that state.
 - The manual backfill left two things unchecked: `points_5v5` covers 319 of 325 games (six games with no 5v5 goals is plausible), and `elite_defensemen` held 2 rows against 40 `elite_forwards`.
 
@@ -54,7 +54,7 @@ Everything not promised yet. An item gains authority only when it moves into `RO
 
 **Opportunity:** The free public NHL API exposes player-level EDGE tracking data (speed bursts, skating distance, zone time, shot speed) that we could incorporate into player profiles and team analysis.
 
-**Status (2026-11-17):** speed bursts shipped in May 2026 (`v2/edge/`, SB/a60 and Max MPH in the browser; plan in `docs/plans/2026-05-04-edge-player-data-and-burst-per-60.md`). The other endpoints below are unused.
+**Status (2026-11-17):** speed bursts shipped in May 2026 (`pipeline/edge/`, SB/a60 and Max MPH in the browser; plan in `docs/plans/2026-05-04-edge-player-data-and-burst-per-60.md`). The other endpoints below are unused.
 
 **Research findings (2026-03-15):**
 

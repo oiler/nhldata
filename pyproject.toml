@@ -19,13 +19,14 @@ build-backend = "setuptools.build_meta"
 # data/ and the docs folders are never scanned as packages.
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["v2", "v2.*"]
+include = ["browser", "browser.*", "pipeline", "pipeline.*", "research", "research.*"]
 namespaces = false
 
 [tool.uv]
 dev-dependencies = []
 
 [tool.pytest.ini_options]
+testpaths = ["browser", "pipeline", "research"]
 markers = [
     "requires_data: reads the local data/ pipeline tree, which is gitignored and absent from a bare checkout. Run from the repo root; CI deselects these with -m 'not requires_data'.",
 ]

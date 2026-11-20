@@ -15,7 +15,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
-COPY v2/browser/requirements.txt .
+COPY browser/requirements.txt .
 
 RUN python -m venv /opt/venv \
     && /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
@@ -32,10 +32,10 @@ ENV PATH="/opt/venv/bin:$PATH"
 WORKDIR /app
 
 # Only the browser subtree is needed at runtime
-COPY --chown=app:app v2/browser/ /app/
+COPY --chown=app:app browser/ /app/
 
 # runtime_data/2024/, /2025/, and /2026/ are gitignored — they're built locally
-# and baked in by tools/sync-runtime-data.sh. Any build from a bare git checkout
+# and baked in by browser/sync-runtime-data.sh. Any build from a bare git checkout
 # (a CI runner, a fresh clone) silently produces an image whose skaters page
 # raises at import (it preloads every ready season's bursts in production),
 # which crash-loops the machine on deploy. Fail the *build* instead, before the
@@ -54,7 +54,7 @@ RUN set -eu; \
         fi; \
     done; \
     if [ "$fail" -ne 0 ]; then \
-        echo "Run ./tools/sync-runtime-data.sh from the repo root, then deploy." >&2; \
+        echo "Run ./browser/sync-runtime-data.sh from the repo root, then deploy." >&2; \
         exit 1; \
     fi
 
@@ -63,7 +63,7 @@ RUN set -eu; \
 RUN set -eu; \
     for db in /app/runtime_data/2025/league.db /app/runtime_data/2026/league.db; do \
         [ -e "$db" ] || continue; \
-        python -c "import sqlite3,sys; c={r[1] for r in sqlite3.connect(sys.argv[1]).execute('PRAGMA table_info(players)')}; sys.exit(0 if 'birthDate' in c else 'ERROR: players.birthDate missing in '+sys.argv[1]+' - rebuild league.db and rerun tools/sync-runtime-data.sh')" "$db"; \
+        python -c "import sqlite3,sys; c={r[1] for r in sqlite3.connect(sys.argv[1]).execute('PRAGMA table_info(players)')}; sys.exit(0 if 'birthDate' in c else 'ERROR: players.birthDate missing in '+sys.argv[1]+' - rebuild league.db and rerun browser/sync-runtime-data.sh')" "$db"; \
     done
 
 # The runtime DBs live alongside the app; DATA_DIR points the app at them

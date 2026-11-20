@@ -30,10 +30,10 @@ Generate competition CSVs for the full season (or a range):
 
 ```bash
 # Single game
-python v2/competition/compute_competition.py <game_number> <season>
+python pipeline/competition/compute_competition.py <game_number> <season>
 
 # Range of games
-python v2/competition/compute_competition.py 1 900 2025
+python pipeline/competition/compute_competition.py 1 900 2025
 ```
 
 Output goes to `data/2025/generated/competition/`.

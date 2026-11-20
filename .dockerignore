@@ -17,24 +17,23 @@ venv
 .env
 .env.*
 
-# Pipeline data tree — only runtime_data/ is shipped, via v2/browser/
+# Pipeline data tree — only runtime_data/ is shipped, via browser/
 data/
 sample-data/
 archive_*.tar.gz
 
 # Other project subtrees the app doesn't need
-v1/
-tools/
+pipeline/
+research/
 docs/
 resources/
 
 # Tests don't need to be in the runtime image
-v2/browser/tests/
+browser/tests/
 
-# Build scripts not used at runtime
-v2/browser/build_league_db.py
-v2/browser/build_edm_db.py
-v2/browser/verify_runtime_data.py
+# Deploy tooling not used at runtime
+browser/sync-runtime-data.sh
+browser/verify_runtime_data.py
 
 # Top-level files the app doesn't need
 README.md
