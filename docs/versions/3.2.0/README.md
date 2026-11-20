@@ -1,7 +1,7 @@
 # v3.2.0: Restructure the code into browser, pipeline, and research
 
 **Created:** 2026-11-18 19:26
-**Last modified:** 2026-11-20 17:05
+**Last modified:** 2026-11-20 14:45
 
 The current milestone in `ROADMAP.md`. It replaces `v1/`, `v2/`, and `tools/` with three top-level folders, `browser/`, `pipeline/`, and `research/`, installed as one editable package. Nothing a user of the browser or the pipeline sees changes: the same pages, the same data files in the same places, and the same 08:00 run.
 
