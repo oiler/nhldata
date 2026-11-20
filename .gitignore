@@ -20,3 +20,6 @@ docs/fly-deploy-runbook.md
 CLAUDE.local.md
 .claude/settings.local.json
 tmp/
+
+# Editable-install metadata (pip install -e .)
+*.egg-info/
