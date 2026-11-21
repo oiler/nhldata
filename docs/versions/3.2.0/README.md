@@ -1,7 +1,7 @@
 # v3.2.0: Restructure the code into browser, pipeline, and research
 
 **Created:** 2026-11-18 19:26
-**Last modified:** 2026-11-20 14:45
+**Last modified:** 2026-11-21 10:47
 
 The current milestone in `ROADMAP.md`. It replaces `v1/`, `v2/`, and `tools/` with three top-level folders, `browser/`, `pipeline/`, and `research/`, installed as one editable package. Nothing a user of the browser or the pipeline sees changes: the same pages, the same data files in the same places, and the same 08:00 run.
 
@@ -205,6 +205,13 @@ Record each result under "Results."
   - The rewrite of moved paths had also changed a printed label in `research/goalies/report_p4p5.py` and an example command in `README.md`; both are corrected.
   - The new image's file list matches the moved image's under `/app/browser/`, its `runtime_data/` checksums match, and run locally both images return byte-identical responses for every route checked in step 6, including `/_dash-layout` and `/_dash-dependencies`, with no errors in the logs.
 - **Changed:** `browser/app.py`, as described in the first two findings.
+
+### Human test step 8, 2026-11-21
+
+- **Run by:** oiler and Claude.
+- **Result:** Passed, in part. launchd ran `pipeline/orchestrator/run.sh` at 08:00, and the job exited 0 with an empty stderr log.
+- **Found:** No games were played on 2026-11-20, so the run had nothing to fetch, and the fetcher (`pipeline/nhlgame.py`) and the player fetcher haven't yet run under the new layout. The close-out waits for the 2026-11-22 run, which should fetch the 2026-11-21 games.
+- **Changed:** Nothing.
 
 ## Close-out
 
