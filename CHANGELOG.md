@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [3.2.0] - 2026-11-22
+### Changed
+- The code lives in three top-level folders: `browser/` (the Dash app), `pipeline/` (the daily run, the season rebuild, and the database builds), and `research/` (the goalie and off-wing studies). They replace `v1/`, `v2/`, and `tools/`. The browser's pages, data, and the daily schedule are unchanged.
+- The code installs as an editable package (`pip install -e . --no-deps`) and imports by package name. After a fresh clone, run that install in the Python environment the daily run uses, and `uv sync`.
+- New commands: `python pipeline/orchestrator/runner.py` for the daily run, `python pipeline/orchestrator/sync_season.py <season>` for a rebuild, and `./browser/sync-runtime-data.sh && fly deploy` for a deploy. `python -m pytest` runs every test.
+
+### Added
+- `NHL_DATA_DIR` points the pipeline and research code at a `data/` folder outside the repository.
+
+### Fixed
+- Pipeline and research scripts find `data/` from any working directory. A script started outside the repository root used to write a new `data/` tree there.
+- The off-wing research tests run in CI.
+
+### Removed
+- The unused `v1/` scripts. Rule 26 and the coincidental-penalty notes moved to `resources/`.
+
 ## [3.1.2] - 2026-11-18
 ### Added
 - Glossary entries for G/A/P, P/60, 5v5 TOI, Line/Pair, Dep Score, and a

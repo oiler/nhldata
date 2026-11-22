@@ -2,29 +2,12 @@
 
 Planned work, in order. When a milestone finishes, it moves to `docs/history.md`.
 
-The project is past its first release: `docs/history.md` lists the releases through v3.1.2. This file holds only the work that's planned next.
+The project is past its first release: `docs/history.md` lists the releases through v3.2.0. This file holds only the work that's planned next.
 
-- **Current milestone:** Restructure the code into browser, pipeline, and research.
+- **Current milestone:** Move the daily pipeline to an always-on Linux machine.
 - **Order:** set by oiler on 2026-11-17 (Decision Queue D37 and D40). The season toggle ships on the current code layout, the code restructure follows as its own release, and the daily pipeline moves machines after that. The Dependabot fix, added at high priority on 2026-11-17, was folded into v3.1.0 the same day.
 
 ## Milestones
-
-### Restructure the code into browser, pipeline, and research
-
-Replace `v1/`, `v2/`, and `tools/` with three top-level folders that match the project's three parts. No behavior changes.
-
-- **Decided (D43 to D45, 2026-11-17):**
-  - Top-level folders `browser/`, `pipeline/`, and `research/`, installed as an editable package, with the `v2.` import prefix dropped. Of `v1/`, only `nhlgame.py` moves, into `pipeline/`.
-  - `metrics.py` stays in `browser/`, and the pipeline imports it.
-  - `v2/goalies/` moves whole to `research/goalies/`, and the pipeline's `build_goalies_db` imports from it.
-- **Work:**
-  - Move the three `build_*_db.py` scripts from the browser folder to the pipeline.
-  - Replace the working-directory-relative `data/` paths and the `parents[N]` root lookups with one helper. `docs/context/2026-09-05-project-scaffold-ai-migration-recommendation.md`, section "Coupling that blocks a move," lists each site.
-  - Update the launchd job, `run.sh`, the `Dockerfile`, `.dockerignore`, `tools/sync-runtime-data.sh`, and the GitHub workflows for the new paths.
-  - Confirm the other `v1/` scripts are unused before removing them.
-  - Verify with the full test suite, one full daily pipeline run, a sync, and a Docker build compared against the current image.
-- **Version:** not chosen yet.
-- **Depends on:** the season toggle, because its plan was reviewed against the current paths.
 
 ### Move the daily pipeline to an always-on Linux machine
 

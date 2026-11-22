@@ -1,13 +1,13 @@
 # v3.2.0: Restructure the code into browser, pipeline, and research
 
 **Created:** 2026-11-18 19:26
-**Last modified:** 2026-11-21 10:47
+**Last modified:** 2026-11-22 09:01
 
 The current milestone in `ROADMAP.md`. It replaces `v1/`, `v2/`, and `tools/` with three top-level folders, `browser/`, `pipeline/`, and `research/`, installed as one editable package. Nothing a user of the browser or the pipeline sees changes: the same pages, the same data files in the same places, and the same 08:00 run.
 
 Rulings: Decision Queue D43 to D45 (folders, package, `metrics.py`, goalies), D50 (trunk-based on `master`), and D53 (the restructure goes before the Edge refresh).
 
-**Status:** in progress. Steps 1 to 6 of "Order of work" are done; human test step 8 (the 08:00 run) and the close-out remain. oiler accepted D54 to D56 on 2026-11-18. A review by a second session the same day changed the order of work, the install steps, the rollback, and the human test. oiler accepted D57 on 2026-11-19: the browser keeps its own data-path lookup. On 2026-11-20 the package install moved ahead of the path helper, because the pipeline scripts run as subprocesses and can import a shared helper only once the package is installed.
+**Status:** released 2026-11-22 as v3.2.0. Not deployed: the image changes only in layout, so it ships with the next data deploy oiler approves.
 
 ## What the release changes
 
@@ -213,10 +213,17 @@ Record each result under "Results."
 - **Found:** No games were played on 2026-11-20, so the run had nothing to fetch, and the fetcher (`pipeline/nhlgame.py`) and the player fetcher haven't yet run under the new layout. The close-out waits for the 2026-11-22 run, which should fetch the 2026-11-21 games.
 - **Changed:** Nothing.
 
+### Human test step 8, 2026-11-22
+
+- **Run by:** oiler and Claude.
+- **Result:** Passed. The laptop was off at 08:00, so launchd started the missed job on wake. It fetched, validated, and processed the 14 games of 2026-11-21 (2026020359 to 2026020372) with no failures, rebuilt `league.db` with 372 games, and exited 0 with an empty stderr log.
+- **Found:** `fetch_players` timed out, and `backfill_players` added the one new player. The same timeout appears in the 2026-11-20 run, from before the move, so the move didn't cause it.
+- **Changed:** Nothing.
+
 ## Close-out
 
-- [ ] Every file in this folder listed under "This folder", and the human test recorded under "Results"
-- [ ] The version added to `CHANGELOG.md`
-- [ ] The milestone's row and log entry added to `docs/history.md`
-- [ ] The milestone removed from `ROADMAP.md`, so the next milestone is first in its list
-- [ ] The release commit tagged, with a GitHub Release: the commit that adds the version to `CHANGELOG.md`
+- [x] Every file in this folder listed under "This folder", and the human test recorded under "Results"
+- [x] The version added to `CHANGELOG.md`
+- [x] The milestone's row and log entry added to `docs/history.md`
+- [x] The milestone removed from `ROADMAP.md`, so the next milestone is first in its list
+- [x] The release commit tagged, with a GitHub Release: the commit that adds the version to `CHANGELOG.md`
