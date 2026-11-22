@@ -1,13 +1,13 @@
 # v3.2.0: Restructure the code into browser, pipeline, and research
 
 **Created:** 2026-11-18 19:26
-**Last modified:** 2026-11-22 09:01
+**Last modified:** 2026-11-22 13:39
 
 The current milestone in `ROADMAP.md`. It replaces `v1/`, `v2/`, and `tools/` with three top-level folders, `browser/`, `pipeline/`, and `research/`, installed as one editable package. Nothing a user of the browser or the pipeline sees changes: the same pages, the same data files in the same places, and the same 08:00 run.
 
 Rulings: Decision Queue D43 to D45 (folders, package, `metrics.py`, goalies), D50 (trunk-based on `master`), and D53 (the restructure goes before the Edge refresh).
 
-**Status:** released 2026-11-22 as v3.2.0. Not deployed: the image changes only in layout, so it ships with the next data deploy oiler approves.
+**Status:** released 2026-11-22 as v3.2.0, and deployed the same day as Fly release v31.
 
 ## What the release changes
 
@@ -219,6 +219,13 @@ Record each result under "Results."
 - **Result:** Passed. The laptop was off at 08:00, so launchd started the missed job on wake. It fetched, validated, and processed the 14 games of 2026-11-21 (2026020359 to 2026020372) with no failures, rebuilt `league.db` with 372 games, and exited 0 with an empty stderr log.
 - **Found:** `fetch_players` timed out, and `backfill_players` added the one new player. The same timeout appears in the 2026-11-20 run, from before the move, so the move didn't cause it.
 - **Changed:** Nothing.
+
+### Deploy, 2026-11-22
+
+- **Run by:** oiler.
+- **Result:** Passed. Fly release v31 is live, its one machine is started with 1 of 1 health checks passing, and `/healthz`, `/`, `/skaters`, and `/goalies` on `app.nhldata.org` return 200.
+- **Found:** Nothing.
+- **Changed:** Nothing. To roll back: `fly deploy --image registry.fly.io/nhl-browser:deployment-01M7RH0E8E9W3A13REQ67P9D9N` (release v30).
 
 ## Close-out
 
