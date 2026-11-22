@@ -7,7 +7,7 @@ The current milestone in `ROADMAP.md`. It replaces `v1/`, `v2/`, and `tools/` wi
 
 Rulings: Decision Queue D43 to D45 (folders, package, `metrics.py`, goalies), D50 (trunk-based on `master`), and D53 (the restructure goes before the Edge refresh).
 
-**Status:** released 2026-11-22 as v3.2.0, and deployed the same day as Fly release v31.
+**Status:** released 2026-11-22 as v3.2.0. Fly release v31 shipped with no seasons readable; the fix awaits a deploy.
 
 ## What the release changes
 
@@ -223,9 +223,9 @@ Record each result under "Results."
 ### Deploy, 2026-11-22
 
 - **Run by:** oiler.
-- **Result:** Passed. Fly release v31 is live, its one machine is started with 1 of 1 health checks passing, and `/healthz`, `/`, `/skaters`, and `/goalies` on `app.nhldata.org` return 200.
-- **Found:** Nothing.
-- **Changed:** Nothing. To roll back: `fly deploy --image registry.fly.io/nhl-browser:deployment-01M7RH0E8E9W3A13REQ67P9D9N` (release v30).
+- **Result:** Failed. Fly release v31 is live and its health check passes, but the site says "2026-27 data isn't available yet." (oiler).
+- **Found:** `fly.toml` sets `DATA_DIR = '/app/runtime_data'` in `[env]`, which overrides the Dockerfile's `ENV`. Since the D54 commit the image holds the data at `/app/browser/runtime_data`, so the app found no season ready. The survey and the image checks missed it: they never read `fly.toml`, the local container runs didn't apply its `[env]`, and `/healthz` doesn't check data.
+- **Changed:** `fly.toml` no longer sets `DATA_DIR`, so the Dockerfile's value applies. `browser/tests/test_deploy_config.py` fails if `fly.toml` overrides `DATA_DIR` with a path other than the Dockerfile's, or if the Dockerfile's `DATA_DIR` isn't where it copies `runtime_data/`; it fails against the v31 `fly.toml`. To roll back: `fly deploy --image registry.fly.io/nhl-browser:deployment-01M7RH0E8E9W3A13REQ67P9D9N` (release v30).
 
 ## Close-out
 

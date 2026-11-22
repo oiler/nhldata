@@ -11,7 +11,8 @@ primary_region = 'iad'
 [env]
   CANONICAL_HOST = 'app.nhldata.org'
   DASH_ENABLE_SECURITY_HEADERS = '1'
-  DATA_DIR = '/app/runtime_data'
+  # DATA_DIR comes from the Dockerfile's ENV, which knows where the image puts
+  # runtime_data/. Setting it here overrides that and can point at nothing.
   PORT = '8080'
 
 [http_service]
