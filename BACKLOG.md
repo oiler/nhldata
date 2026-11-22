@@ -21,6 +21,13 @@ Everything not promised yet. An item gains authority only when it moves into `RO
 
 ---
 
+### Found during the v3.2.0 restructure
+
+- `fetch_players` times out in the daily run (2026-11-20 and 2026-11-22 logs, before and after the move). `backfill_players` recovers the new players, so no data is lost, but the step never finishes.
+- A deploy check that loads a season. `/healthz` passed while Fly release v31 read no data. A post-deploy check, or a readiness field in `/healthz`, would catch that class of failure.
+
+---
+
 ### Declare the pipeline's dependencies in `pyproject.toml`
 
 - `pyproject.toml` lists `requests`, `beautifulsoup4`, `lxml`, and `anthropic`, but not `pandas` or `numpy`, which the pipeline and research code import. The pipeline works only because the pyenv 3.11.6 environment already has them.
