@@ -8,6 +8,13 @@ dependencies = [
     "beautifulsoup4>=4.12.0",
     "lxml>=5.0.0",
     "anthropic>=0.40.0",
+    # Same pandas as browser/requirements.txt, so the pipeline builds league.db
+    # with the version the browser reads it with.
+    "pandas==3.0.0",
+    # numpy 2.4 needs SSE4.2 and POPCNT. mininet, the Core 2 Duo machine that
+    # runs the daily pipeline, has neither, and numpy 2.4 refuses to import
+    # there (Decision Queue D80). Stay on 2.3 while mininet runs the pipeline.
+    "numpy>=2.3,<2.4",
 ]
 
 [build-system]
@@ -22,8 +29,8 @@ where = ["."]
 include = ["browser", "browser.*", "pipeline", "pipeline.*", "research", "research.*"]
 namespaces = false
 
-[tool.uv]
-dev-dependencies = []
+[dependency-groups]
+dev = ["pytest>=8"]
 
 [tool.pytest.ini_options]
 testpaths = ["browser", "pipeline", "research"]

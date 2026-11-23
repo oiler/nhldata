@@ -28,13 +28,6 @@ Everything not promised yet. An item gains authority only when it moves into `RO
 
 ---
 
-### Declare the pipeline's dependencies in `pyproject.toml`
-
-- `pyproject.toml` lists `requests`, `beautifulsoup4`, `lxml`, and `anthropic`, but not `pandas` or `numpy`, which the pipeline and research code import. The pipeline works only because the pyenv 3.11.6 environment already has them.
-- Found during the v3.2.0 restructure design (2026-11-18). The restructure's editable install uses `--no-deps`, so it doesn't change this.
-
----
-
 ### A notification the runner sends itself
 
 - Today the agent sends the run's notification through `send_notification`, a macOS desktop notification. When the agent can't start, nothing is sent, so a failed run looks like a quiet one. On mininet the tool does nothing.

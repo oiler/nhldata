@@ -1,7 +1,7 @@
 # v3.3.0: Move the daily pipeline to mininet
 
 **Created:** 2026-11-23 11:02
-**Last modified:** 2026-11-23 11:08
+**Last modified:** 2026-11-23 11:16
 
 The current milestone in `ROADMAP.md`. The daily pipeline moves from the laptop's launchd job to mininet, an always-on Mac mini running Ubuntu. mininet becomes the machine that fetches from the NHL and builds each season's data, and the laptop keeps a read-only mirror for research and deploys. Nothing a user of the browser sees changes, and the pipeline's output must match the laptop's.
 
@@ -48,7 +48,8 @@ Everything lives in the home folder of `jrf1039`, so setup needs `sudo` only onc
 ### Dependencies and Python (D80)
 
 - `pyproject.toml` declares what the pipeline and research code import and don't list today: `pandas` and `numpy`. numpy is pinned `>=2.3,<2.4`, with a comment that names mininet's CPU as the reason. This closes the `BACKLOG.md` item "Declare the pipeline's dependencies in `pyproject.toml`."
-- A `.python-version` file pins Python 3.12 for `uv`. CI and the Docker image already run 3.12, and mininet's system Python is 3.12. The laptop's daily run uses pyenv 3.11.6 until cutover, and that environment doesn't change.
+- The service sets `UV_PYTHON=3.12`, so `uv` runs the pipeline on Python 3.12 there. CI and the Docker image already run 3.12, and mininet's system Python is 3.12. The laptop's daily run uses pyenv 3.11.6 until cutover, and that environment doesn't change. A `.python-version` file would have been simpler, but pyenv reads that file too, and it broke `python` in the laptop checkout, which has no pyenv 3.12.
+- A `dev` dependency group adds `pytest`. The `uv` environment holds the pipeline's and research's packages, not the browser's, so under `uv` the tests to run are `pipeline` and `research`. The full suite still runs in the pyenv environment and in CI.
 - `uv.lock` is refreshed, and mininet installs from it with `uv sync --frozen`, so it runs the same versions on every run.
 - The browser image installs from `browser/requirements.txt` and isn't affected.
 
@@ -97,13 +98,13 @@ mininet runs a different numpy and a different Python from the laptop's daily ru
 
 Each step is one commit on `master` with the full test suite passing, and each leaves the laptop's 08:00 run working until cutover.
 
-1. Declare `pandas` and `numpy` with the numpy pin, add `.python-version`, and refresh `uv.lock`. Run the suite under `uv` on the laptop with numpy 2.3.
+1. Declare `pandas` and `numpy` with the numpy pin, add the `dev` group, and refresh `uv.lock`. Run the `pipeline` and `research` tests under `uv` on the laptop with numpy 2.3.
 2. Add the systemd units and `pipeline/mirror-data.sh`. Nothing on the laptop uses them yet.
 3. Set up mininet:
-   - Install `uv`, clone the repository, run `uv sync --frozen`, and run the test suite there with `-m "not requires_data"`.
+   - Install `uv`, clone the repository, run `uv sync --frozen`, and run the `pipeline` and `research` tests there with `-m "not requires_data"`.
    - oiler creates `pipeline.env` with the key, and runs `sudo loginctl enable-linger jrf1039`.
    - Seed `~/nhl-data/` from the laptop with `rsync`: every season folder and `data/generated/`, about 20 GB. `data/v1-data/` and the archive file stay on the laptop.
-   - Run the suite again with the data, then time one daily run by hand.
+   - Run those tests again with the data, then time one daily run by hand.
    - Link and enable the timer.
 4. Shadow runs and the parity check, two or three mornings.
 5. Cutover, in one sitting:
@@ -126,7 +127,7 @@ To roll back before cutover, disable the timer on mininet; the laptop never stop
 
 Claude runs steps 1 to 5. oiler runs step 6.
 
-1. On mininet, the test suite passes with `-m "not requires_data"`, and passes in full once the data is seeded.
+1. On mininet, the `pipeline` and `research` tests pass with `-m "not requires_data"`, and pass in full once the data is seeded.
 2. One daily run started by hand on mininet completes, and its run log lists the same steps as the laptop's. Record how long it took, and the time and peak memory of `build_league_db.py`.
 3. `systemctl --user list-timers` shows the next run at the chosen time, and `loginctl show-user jrf1039 -p Linger` shows `yes`.
 4. Each shadow morning, the parity check passes as the section "Shadow runs and the parity check" defines it.
@@ -136,6 +137,13 @@ Claude runs steps 1 to 5. oiler runs step 6.
 Record each result under "Results."
 
 ## Results
+
+### Machine-led tests, step 1, 2026-11-23
+
+- **Run by:** Claude, on the laptop.
+- **Result:** Passed. Under `uv` (Python 3.12.10, numpy 2.3.5, pandas 3.0.0) the `pipeline` and `research` tests give 309 passed. The full suite in the pyenv environment still gives 440 passed.
+- **Found:** A `.python-version` file set to 3.12 made pyenv's `python` fail in the checkout. The file was removed, and the service sets `UV_PYTHON` instead.
+- **Changed:** The design's "Dependencies and Python" section and steps, to match.
 
 ## Close-out
 
