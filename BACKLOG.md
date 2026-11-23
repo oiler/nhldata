@@ -35,6 +35,16 @@ Everything not promised yet. An item gains authority only when it moves into `RO
 
 ---
 
+### mininet follow-ups
+
+mininet is the Mac mini (Macmini4,1, Ubuntu 24.04) that the daily pipeline is moving to. Found while checking the machine on 2026-11-22 and 2026-11-23.
+
+- **Run the disk's full surface test.** No SMART self-test has ever run on its drive, the original 2010 Toshiba MK3255GSXF. `sudo smartctl -t long /dev/sda` takes about 2.5 hours in the background, and `sudo smartctl -l selftest /dev/sda` shows the result. The drive passed its health check with no reallocated or pending sectors.
+- **Recheck `Load_Cycle_Count`.** It read 3,848,578 on 2026-11-23, about six times the usual rating for a laptop drive. `hdparm -B 254` turns off the aggressive head parking that causes it. A day or more after that change, confirm the count has stopped climbing.
+- **Power loss needs a person.** The mini doesn't turn itself back on after a power cut; someone has to press the button. oiler is putting it on a battery backup. Until the run's notification covers a run that never started, a power cut shows up only as silence.
+
+---
+
 ### Detect NHL Play-by-Play Data Corrections
 
 **Problem:** Our 5v5 goal counts occasionally differ by 1-2 goals from NHL.com official stats (e.g., LAK 5v5 GF: 113 vs NHL's 114 for 2025 season). The NHL likely makes post-game corrections to play-by-play data, but we only download each game once.
