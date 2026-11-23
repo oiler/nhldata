@@ -21,9 +21,34 @@ The 08:00 launchd job runs on a laptop that is often asleep. Fifteen runs betwee
   - D78 (2026-11-23): notifications wait in `BACKLOG.md`.
   - D79 (2026-11-23): deploys stay on the laptop.
   - D80 (2026-11-23): numpy stays on the 2.3 series, because mininet's CPU can't run 2.4.
-- **Open:** D81 (the run time) and D82 (a second run that re-checks recent games for corrections).
+  - D81 (2026-11-23): the run starts at 05:00 Eastern.
 - **Release folder:** `docs/versions/3.3.0/`, which holds the design.
 - **Depends on:** nothing. The code restructure shipped as v3.2.0.
+
+### Re-check recent games for corrections
+
+A second run on mininet that fetches recent games again and finds the ones the NHL changed after the daily run took them. Moved from `BACKLOG.md` on 2026-11-23.
+
+- **Decided (D82, 2026-11-23):** its own milestone, right after the move to mininet. The first version measures: it stores a checksum of each game's play-by-play, fetches games from the last few days again on a second timer, and logs which ones changed, before anything is rebuilt from them.
+- **Depends on:** the move to mininet.
+
+**Problem:** Our 5v5 goal counts occasionally differ by 1-2 goals from NHL.com official stats (e.g., LAK 5v5 GF: 113 vs NHL's 114 for 2025 season). The NHL likely makes post-game corrections to play-by-play data, but we only download each game once.
+
+**Research findings (2026-03-15):**
+
+- The public NHL API (`api-web.nhle.com`) has no changelog, no `Last-Modified` header, and no `updatedAt` field in the JSON response.
+- HTTP ETags are request-time-based (not content-based), so they can't detect changes.
+- The `gameState` transition from `FINAL` to `OFF` is the best proxy for "data is probably stable," but corrections may still happen after.
+- Cache TTLs on completed games are only 3-5 seconds, suggesting the NHL expects clients to re-fetch and that data can change.
+- No open-source library (Hockey-Scraper, chickenstats, nhl-api-py) implements automatic staleness detection.
+- chickenstats maintains a 570-line manual corrections file (`_fixes.py`) for known NHL data errors spanning 2010-2025, confirming that errors are real and persistent.
+- The commercial Sportradar NHL API has a "Daily Change Log" endpoint, but the free public API does not.
+
+**Possible approaches:**
+
+1. **Hash-and-compare** — Store a checksum of each game's play-by-play JSON at download time. Periodically re-fetch and flag games where the checksum changed.
+2. **Scheduled re-download window** — Re-fetch play-by-play for games played within the last N days as part of the daily pipeline, since corrections are most likely shortly after games.
+3. **Accept small discrepancies** — Document that our 5v5 data uses strict `1551` situation codes from a single point-in-time download and may differ slightly from NHL.com.
 
 ### Keep the deployed browser current during the season
 

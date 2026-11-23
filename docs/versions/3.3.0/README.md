@@ -1,12 +1,13 @@
 # v3.3.0: Move the daily pipeline to mininet
 
 **Created:** 2026-11-23 11:02
+**Last modified:** 2026-11-23 11:08
 
 The current milestone in `ROADMAP.md`. The daily pipeline moves from the laptop's launchd job to mininet, an always-on Mac mini running Ubuntu. mininet becomes the machine that fetches from the NHL and builds each season's data, and the laptop keeps a read-only mirror for research and deploys. Nothing a user of the browser sees changes, and the pipeline's output must match the laptop's.
 
-Rulings: Decision Queue D36 (move to an always-on Linux machine), D75 (mininet), D76 (who writes which data), D77 (systemd timer, pull before each run, `uv`), D78 (notifications wait in `BACKLOG.md`), D79 (deploys stay on the laptop), and D80 (numpy stays on the 2.3 series).
+Rulings: Decision Queue D36 (move to an always-on Linux machine), D75 (mininet), D76 (who writes which data), D77 (systemd timer, pull before each run, `uv`), D78 (notifications wait in `BACKLOG.md`), D79 (deploys stay on the laptop), D80 (numpy stays on the 2.3 series), D81 (the run starts at 05:00 Eastern), and D82 (re-checking recent games for corrections is its own milestone, after this one).
 
-**Status:** design for discussion. No code has changed. D81 (the run time) and D82 (a second run that re-checks recent games) are open; the design uses D81's recommendation and leaves D82's work out.
+**Status:** design accepted. Every decision it depends on is answered. No code has changed.
 
 ## What the release changes
 
@@ -62,7 +63,7 @@ Two systemd user units, kept in the repository at `pipeline/orchestrator/systemd
   - Then `uv run python pipeline/orchestrator/runner.py`.
   - A start timeout of three hours, so a hung run ends instead of blocking the next one.
 - `nhl-pipeline.timer`:
-  - `OnCalendar=*-*-* 05:00` (D81's recommendation). The latest games end around 01:30 Eastern, the restart window is 04:00, and updates install from 06:00.
+  - `OnCalendar=*-*-* 05:00` (D81). The latest games end around 01:30 Eastern, the restart window is 04:00, and updates install from 06:00.
   - `Persistent=true`, so a run missed while the machine was off or restarting starts when it's back.
 - User units run without a login only when lingering is on. oiler runs `sudo loginctl enable-linger jrf1039` once.
 - The run's output goes to the systemd journal (`journalctl --user -u nhl-pipeline`), and the run log goes to `~/nhl-data/<season>/logs/` as it does today.
@@ -117,7 +118,7 @@ To roll back before cutover, disable the timer on mininet; the laptop never stop
 
 - No deploy from mininet (D79). The layout allows it later: mininet holds every file a deploy needs.
 - No notifications (D78).
-- No second run or correction detection (D82).
+- No second run or correction detection. D82 makes that the next milestone in `ROADMAP.md`.
 - No Edge refresh timer. The Edge fetch stays a job started by hand, now on mininet.
 - No change to what the pipeline fetches or computes.
 
