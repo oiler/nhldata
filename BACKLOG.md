@@ -35,6 +35,15 @@ Everything not promised yet. An item gains authority only when it moves into `RO
 
 ---
 
+### A notification the runner sends itself
+
+- Today the agent sends the run's notification through `send_notification`, a macOS desktop notification. When the agent can't start, nothing is sent, so a failed run looks like a quiet one. On mininet the tool does nothing.
+- Wanted: the runner sends one message per run with the result, and systemd sends one when the job fails. ntfy.sh is reachable from mininet and needs no account.
+- oiler deferred this on 2026-11-23 (Decision Queue D78): the run log on mininet is enough while the project is being worked on daily. Until it's built, `pipeline/mirror-data.sh` warns when mininet has no run log for today.
+- The current tool also builds an `osascript` command from the agent's text without escaping it. Replace it; don't port it.
+
+---
+
 ### mininet follow-ups
 
 mininet is the Mac mini (Macmini4,1, Ubuntu 24.04) that the daily pipeline is moving to. Found while checking the machine on 2026-11-22 and 2026-11-23.

@@ -13,12 +13,17 @@ The project is past its first release: `docs/history.md` lists the releases thro
 
 The 08:00 launchd job runs on a laptop that is often asleep. Fifteen runs between 2026-10-03 and 2026-11-15 failed with `Agent error: Connection error.` The daily run now catches up on games an earlier run missed, so a failed morning no longer loses games, but the data arrives a day or more late.
 
-- **Decided (D36, 2026-11-17):** move the scheduled run to an always-on Linux machine, instead of adding retries or changing the time on the laptop.
-- **Work:**
-  - Replace `com.nhl.orchestrator.plist` and the hard-coded paths in `pipeline/orchestrator/run.sh` with a cron job or systemd timer that takes the repository path from its environment.
-  - Decide where `data/` lives on that machine, and how the laptop reads it for local deploys.
-  - Replace `send_notification`, which is a macOS desktop notification.
-- **Depends on:** the code restructure.
+- **Decided:**
+  - D36 (2026-11-17): move the scheduled run to an always-on Linux machine, instead of adding retries or changing the time on the laptop.
+  - D75 (2026-11-22): the machine is mininet, a Mac mini at home running Ubuntu, reached over Tailscale.
+  - D76 (2026-11-23): mininet is the only writer of every `data/<season>/` folder. The laptop keeps a read-only mirror and is the only writer of `data/generated/`.
+  - D77 (2026-11-23): a systemd timer, with `git pull` and `uv sync` before each run and the settings in one environment file.
+  - D78 (2026-11-23): notifications wait in `BACKLOG.md`.
+  - D79 (2026-11-23): deploys stay on the laptop.
+  - D80 (2026-11-23): numpy stays on the 2.3 series, because mininet's CPU can't run 2.4.
+- **Open:** D81 (the run time) and D82 (a second run that re-checks recent games for corrections).
+- **Release folder:** `docs/versions/3.3.0/`, which holds the design.
+- **Depends on:** nothing. The code restructure shipped as v3.2.0.
 
 ### Keep the deployed browser current during the season
 
