@@ -1,7 +1,7 @@
 # v3.3.0: Move the daily pipeline to mininet
 
 **Created:** 2026-11-23 11:02
-**Last modified:** 2026-11-23 11:16
+**Last modified:** 2026-11-23 11:17
 
 The current milestone in `ROADMAP.md`. The daily pipeline moves from the laptop's launchd job to mininet, an always-on Mac mini running Ubuntu. mininet becomes the machine that fetches from the NHL and builds each season's data, and the laptop keeps a read-only mirror for research and deploys. Nothing a user of the browser sees changes, and the pipeline's output must match the laptop's.
 
@@ -66,6 +66,8 @@ Two systemd user units, kept in the repository at `pipeline/orchestrator/systemd
 - `nhl-pipeline.timer`:
   - `OnCalendar=*-*-* 05:00` (D81). The latest games end around 01:30 Eastern, the restart window is 04:00, and updates install from 06:00.
   - `Persistent=true`, so a run missed while the machine was off or restarting starts when it's back.
+- The service waits up to five minutes for name lookups to work before it starts, because a run the timer missed starts as soon as the machine is back, which can be before the network is.
+- `pipeline.env.example`, beside the units, shows the settings file's three lines.
 - User units run without a login only when lingering is on. oiler runs `sudo loginctl enable-linger jrf1039` once.
 - The run's output goes to the systemd journal (`journalctl --user -u nhl-pipeline`), and the run log goes to `~/nhl-data/<season>/logs/` as it does today.
 - `pipeline/orchestrator/run.sh` and `com.nhl.orchestrator.plist` are deleted at cutover, not ported.
@@ -76,6 +78,7 @@ A new script, `pipeline/mirror-data.sh`, run on the laptop.
 
 - **Pull.** `rsync` copies mininet's season folders into the laptop's `data/`. It doesn't delete: a file that exists only on the laptop stays, and the script lists such files so they can be looked at.
 - **Push.** `rsync` copies the laptop's `data/generated/` to mininet.
+- **Laptop-only files.** It lists files that exist only in the laptop's copy of a season folder mininet has, since those were written against the one-writer rule or predate the move.
 - **Not during a run.** It first asks mininet whether `nhl-pipeline.service` is active, and stops if it is. `build_league_db.py` deletes `league.db` and rebuilds it, so a mirror taken mid-run could copy a partial database.
 - **A stale mininet is visible.** It prints the date of mininet's newest run log, and warns when that isn't today. This is the only signal of a missed run until notifications are built (D78).
 - It's started by hand, because Tailscale SSH can ask for a browser check.
@@ -144,6 +147,13 @@ Record each result under "Results."
 - **Result:** Passed. Under `uv` (Python 3.12.10, numpy 2.3.5, pandas 3.0.0) the `pipeline` and `research` tests give 309 passed. The full suite in the pyenv environment still gives 440 passed.
 - **Found:** A `.python-version` file set to 3.12 made pyenv's `python` fail in the checkout. The file was removed, and the service sets `UV_PYTHON` instead.
 - **Changed:** The design's "Dependencies and Python" section and steps, to match.
+
+### Machine-led tests, step 2, 2026-11-23
+
+- **Run by:** Claude, on the laptop.
+- **Result:** Passed, as far as the laptop can show. The mirror script's `rsync` options were tried on scratch folders: the pull skips `generated/`, copies new files, deletes nothing, and the laptop-only listing names the right file. The full suite gives 440 passed.
+- **Found:** The laptop's `rsync` is openrsync, which prints each laptop-only file twice in a dry run. The script removes the duplicates.
+- **Changed:** Nothing else. The units and the script's calls to mininet are first exercised in step 3.
 
 ## Close-out
 

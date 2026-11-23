@@ -1,0 +1,41 @@
+# The daily pipeline on mininet, as a systemd user service. The timer beside
+# this file starts it.
+#
+# Paths use %h, the home folder, so nothing here names a user:
+#   %h/nhl                       the repository, on master
+#   %h/.config/nhl/pipeline.env  settings and the API key (see pipeline.env.example)
+#   %h/.local/bin/uv             uv
+#
+# To install (once):
+#   sudo loginctl enable-linger "$USER"     # user services run without a login
+#   systemctl --user link ~/nhl/pipeline/orchestrator/systemd/nhl-pipeline.service \
+#                         ~/nhl/pipeline/orchestrator/systemd/nhl-pipeline.timer
+#   systemctl --user enable --now nhl-pipeline.timer
+# The units are linked, not copied, so a pull updates them. After a pull that
+# changes either file, run: systemctl --user daemon-reload
+#
+# To run now:      systemctl --user start nhl-pipeline.service
+# To read output:  journalctl --user -u nhl-pipeline.service
+
+[Unit]
+Description=NHL daily pipeline
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/nhl
+EnvironmentFile=%h/.config/nhl/pipeline.env
+Environment=UV_PYTHON=3.12
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
+
+# A run the timer missed starts as soon as the machine is back, which can be
+# before the network is. Wait up to five minutes for name lookups to work.
+ExecStartPre=/bin/sh -c 'for i in $(seq 60); do getent hosts api-web.nhle.com >/dev/null && exit 0; sleep 5; done; exit 1'
+# The "-" lets the run go on when the pull fails: yesterday's code still
+# fetches today's games.
+ExecStartPre=-/usr/bin/git pull --ff-only
+# A failed sync stops the run: the code and its packages may no longer match.
+ExecStartPre=%h/.local/bin/uv sync --frozen --no-dev
+ExecStart=%h/.local/bin/uv run --no-sync python pipeline/orchestrator/runner.py
+
+# A hung run ends instead of blocking the next day's.
+TimeoutStartSec=3h

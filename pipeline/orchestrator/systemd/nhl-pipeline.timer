@@ -1,0 +1,15 @@
+# Starts nhl-pipeline.service every day. Install steps are in the service file.
+
+[Unit]
+Description=Run the NHL daily pipeline every morning
+
+[Timer]
+# 05:00 in the machine's time zone, which is America/New_York. The latest
+# games end around 01:30, the machine restarts for updates at 04:00, and
+# updates install from 06:00 (Decision Queue D81).
+OnCalendar=*-*-* 05:00:00
+# Run a missed start when the machine comes back.
+Persistent=true
+
+[Install]
+WantedBy=timers.target
