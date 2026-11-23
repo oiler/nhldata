@@ -1,7 +1,7 @@
 # v3.3.0: Move the daily pipeline to mininet
 
 **Created:** 2026-11-23 11:02
-**Last modified:** 2026-11-23 11:17
+**Last modified:** 2026-11-23 11:40
 
 The current milestone in `ROADMAP.md`. The daily pipeline moves from the laptop's launchd job to mininet, an always-on Mac mini running Ubuntu. mininet becomes the machine that fetches from the NHL and builds each season's data, and the laptop keeps a read-only mirror for research and deploys. Nothing a user of the browser sees changes, and the pipeline's output must match the laptop's.
 
@@ -154,6 +154,24 @@ Record each result under "Results."
 - **Result:** Passed, as far as the laptop can show. The mirror script's `rsync` options were tried on scratch folders: the pull skips `generated/`, copies new files, deletes nothing, and the laptop-only listing names the right file. The full suite gives 440 passed.
 - **Found:** The laptop's `rsync` is openrsync, which prints each laptop-only file twice in a dry run. The script removes the duplicates.
 - **Changed:** Nothing else. The units and the script's calls to mininet are first exercised in step 3.
+
+### Machine-led tests, step 3, 2026-11-23
+
+- **Run by:** Claude, with oiler adding the API key to `pipeline.env`.
+- **Result:** Passed, except that lingering isn't on yet, so the timer doesn't fire without a login.
+- **Found:**
+  - Setup: `uv` 0.13.9 installed in the home folder, the repository cloned to `~/nhl`, and `uv sync --frozen` gave Python 3.12.3, numpy 2.3.5, and pandas 3.0.0.
+  - Tests on mininet: the `pipeline` and `research` tests gave 305 passed with 4 deselected before the data arrived, and 309 passed with it.
+  - Seed: the laptop's six season folders and `data/generated/` copied in 13 minutes, 21 GB. File counts match folder by folder.
+  - Timing on mininet with 377 games: `build_league_db.py` took 210 seconds and peaked at 94 MB. A timeline, a competition file, and the boxscore flatten each took about a second.
+  - Parity: the timeline, competition file, and flattened boxscores for game 2026020372 match the laptop's by checksum. Of `league.db`'s 10 tables, 9 match the laptop's 08:00 build row for row. `competition` differs in one value of 13,571 rows: `pct_vs_top_fwd` for one player in one game is 0.0333 on mininet and 0.0332 on the laptop.
+  - The cause is the Python version, not mininet's CPU or numpy. The same build on the laptop under Python 3.12 matches mininet in all 10 tables. Python 3.12 made `sum()` on decimals more accurate, and `build_league_db.py` rounds an average of such a sum to four places, so a value on a rounding boundary can move by 0.0001. Decision Queue D83 asks whether to accept that.
+  - The service, started by hand, pulled, synced, found nothing pending through 2026-11-22, called the agent with the new key, and finished in 27 seconds with `Result=success`.
+  - The timer is linked and enabled; its next run is 2026-11-24 05:00.
+  - `./pipeline/mirror-data.sh --dry-run` from the laptop read the service state and the newest run log, and listed its pull and push.
+- **Changed:**
+  - The mirror script skips `.DS_Store` files, which the dry run listed as laptop-only.
+  - The hand run replaced mininet's copy of the 2026-11-23 run log, which the seed had brought from the laptop. The laptop's own log is unchanged.
 
 ## Close-out
 

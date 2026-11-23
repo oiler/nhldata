@@ -59,15 +59,15 @@ else
 fi
 
 echo "pull: $HOST:$REMOTE/ -> $LOCAL/ (season folders)"
-rsync -a --stats ${DRY[@]+"${DRY[@]}"} --exclude '/generated/' "$HOST:$REMOTE/" "$LOCAL/" | grep -E '^(Number of|Total transferred)' || true
+rsync -a --stats ${DRY[@]+"${DRY[@]}"} --exclude '/generated/' --exclude '.DS_Store' "$HOST:$REMOTE/" "$LOCAL/" | grep -E '^(Number of|Total transferred)' || true
 
 echo "push: $LOCAL/generated/ -> $HOST:$REMOTE/generated/"
-rsync -a --stats ${DRY[@]+"${DRY[@]}"} "$LOCAL/generated/" "$HOST:$REMOTE/generated/" | grep -E '^(Number of|Total transferred)' || true
+rsync -a --stats ${DRY[@]+"${DRY[@]}"} --exclude '.DS_Store' "$LOCAL/generated/" "$HOST:$REMOTE/generated/" | grep -E '^(Number of|Total transferred)' || true
 
 # Season folders that mininet has: a file in one of them that only the laptop
 # has was written here, against the one-writer rule, or predates the move.
 only_here="$(ssh "$HOST" "ls -d $REMOTE/[0-9][0-9][0-9][0-9] 2>/dev/null | sed 's#.*/##'" | while read -r season; do
-    rsync -a --dry-run --delete --itemize-changes "$HOST:$REMOTE/$season/" "$LOCAL/$season/" \
+    rsync -a --dry-run --delete --itemize-changes --exclude '.DS_Store' "$HOST:$REMOTE/$season/" "$LOCAL/$season/" \
         | sed -n "s#^\*deleting  *#$season/#p"
 done | sort -u)"
 if [[ -n "$only_here" ]]; then
