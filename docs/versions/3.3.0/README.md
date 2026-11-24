@@ -1,7 +1,7 @@
 # v3.3.0: Move the daily pipeline to mininet
 
 **Created:** 2026-11-23 11:02
-**Last modified:** 2026-11-23 11:40
+**Last modified:** 2026-11-24 08:37
 
 The current milestone in `ROADMAP.md`. The daily pipeline moves from the laptop's launchd job to mininet, an always-on Mac mini running Ubuntu. mininet becomes the machine that fetches from the NHL and builds each season's data, and the laptop keeps a read-only mirror for research and deploys. Nothing a user of the browser sees changes, and the pipeline's output must match the laptop's.
 
@@ -172,6 +172,18 @@ Record each result under "Results."
 - **Changed:**
   - The mirror script skips `.DS_Store` files, which the dry run listed as laptop-only.
   - The hand run replaced mininet's copy of the 2026-11-23 run log, which the seed had brought from the laptop. The laptop's own log is unchanged.
+
+### Shadow run 1, 2026-11-24
+
+- **Run by:** Claude. oiler turned lingering on the day before.
+- **Result:** Passed. mininet's output matches the laptop's.
+- **Found:**
+  - mininet's timer started the service at 05:00 with no one logged in. It pulled, fetched and processed the seven games of 2026-11-23 (2026020378 to 2026020384), rebuilt `league.db` with 384 games, and exited 0 at 05:39. About 30 of those minutes are the `fetch_players` timeout that `BACKLOG.md` already lists; `backfill_players` added the two new players.
+  - The laptop's launchd run did the same games from 08:00.
+  - Raw files for the seven games: all 21 boxscore, play-by-play, and meta files match by checksum. The 14 shift files match in content and differ only in `fetchedAt`, the time each machine fetched them.
+  - Derived files: all 29 match by checksum (the seven games' timelines in CSV and JSON, competition files, and flattened plays, plus the flattened boxscores).
+  - `league.db`: all 10 tables match the laptop's real build on Python 3.11 row for row, and match a laptop build on Python 3.12. The one-value difference of 2026-11-23 didn't recur: that value depends on the day's elite set, and today it isn't on a rounding boundary. D83 still decides how to treat such a difference when one appears.
+- **Changed:** Nothing.
 
 ## Close-out
 
