@@ -1,7 +1,7 @@
 # v3.3.0: Move the daily pipeline to mininet
 
 **Created:** 2026-11-23 11:02
-**Last modified:** 2026-11-24 08:37
+**Last modified:** 2026-11-25 13:43
 
 The current milestone in `ROADMAP.md`. The daily pipeline moves from the laptop's launchd job to mininet, an always-on Mac mini running Ubuntu. mininet becomes the machine that fetches from the NHL and builds each season's data, and the laptop keeps a read-only mirror for research and deploys. Nothing a user of the browser sees changes, and the pipeline's output must match the laptop's.
 
@@ -183,6 +183,16 @@ Record each result under "Results."
   - Raw files for the seven games: all 21 boxscore, play-by-play, and meta files match by checksum. The 14 shift files match in content and differ only in `fetchedAt`, the time each machine fetched them.
   - Derived files: all 29 match by checksum (the seven games' timelines in CSV and JSON, competition files, and flattened plays, plus the flattened boxscores).
   - `league.db`: all 10 tables match the laptop's real build on Python 3.11 row for row, and match a laptop build on Python 3.12. The one-value difference of 2026-11-23 didn't recur: that value depends on the day's elite set, and today it isn't on a rounding boundary. D83 still decides how to treat such a difference when one appears.
+- **Changed:** Nothing.
+
+### Shadow run 2, 2026-11-25
+
+- **Run by:** Claude, with oiler traveling and the laptop off the home network.
+- **Result:** mininet's run passed. No comparison was possible, because the laptop's run failed.
+- **Found:**
+  - mininet ran at 05:00, fetched and processed the one game of 2026-11-24 (2026020385), rebuilt `league.db` with 385 games, and exited 0 at 05:35. `fetch_players` timed out as it does every day.
+  - The laptop's launchd job started at 08:25, when the laptop woke with no network. It ended with `Schedule error` (a name lookup failure for `api-web.nhle.com`), logged it, and fetched nothing. The laptop stays at 384 games until its next run.
+  - Reaching mininet from outside the home network works over Tailscale. The first connections waited on Tailscale's browser check and closed after a few minutes without it.
 - **Changed:** Nothing.
 
 ## Close-out
