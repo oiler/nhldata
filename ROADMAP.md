@@ -25,6 +25,13 @@ The 08:00 launchd job runs on a laptop that is often asleep. Fifteen runs betwee
 - **Release folder:** `docs/versions/3.3.0/`, which holds the design.
 - **Depends on:** nothing. The code restructure shipped as v3.2.0.
 
+### Browser improvements, in parallel with the move to mininet
+
+oiler approved browser work alongside the mininet move on 2026-11-27, so this isn't off-roadmap work. It ships as v3.4.0, or v3.2.1 if it's only small fixes, with its own folder under `docs/versions/`.
+
+- **Scope:** pages, layout, styling, and their tests inside `browser/`. A change that touches `browser/metrics.py`, `pipeline/build_dbs/`, a database schema, dependencies, or the deploy guards stops for oiler's approval first.
+- **Depends on:** nothing. It doesn't touch the files the mininet move owns.
+
 ### Re-check recent games for corrections
 
 A second run on mininet that fetches recent games again and finds the ones the NHL changed after the daily run took them. Moved from `BACKLOG.md` on 2026-11-23.
@@ -68,6 +75,8 @@ A second run on mininet that fetches recent games again and finds the ones the N
 1. **Daily local deploy.** After the 08:00 run, a local job rebuilds the manual artifacts, syncs, and runs `fly deploy`. Smallest change, but it depends on this Mac being awake and building an image every day.
 2. **Manual cadence with an "as of" date.** Deploy when convenient (for example, weekly), and show the data date in the app header.
 3. **Move data off the image.** A Fly volume or object storage that the pipeline pushes to, so data refreshes without a deploy. Most robust, but it changes the deploy model and the runtime-data guards.
+   - **Proposed first use, play-by-play data (2026-11-27, Decision Queue D109, open):** publish one Parquet file per season of every play, with player names and team abbreviations joined, to a public bucket in Tigris, Fly's object storage. A separate static viewer reads it in the reader's browser with DuckDB-Wasm, and the game page shows a play table from the same file without growing the image. Open points: a write key and an upload step (from the laptop after the mirror, per D79), a CORS setting on the bucket, the Parquet writer (the DuckDB command-line tool through `uvx` keeps `pyproject.toml` unchanged), and whether to republish the NHL's raw play log in bulk. If D109 is accepted, D108, which ships the play CSVs in the image instead, is withdrawn.
+   - **Before that:** build the per-season Parquet files locally and browse them with DuckDB or Datasette, to settle which columns the viewer and the game page need.
 
 **Depends on:** the season-toggle work (2025-26 + 2026-27 in the browser).
 
