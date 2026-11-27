@@ -1,7 +1,7 @@
 # v3.4.1: Browser improvements, continued
 
 **Created:** 2026-11-27 18:22
-**Last modified:** 2026-11-27 18:25
+**Last modified:** 2026-11-27 18:31
 
 The second release of the `ROADMAP.md` entry "Browser improvements, in parallel with the move to mininet." oiler picked two items on 2026-11-27. Both stay inside `browser/`.
 
@@ -55,6 +55,13 @@ The new page, for the default season:
 - **Changed:**
   - The leaders split by position (see the design).
   - The leader tables use their own rank column instead of the shared row-number gutter, which separated from a wrapped name on a phone.
+
+### Deploy, 2026-11-27
+
+- **Run by:** Claude, with oiler's approval.
+- **Result:** Deployed as Fly release v36, built with `--no-cache`. Tagged `v3.4.1` with a GitHub Release.
+- **Found:** On app.nhldata.org, `/?utm_source=test` shows the November 25, 2026 games (14 cards) and both leader tables, and `/skaters?ref=x` shows the leaderboard with "Games through Nov 25, 2026", matching the synced `league.db`.
+- **Changed:** Nothing.
 
 ## Close-out
 
