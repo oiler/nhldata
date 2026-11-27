@@ -456,7 +456,7 @@ def update_player(date_start, date_end, home_away, pid, position, season):
         {"name": "Dep Score",  "id": "deployment_score", "type": "numeric"},
     ]
 
-    _styles = table_styles()
+    _styles = table_styles(columns)
     _styles["style_data_conditional"] = _styles["style_data_conditional"] + [
         {"if": {"filter_query": '{result} = "W"', "column_id": "result"}, "color": "green"},
         {"if": {"filter_query": '{result} = "OTL"', "column_id": "result"}, "color": "darkorange"},

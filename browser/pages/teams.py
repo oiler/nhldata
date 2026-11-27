@@ -250,7 +250,7 @@ def update_teams(date_start, date_end, home_away, season):
     ]
     display_cols = ["team_link", "division", "conference", "gp", "pct", "rw", "ppi_plus", "wppi_plus", "gf", "ga", "gd_5v5"]
 
-    _styles = table_styles()
+    _styles = table_styles(columns)
     _styles["style_data_conditional"] = _styles["style_data_conditional"] + tercile_cond
 
     return html.Div(

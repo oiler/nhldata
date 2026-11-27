@@ -216,7 +216,7 @@ def update_skaters(date_start, date_end, home_away, season):
             filter_action="native",
             page_action="native",
             page_size=50,
-            **table_styles(),
+            **table_styles(columns),
         ),
         className="table-wrap",
     )

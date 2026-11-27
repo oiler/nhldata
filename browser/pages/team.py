@@ -150,7 +150,7 @@ def _make_position_table(df, pos="F"):
             data=df[display_cols].to_dict("records"),
             markdown_options={"link_target": "_self"},
             sort_action="native",
-            **table_styles(),
+            **table_styles(columns),
         ),
         className="table-wrap",
     )

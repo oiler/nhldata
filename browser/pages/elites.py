@@ -73,7 +73,7 @@ def _build_fwd_table(df):
             sort_action="native",
             filter_action="native",
             page_action="none",
-            **table_styles(),
+            **table_styles(columns),
         ),
         className="table-wrap",
     )
@@ -114,7 +114,7 @@ def _build_def_table(df):
             sort_action="native",
             filter_action="native",
             page_action="none",
-            **table_styles(),
+            **table_styles(columns),
         ),
         className="table-wrap",
     )

@@ -6,6 +6,8 @@ props (columns, data, sort_action, filter_action, page_action) stay per-page;
 this module owns only the visual style kwargs.
 """
 
+from browser.glossary import header_tooltips
+
 STYLE_TABLE = {"overflowX": "auto"}
 
 STYLE_HEADER = {
@@ -62,9 +64,13 @@ STYLE_DATA_CONDITIONAL = [
 CSS = [{"selector": ".dash-filter--case", "rule": "display: none"}]
 
 
-def table_styles() -> dict:
-    """Style kwargs to splat into dash_table.DataTable(**table_styles(), ...)."""
-    return {
+def table_styles(columns=None) -> dict:
+    """Style kwargs to splat into dash_table.DataTable(**table_styles(columns), ...).
+
+    With `columns`, each column that has a glossary definition gets it as a header
+    tooltip and a dotted underline on its header, so readers can tell it has one.
+    """
+    styles = {
         "style_table": STYLE_TABLE,
         "style_header": STYLE_HEADER,
         "style_header_conditional": STYLE_HEADER_CONDITIONAL,
@@ -73,3 +79,13 @@ def table_styles() -> dict:
         "style_data_conditional": STYLE_DATA_CONDITIONAL,
         "css": CSS,
     }
+    if columns:
+        tips = header_tooltips(columns)
+        styles["tooltip_header"] = tips
+        styles["tooltip_delay"] = 300
+        styles["tooltip_duration"] = None
+        styles["style_header_conditional"] = STYLE_HEADER_CONDITIONAL + [
+            {"if": {"column_id": cid}, "textDecoration": "underline dotted", "cursor": "help"}
+            for cid in tips
+        ]
+    return styles

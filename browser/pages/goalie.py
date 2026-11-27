@@ -136,7 +136,7 @@ def render_goalie(gid, situation):
             columns=columns,
             data=games[display].to_dict("records"),
             sort_action="native", page_action="native", page_size=41,
-            **table_styles(),
+            **table_styles(columns),
         ),
         className="table-wrap",
     ))

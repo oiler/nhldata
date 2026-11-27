@@ -86,7 +86,7 @@ def update_games(date_start, date_end, season):
             filter_options={"case": "insensitive"},
             page_action="native",
             page_size=50,
-            **table_styles(),
+            **table_styles(columns),
         ),
         className="table-wrap",
     )

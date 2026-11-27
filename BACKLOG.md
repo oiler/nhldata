@@ -28,6 +28,12 @@ Everything not promised yet. An item gains authority only when it moves into `RO
 
 ---
 
+### Found during v3.4.0
+
+- A URL with a query string, such as `/skaters?utm_source=x`, renders an empty page. Dash passes query parameters to a page's `layout()` as keyword arguments, and the layouts take none. Shared links that pick up tracking parameters break.
+
+---
+
 ### A notification the runner sends itself
 
 - Today the agent sends the run's notification through `send_notification`, a macOS desktop notification. When the agent can't start, nothing is sent, so a failed run looks like a quiet one. On mininet the tool does nothing.

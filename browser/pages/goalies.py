@@ -77,7 +77,7 @@ def update_goalies(season, situation):
             markdown_options={"link_target": "_self"},
             sort_action="native", filter_action="native",
             page_action="native", page_size=50,
-            **table_styles(),
+            **table_styles(columns),
         ),
         className="table-wrap",
     )])

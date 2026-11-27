@@ -100,7 +100,7 @@ def _make_position_table(df, pos="F"):
             columns=columns,
             data=df[display_cols].to_dict("records"),
             sort_action="native",
-            **table_styles(),
+            **table_styles(columns),
         ),
         className="table-wrap",
     )
