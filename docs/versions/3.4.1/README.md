@@ -1,7 +1,7 @@
 # v3.4.1: Browser improvements, continued
 
 **Created:** 2026-11-27 18:22
-**Last modified:** 2026-11-27 18:31
+**Last modified:** 2026-11-27 18:29
 
 The second release of the `ROADMAP.md` entry "Browser improvements, in parallel with the move to mininet." oiler picked two items on 2026-11-27. Both stay inside `browser/`.
 
