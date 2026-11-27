@@ -3,6 +3,7 @@ import dash
 from dash import html, dcc, callback, Input, Output
 import dash_bootstrap_components as dbc
 
+from browser.filters import data_through
 from browser.seasons import DEFAULT_SEASON, SEASONS, normalize_season, season_label
 
 # Dash loads each page straight into sys.modules as browser.pages.<name>
@@ -102,6 +103,7 @@ app.layout = html.Div([
                 class_name="season-options",
             ),
         ], className="season-fieldset"),
+        html.Span(id="season-data-date", className="season-data-date"),
     ], id="season-bar", className="filter-bar", style={"display": "none"}),
 
     # Goalie situation filter — visible only on goalie-bearing pages (toggled
@@ -351,6 +353,11 @@ app.layout = html.Div([
 @callback(Output("store-season", "data"), Input("filter-season", "value"))
 def sync_season(season):
     return normalize_season(season)
+
+
+@callback(Output("season-data-date", "children"), Input("store-season", "data"))
+def show_data_date(season):
+    return data_through(season)
 
 
 _SEASON_PAGES = ("/games", "/teams", "/skaters", "/goalies")

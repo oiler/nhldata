@@ -1,6 +1,8 @@
 # browser/filters.py
 """Shared filter bar components for browser pages."""
 
+from datetime import date
+
 import pandas as pd
 from dash import html, dcc, callback, Input, Output, ctx
 from browser.db import league_query
@@ -23,6 +25,21 @@ def season_date_range(season: str = DEFAULT_SEASON) -> tuple[str, str]:
         yr = int(season)
         return (f"{yr}-09-01", f"{yr + 1}-06-30")
     return (df.iloc[0]["min_d"], df.iloc[0]["max_d"])
+
+
+def data_through(season: str) -> str:
+    """'Games through Nov 22, 2026' for the season's latest scored game, or ''.
+
+    The deployed image is rebuilt by hand, so this tells readers how old its data is.
+    """
+    df = league_query(
+        "SELECT MAX(gameDate) AS max_d FROM games WHERE awayTeam_score IS NOT NULL",
+        season=normalize_season(season),
+    )
+    if df.empty or pd.isna(df.iloc[0]["max_d"]):
+        return ""
+    d = date.fromisoformat(df.iloc[0]["max_d"])
+    return f"Games through {d:%b} {d.day}, {d.year}"
 
 
 def season_not_ready(season: str):

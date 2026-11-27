@@ -1,6 +1,6 @@
 import sqlite3
 
-from browser.filters import season_date_range, season_not_ready
+from browser.filters import data_through, season_date_range, season_not_ready
 
 
 def test_fallback_range_for_missing_db(monkeypatch, tmp_path):
@@ -33,3 +33,30 @@ def test_ready_season_has_no_message(monkeypatch, tmp_path):
     (tmp_path / "2026" / "league.db").write_bytes(b"x")
     (tmp_path / "2026" / "player_bursts.csv").write_text("playerId\n1\n")
     assert season_not_ready("2026") is None
+
+
+def _games_db(tmp_path, rows):
+    db = tmp_path / "2026" / "league.db"
+    db.parent.mkdir()
+    conn = sqlite3.connect(db)
+    conn.execute("CREATE TABLE games (gameDate TEXT, awayTeam_score INTEGER)")
+    conn.executemany("INSERT INTO games VALUES (?, ?)", rows)
+    conn.commit()
+    conn.close()
+
+
+def test_data_through_names_latest_scored_game(monkeypatch, tmp_path):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    _games_db(tmp_path, [("2026-10-07", 3), ("2026-11-22", 2), ("2026-11-23", None)])
+    assert data_through("2026") == "Games through Nov 22, 2026"
+
+
+def test_data_through_empty_without_scored_games(monkeypatch, tmp_path):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    _games_db(tmp_path, [("2026-09-29", None)])
+    assert data_through("2026") == ""
+
+
+def test_data_through_empty_without_db(monkeypatch, tmp_path):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    assert data_through("2026") == ""

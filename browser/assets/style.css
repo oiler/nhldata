@@ -131,6 +131,11 @@ body {
   border-color: var(--navy);
   box-shadow: 0 0 0 1px #00205B, 0 0 0 3px rgba(0, 32, 91, 0.15);
 }
+.season-data-date {
+  margin-left: auto;
+  font-size: 0.8rem;
+  color: var(--text-3);
+}
 .filter-bar .dash-dropdown-content .dash-options-list-option { font-size: 0.9rem; }
 @media (max-width: 639px) {
   .season-options .form-check { display: inline-flex; align-items: center; min-height: 40px; }
