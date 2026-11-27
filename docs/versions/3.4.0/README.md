@@ -1,7 +1,7 @@
 # v3.4.0: Browser improvements
 
 **Created:** 2026-11-27 17:53
-**Last modified:** 2026-11-27 18:50
+**Last modified:** 2026-11-27 18:06
 
 The `ROADMAP.md` entry "Browser improvements, in parallel with the move to mininet." oiler approved browser work alongside v3.3.0 on 2026-11-27 and picked three items, built in this order. Every change stays inside `browser/`: no change to `browser/metrics.py`, `pipeline/`, a database schema, dependencies, or the deploy guards.
 
