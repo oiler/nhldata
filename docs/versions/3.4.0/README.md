@@ -1,7 +1,7 @@
 # v3.4.0: Browser improvements
 
 **Created:** 2026-11-27 17:53
-**Last modified:** 2026-11-27 18:40
+**Last modified:** 2026-11-27 18:50
 
 The `ROADMAP.md` entry "Browser improvements, in parallel with the move to mininet." oiler approved browser work alongside v3.3.0 on 2026-11-27 and picked three items, built in this order. Every change stays inside `browser/`: no change to `browser/metrics.py`, `pipeline/`, a database schema, dependencies, or the deploy guards.
 
@@ -62,6 +62,17 @@ The definitions are in the glossary at the foot of each page, far from the numbe
   - The footer's terms and definitions match `browser/glossary.py` exactly.
   - Unrelated to this release: any query string, such as `/skaters?x=1`, renders an empty page, because the page layouts take no query arguments. Added to `BACKLOG.md`.
 - **Changed:** The season bar wraps at phone width, added after the first phone check showed its choices stacking.
+
+### Human test, 2026-11-27
+
+- **Run by:** Claude, in Chrome against the local app, at oiler's request.
+- **Result:** Passed, all four steps.
+- **Found:**
+  1. Switching seasons on `/skaters` changes the date: "Games through Apr 16, 2026" for 2025-26, "Games through Nov 25, 2026" for 2026-27.
+  2. Clicking Home turns it navy and All white.
+  3. Hovering wPPI+ shows "wPPI indexed to the league average (100 = average). Accounts for both build and 5v5 deployment rate." Hovering Player shows nothing.
+  4. In a 390-pixel frame, "NHL Data" stays on one line and "To" stays beside its date picker. Chrome can't size a window that narrow, so the check used a frame.
+- **Changed:** Nothing.
 
 ## Close-out
 
