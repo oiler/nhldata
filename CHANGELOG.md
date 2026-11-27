@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [3.4.0] - 2026-11-27
+### Added
+- The season bar shows how current the data is, such as "Games through Nov 25, 2026", for the selected season.
+- Hovering a column header shows the stat's glossary definition. A dotted underline marks the headers that have one.
+
+### Changed
+- The selected All/Home/Away button is navy, the app's active-state color, instead of bright blue.
+- At phone width, the "NHL Data" wordmark stays on one line, each date label stays beside its date picker, and the season choices stay on one row.
+
 ## [3.2.0] - 2026-11-22
 ### Changed
 - The code lives in three top-level folders: `browser/` (the Dash app), `pipeline/` (the daily run, the season rebuild, and the database builds), and `research/` (the goalie and off-wing studies). They replace `v1/`, `v2/`, and `tools/`. The browser's pages, data, and the daily schedule are unchanged.
