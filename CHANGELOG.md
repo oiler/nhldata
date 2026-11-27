@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [3.4.1] - 2026-11-27
+### Changed
+- The home page shows the season's latest games, each linked to its game page, and the top 5 forwards and top 5 defensemen by wPPI+. It replaces the welcome text and the example links.
+
+### Fixed
+- A link with a query string, such as one carrying tracking tags, shows its page instead of an empty one.
+
 ## [3.4.0] - 2026-11-27
 ### Added
 - The season bar shows how current the data is, such as "Games through Nov 25, 2026", for the selected season.
