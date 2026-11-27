@@ -167,7 +167,7 @@ def _make_player_tables(df):
     return html.Div(sections) if sections else html.Div("No player data.")
 
 
-def layout(abbrev=None):
+def layout(abbrev=None, **_query):
     if not abbrev:
         return html.Div("No team specified.")
     abbrev = abbrev.upper()

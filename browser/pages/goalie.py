@@ -70,7 +70,7 @@ def _season_card(r):
                                 "border": "1px solid #dee2e6", "borderRadius": "6px"})
 
 
-def layout(goalie_id=None):
+def layout(goalie_id=None, **_query):
     try:
         gid = int(goalie_id)
     except (TypeError, ValueError):

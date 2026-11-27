@@ -118,7 +118,7 @@ def _make_player_tables(df):
     return html.Div(sections) if sections else html.Div("No player data.")
 
 
-def layout(game_id=None):
+def layout(game_id=None, **_query):
     if game_id is None:
         return html.Div("No game specified.")
 

@@ -25,7 +25,7 @@ _CUT_NOTE = ("Strict 5v5 (situationCode 1551): shot metrics, TOI and every rate 
              "count 5v5 play only. GP still counts appearances in all situations.")
 
 
-def layout():
+def layout(**_query):
     return html.Div([
         html.H2("Goalies"),
         html.P(_CAVEAT, style={"fontSize": "0.85rem", "color": "#6c757d",

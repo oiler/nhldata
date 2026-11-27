@@ -25,3 +25,15 @@ def test_every_page_registers_once_under_browser_pages():
 
 def test_no_page_loads_under_a_bare_pages_name():
     assert not [m for m in sys.modules if m == "pages" or m.startswith("pages.")]
+
+
+def test_every_page_layout_accepts_query_parameters():
+    # Dash passes ?key=value pairs to layout() as keyword arguments; a layout that
+    # can't take them raises, and a link with tracking tags shows an empty page.
+    import inspect
+    for page in dash.page_registry.values():
+        layout = page["layout"]
+        if not callable(layout):
+            continue
+        kinds = {p.kind for p in inspect.signature(layout).parameters.values()}
+        assert inspect.Parameter.VAR_KEYWORD in kinds, page["module"]

@@ -47,7 +47,7 @@ _DIVISIONS = {
 _CONFERENCES = {"ATL": "East", "MET": "East", "CEN": "West", "PAC": "West"}
 
 
-def layout():
+def layout(**_query):
     return html.Div([
         html.H2("Teams"),
         make_filter_bar("teams", include_home_away=True),

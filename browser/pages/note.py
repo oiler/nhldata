@@ -7,7 +7,7 @@ from browser.pages.notes import NOTES_DIR
 dash.register_page(__name__, path_template="/notes/<slug>", name="Note")
 
 
-def layout(slug=None):
+def layout(slug=None, **_query):
     # Whitelist the slug against the directory listing — never build a path
     # from user input directly.
     valid = {p.stem: p for p in NOTES_DIR.glob("*.md")} if NOTES_DIR.exists() else {}

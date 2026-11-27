@@ -31,7 +31,6 @@ Everything not promised yet. An item gains authority only when it moves into `RO
 ### Found during v3.4.0
 
 - A deploy can ship stale data. Fly release v34 (2026-11-27) served the previous 2026 `league.db` although `runtime_data/` held a newer one; `fly deploy --remote-only --no-cache` fixed it in v35. Either deploy with `--no-cache` every time, or check after each deploy that the live "Games through" date matches the synced `league.db`. Either touches the deploy process, so it needs oiler's approval.
-- A URL with a query string, such as `/skaters?utm_source=x`, renders an empty page. Dash passes query parameters to a page's `layout()` as keyword arguments, and the layouts take none. Shared links that pick up tracking parameters break.
 
 ---
 

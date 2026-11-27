@@ -90,7 +90,7 @@ def _load_bursts(season: str) -> pd.DataFrame:
     return df.set_index("playerId")
 
 
-def layout(player_id=None):
+def layout(player_id=None, **_query):
     if player_id is None:
         return html.Div("No player specified.")
     try:

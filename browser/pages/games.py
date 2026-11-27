@@ -20,7 +20,7 @@ ORDER BY gameDate DESC
 """
 
 
-def layout():
+def layout(**_query):
     return html.Div([
         html.H2("Games"),
         make_filter_bar("games", include_home_away=False),

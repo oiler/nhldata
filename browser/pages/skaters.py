@@ -56,7 +56,7 @@ _EVENTS_SQL = "SELECT gameId, playerId, hits, blocks, takeaways, giveaways, isho
 ISA_RANK_MIN = 50  # min 5v5 individual shot attempts in window to show P/100iSA on the leaderboard
 
 
-def layout():
+def layout(**_query):
     return html.Div([
         html.H2("Skaters"),
         html.A("Jump to glossary ↓", href="#glossary",

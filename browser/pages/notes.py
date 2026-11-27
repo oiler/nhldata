@@ -30,7 +30,7 @@ def list_notes() -> list[dict]:
     return [_note_meta(p) for p in sorted(NOTES_DIR.glob("*.md"), reverse=True)]
 
 
-def layout():
+def layout(**_query):
     notes = list_notes()
     if not notes:
         return html.Div([html.H2("Notes"), html.P("Nothing here yet.")])

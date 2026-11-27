@@ -120,7 +120,7 @@ def _build_def_table(df):
     )
 
 
-def layout(season=None):
+def layout(season=None, **_query):
     season = normalize_season(season)
     children = []
 
