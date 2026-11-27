@@ -1,7 +1,7 @@
 # v3.4.0: Browser improvements
 
 **Created:** 2026-11-27 17:53
-**Last modified:** 2026-11-27 18:06
+**Last modified:** 2026-11-27 18:15
 
 The `ROADMAP.md` entry "Browser improvements, in parallel with the move to mininet." oiler approved browser work alongside v3.3.0 on 2026-11-27 and picked three items, built in this order. Every change stays inside `browser/`: no change to `browser/metrics.py`, `pipeline/`, a database schema, dependencies, or the deploy guards.
 
@@ -73,6 +73,13 @@ The definitions are in the glossary at the foot of each page, far from the numbe
   3. Hovering wPPI+ shows "wPPI indexed to the league average (100 = average). Accounts for both build and 5v5 deployment rate." Hovering Player shows nothing.
   4. In a 390-pixel frame, "NHL Data" stays on one line and "To" stays beside its date picker. Chrome can't size a window that narrow, so the check used a frame.
 - **Changed:** Nothing.
+
+### Deploy, 2026-11-27
+
+- **Run by:** Claude, with oiler's approval.
+- **Result:** Deployed as Fly release v35. Every page checked returns 200, and the live site shows "Games through Nov 25, 2026" for 2026-27.
+- **Found:** Release v34, the first deploy, ran the new code but served the old 2026 `league.db` (games through Nov 22), although the synced `runtime_data/` held the Nov 25 build. A rebuild with `fly deploy --remote-only --no-cache` fixed it, which points to the remote builder reusing a cached copy of the data. The release's own data date is what exposed it.
+- **Changed:** Nothing in the code. `BACKLOG.md` gains an item to make the deploy check catch a stale data layer.
 
 ## Close-out
 
