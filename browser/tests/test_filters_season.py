@@ -60,3 +60,11 @@ def test_data_through_empty_without_scored_games(monkeypatch, tmp_path):
 def test_data_through_empty_without_db(monkeypatch, tmp_path):
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
     assert data_through("2026") == ""
+
+
+def test_home_away_active_button_is_navy():
+    from browser.filters import home_away_styles
+    styles = home_away_styles("skaters", "skaters-ha-home")
+    assert styles["skaters-ha-home"]["backgroundColor"] == "#00205B"
+    assert styles["skaters-ha-all"]["backgroundColor"] == "#fff"
+    assert styles["skaters-ha-away"]["backgroundColor"] == "#fff"

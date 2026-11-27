@@ -49,6 +49,26 @@ def season_not_ready(season: str):
     return html.P(f"{season_label(season)} data isn't available yet.")
 
 
+_HA_BUTTON = {
+    "padding": "6px 16px", "border": "1px solid #dee2e6",
+    "backgroundColor": "#fff", "cursor": "pointer",
+    "fontSize": "0.85rem",
+}
+_HA_ACTIVE = {"backgroundColor": "#00205B", "color": "#fff", "borderColor": "#00205B"}
+
+
+def home_away_styles(page_id: str, active_id: str) -> dict:
+    """Inline styles for the All/Home/Away buttons, keyed by button id, with `active_id` selected."""
+    styles = {
+        f"{page_id}-ha-all": {**_HA_BUTTON, "borderRadius": "4px 0 0 4px"},
+        f"{page_id}-ha-home": {**_HA_BUTTON, "borderLeft": "none"},
+        f"{page_id}-ha-away": {**_HA_BUTTON, "borderLeft": "none", "borderRadius": "0 4px 4px 0"},
+    }
+    if active_id in styles:
+        styles[active_id] = {**styles[active_id], **_HA_ACTIVE}
+    return styles
+
+
 def make_filter_bar(page_id: str, include_home_away: bool = True) -> html.Div:
     """Build a filter bar with date pickers and optional home/away toggle.
 
@@ -76,29 +96,21 @@ def make_filter_bar(page_id: str, include_home_away: bool = True) -> html.Div:
         style={"marginRight": "1rem"},
     )
 
+    label_style = {"marginRight": "0.5rem", "fontWeight": "bold", "fontSize": "0.9rem"}
+    # Each label and its picker wrap as one unit, so a narrow screen never leaves "To" behind.
+    pair_style = {"display": "inline-flex", "alignItems": "center"}
     children = [
-        html.Label("From", style={"marginRight": "0.5rem", "fontWeight": "bold", "fontSize": "0.9rem"}),
-        date_start,
-        html.Label("To", style={"marginRight": "0.5rem", "fontWeight": "bold", "fontSize": "0.9rem"}),
-        date_end,
+        html.Div([html.Label("From", style=label_style), date_start], style=pair_style),
+        html.Div([html.Label("To", style=label_style), date_end], style=pair_style),
     ]
 
     if include_home_away:
-        btn_style = {
-            "padding": "6px 16px", "border": "1px solid #dee2e6",
-            "backgroundColor": "#fff", "cursor": "pointer",
-            "fontSize": "0.85rem",
-        }
-        active_style = {**btn_style, "backgroundColor": "#0d6efd", "color": "#fff", "borderColor": "#0d6efd"}
-
+        styles = home_away_styles(page_id, f"{page_id}-ha-all")
         children.append(
             html.Div([
-                html.Button("All", id=f"{page_id}-ha-all", n_clicks=0,
-                            style={**active_style, "borderRadius": "4px 0 0 4px"}),
-                html.Button("Home", id=f"{page_id}-ha-home", n_clicks=0,
-                            style={**btn_style, "borderLeft": "none"}),
-                html.Button("Away", id=f"{page_id}-ha-away", n_clicks=0,
-                            style={**btn_style, "borderLeft": "none", "borderRadius": "0 4px 4px 0"}),
+                html.Button("All", id=f"{page_id}-ha-all", n_clicks=0, style=styles[f"{page_id}-ha-all"]),
+                html.Button("Home", id=f"{page_id}-ha-home", n_clicks=0, style=styles[f"{page_id}-ha-home"]),
+                html.Button("Away", id=f"{page_id}-ha-away", n_clicks=0, style=styles[f"{page_id}-ha-away"]),
                 dcc.Store(id=f"{page_id}-home-away", data="all"),
             ], style={"display": "inline-flex", "marginLeft": "1rem"})
         )
@@ -132,13 +144,6 @@ def register_season_callback(page_id: str):
 def register_home_away_callback(page_id: str):
     """Register a callback that syncs the H/A toggle buttons with the store."""
 
-    btn_style = {
-        "padding": "6px 16px", "border": "1px solid #dee2e6",
-        "backgroundColor": "#fff", "cursor": "pointer",
-        "fontSize": "0.85rem",
-    }
-    active_style = {**btn_style, "backgroundColor": "#0d6efd", "color": "#fff", "borderColor": "#0d6efd"}
-
     @callback(
         Output(f"{page_id}-home-away", "data"),
         Output(f"{page_id}-ha-all", "style"),
@@ -150,17 +155,12 @@ def register_home_away_callback(page_id: str):
     )
     def toggle_home_away(n_all, n_home, n_away):
         triggered = ctx.triggered_id or f"{page_id}-ha-all"
-        styles = {
-            f"{page_id}-ha-all": {**btn_style, "borderRadius": "4px 0 0 4px"},
-            f"{page_id}-ha-home": {**btn_style, "borderLeft": "none"},
-            f"{page_id}-ha-away": {**btn_style, "borderLeft": "none", "borderRadius": "0 4px 4px 0"},
-        }
+        styles = home_away_styles(page_id, triggered)
         value_map = {
             f"{page_id}-ha-all": "all",
             f"{page_id}-ha-home": "home",
             f"{page_id}-ha-away": "away",
         }
-        styles[triggered] = {**styles[triggered], "backgroundColor": "#0d6efd", "color": "#fff", "borderColor": "#0d6efd"}
         value = value_map.get(triggered, "all")
         return value, styles[f"{page_id}-ha-all"], styles[f"{page_id}-ha-home"], styles[f"{page_id}-ha-away"]
 
