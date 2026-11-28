@@ -32,7 +32,7 @@ Everything not promised yet. An item gains authority only when it moves into `RO
 
 - Group the player page's 25 summary tiles (usage, production, deployment, events, shot attempts) and show each tile's glossary definition on hover, as the column headers do.
 - Link the Elites page (`/elites`), which nothing links to. Decide first whether it's hidden on purpose.
-- A play-by-play table on the game page. Waits on Decision Queue D109 (publish play data to object storage), which would withdraw D108 (ship the play files in the image).
+- A play-by-play table on the game page. D109 (accepted 2026-11-28) puts it in the `ROADMAP.md` milestone "Keep the deployed browser current": the page reads the play data from object storage, not from the image. D108 is withdrawn.
 - Test on a phone before deploying: Decision Queue D110. Playwright's WebKit browser, about a 100 MB download, would let Claude check iPhone layout locally.
 
 ---
