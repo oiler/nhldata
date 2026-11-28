@@ -1,6 +1,7 @@
 # v3.4.2: Phone menu
 
 **Created:** 2026-11-27 19:09
+**Last modified:** 2026-11-27 19:19
 
 A fix within the `ROADMAP.md` entry "Browser improvements, in parallel with the move to mininet." oiler reported on 2026-11-27, with a screenshot from an iPhone, that the header's links run off the screen and the page can't be scrolled to reach them. Everything stays inside `browser/`.
 
@@ -45,6 +46,13 @@ On the iPhone, the six links stay on one line. Skaters and Teams sit past the en
   - With the security headers on, the page loads `assets/menu.js`, which the policy's `script-src 'self'` allows.
   - The viewport test passed on its first run: the live site already sends the tag, so it guards against losing it rather than proving a fix.
 - **Changed:** A first version closed the menu with a Dash callback on page change. It did nothing, since Dash's copy of the menu's state never changed, and `menu.js` replaced it.
+
+### Deploy, 2026-11-27
+
+- **Run by:** Claude, with oiler's approval, so oiler can run the human test on an iPhone. The project has no staging server, so a phone can test only what's deployed.
+- **Result:** Deployed as Fly release v37, built with `--no-cache`. Tagged `v3.4.2` with a GitHub Release.
+- **Found:** On app.nhldata.org, `assets/menu.js` returns 200, the desktop header shows the link row with the six links also in the hidden menu, and the data date reads "Games through Nov 25, 2026". The human test on the iPhone is still to run.
+- **Changed:** Nothing.
 
 ## Close-out
 
