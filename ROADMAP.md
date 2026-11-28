@@ -25,13 +25,6 @@ The 08:00 launchd job runs on a laptop that is often asleep. Fifteen runs betwee
 - **Release folder:** `docs/versions/3.3.0/`, which holds the design.
 - **Depends on:** nothing. The code restructure shipped as v3.2.0.
 
-### Browser improvements, in parallel with the move to mininet
-
-oiler approved browser work alongside the mininet move on 2026-11-27, so this isn't off-roadmap work. v3.4.0 shipped the first items on 2026-11-27 (`docs/history.md`). The work continues as v3.4.1, with its own folder under `docs/versions/`.
-
-- **Scope:** pages, layout, styling, and their tests inside `browser/`. A change that touches `browser/metrics.py`, `pipeline/build_dbs/`, a database schema, dependencies, or the deploy guards stops for oiler's approval first.
-- **Depends on:** nothing. It doesn't touch the files the mininet move owns.
-
 ### Re-check recent games for corrections
 
 A second run on mininet that fetches recent games again and finds the ones the NHL changed after the daily run took them. Moved from `BACKLOG.md` on 2026-11-23.

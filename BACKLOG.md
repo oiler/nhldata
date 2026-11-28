@@ -28,6 +28,15 @@ Everything not promised yet. An item gains authority only when it moves into `RO
 
 ---
 
+### Browser ideas not built in v3.4
+
+- Group the player page's 25 summary tiles (usage, production, deployment, events, shot attempts) and show each tile's glossary definition on hover, as the column headers do.
+- Link the Elites page (`/elites`), which nothing links to. Decide first whether it's hidden on purpose.
+- A play-by-play table on the game page. Waits on Decision Queue D109 (publish play data to object storage), which would withdraw D108 (ship the play files in the image).
+- Test on a phone before deploying: Decision Queue D110. Playwright's WebKit browser, about a 100 MB download, would let Claude check iPhone layout locally.
+
+---
+
 ### Found during v3.4.0
 
 - A deploy can ship stale data. Fly release v34 (2026-11-27) served the previous 2026 `league.db` although `runtime_data/` held a newer one; `fly deploy --remote-only --no-cache` fixed it in v35. Either deploy with `--no-cache` every time, or check after each deploy that the live "Games through" date matches the synced `league.db`. Either touches the deploy process, so it needs oiler's approval.

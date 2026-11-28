@@ -1,7 +1,7 @@
 # v3.4.0: Browser improvements
 
 **Created:** 2026-11-27 17:53
-**Last modified:** 2026-11-27 18:18
+**Last modified:** 2026-11-27 20:45
 
 The `ROADMAP.md` entry "Browser improvements, in parallel with the move to mininet." oiler approved browser work alongside v3.3.0 on 2026-11-27 and picked three items, built in this order. Every change stays inside `browser/`: no change to `browser/metrics.py`, `pipeline/`, a database schema, dependencies, or the deploy guards.
 
@@ -86,5 +86,5 @@ The definitions are in the glossary at the foot of each page, far from the numbe
 - [x] Every file in this folder listed under "This folder", and the human test recorded under "Results". The folder holds only this README.
 - [x] The version added to `CHANGELOG.md`
 - [x] The milestone's row and log entry added to `docs/history.md`
-- [x] The milestone removed from `ROADMAP.md`. Not removed: oiler continued the browser work as v3.4.1 on 2026-11-27, so the roadmap entry stays and names v3.4.1.
+- [x] The milestone removed from `ROADMAP.md`. Removed on 2026-11-27, after v3.4.1 to v3.4.4 continued the work; its unbuilt ideas moved to `BACKLOG.md`.
 - [x] The release commit tagged, with a GitHub Release: the commit that adds the version to `CHANGELOG.md`

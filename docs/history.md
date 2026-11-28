@@ -49,3 +49,4 @@ The goalie evaluation research (phases P0 to P6, the freeze-value study, and the
 - 2026-11-27: v3.4.2, a Menu button in place of the header's link row on phones, after oiler's iPhone showed the links running off the screen.
 - 2026-11-27: v3.4.3, phone fixes found by oiler's iPhone check of v3.4.2: the open menu's links and the game page's width.
 - 2026-11-27: v3.4.4, the header's wordmark links to the home page.
+- 2026-11-27: The browser-improvements milestone, approved by oiler to run alongside the v3.3.0 mininet move, closed after v3.4.0 to v3.4.4 shipped and passed oiler's iPhone check. Its unbuilt ideas moved to `BACKLOG.md`.
