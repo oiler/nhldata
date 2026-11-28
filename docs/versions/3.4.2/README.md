@@ -1,7 +1,7 @@
 # v3.4.2: Phone menu
 
 **Created:** 2026-11-27 19:09
-**Last modified:** 2026-11-27 19:19
+**Last modified:** 2026-11-27 20:02
 
 A fix within the `ROADMAP.md` entry "Browser improvements, in parallel with the move to mininet." oiler reported on 2026-11-27, with a screenshot from an iPhone, that the header's links run off the screen and the page can't be scrolled to reach them. Everything stays inside `browser/`.
 
@@ -52,6 +52,13 @@ On the iPhone, the six links stay on one line. Skaters and Teams sit past the en
 - **Run by:** Claude, with oiler's approval, so oiler can run the human test on an iPhone. The project has no staging server, so a phone can test only what's deployed.
 - **Result:** Deployed as Fly release v37, built with `--no-cache`. Tagged `v3.4.2` with a GitHub Release.
 - **Found:** On app.nhldata.org, `assets/menu.js` returns 200, the desktop header shows the link row with the six links also in the hidden menu, and the data date reads "Games through Nov 25, 2026". The human test on the iPhone is still to run.
+- **Changed:** Nothing.
+
+### Human test, 2026-11-27
+
+- **Run by:** oiler, on an iPhone, against app.nhldata.org (Fly release v38).
+- **Result:** Passed.
+- **Found:** oiler loaded every page and opened the menu on the iPhone after v3.4.3 deployed: everything looks right. The closed menu was confirmed on the first check. The open menu ran its links off the screen, fixed in v3.4.3.
 - **Changed:** Nothing.
 
 ## Close-out
