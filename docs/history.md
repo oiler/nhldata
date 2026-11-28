@@ -15,6 +15,7 @@ Finished milestones, and a dated log of what happened along the way. `ROADMAP.md
 | Restructure the code into browser, pipeline, and research | 3.2.0 | 2026-11-22 | `docs/versions/3.2.0/` |
 | Browser improvements: data date, header definitions, polish | 3.4.0 | 2026-11-27 | `docs/versions/3.4.0/` |
 | Current-season home page and query-string fix | 3.4.1 | 2026-11-27 | `docs/versions/3.4.1/` |
+| Phone menu | 3.4.2 | 2026-11-27 | `docs/versions/3.4.2/` |
 
 Work from January to June 2026 predates version tags: the timeline generator, the fetcher, the competition score, the browser app, the orchestrator, the elite models, deployment metrics, Edge bursts, the Fly.io deploy, and the frontend redesign. Its designs and plans are in `docs/plans/`, named by date.
 
@@ -43,3 +44,4 @@ The goalie evaluation research (phases P0 to P6, the freeze-value study, and the
 - 2026-11-22: v3.2.0, the code restructure. `v1/`, `v2/`, and `tools/` became `browser/`, `pipeline/`, and `research/`, installed as an editable package, with one data-path helper (D43 to D45, D54 to D57). Built on `master` from 2026-11-20 and verified by the 08:00 runs on 2026-11-21 and 2026-11-22. Deployed as Fly release v31, which read no seasons because `fly.toml` still set the old `DATA_DIR`; release v32 fixed it the same day.
 - 2026-11-27: v3.4.0, browser improvements built alongside the v3.3.0 mininet move: the season bar's data date, glossary definitions in column headers, and a navy home/away button and phone layout fixes. Fly release v34 served the old 2026 data from a cached build; v35, built with `--no-cache`, fixed it.
 - 2026-11-27: v3.4.1, a current-season home page (latest games, wPPI+ leaders by position) and a fix for links with a query string.
+- 2026-11-27: v3.4.2, a Menu button in place of the header's link row on phones, after oiler's iPhone showed the links running off the screen.

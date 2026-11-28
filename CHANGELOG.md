@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [3.4.2] - 2026-11-27
+### Fixed
+- On a phone, the header's links no longer run off the screen. Below 640px wide, a Menu button opens the links as a list, and the menu closes after a link is followed or on a tap outside it.
+
 ## [3.4.1] - 2026-11-27
 ### Changed
 - The home page shows the season's latest games, each linked to its game page, and the top 5 forwards and top 5 defensemen by wPPI+. It replaces the welcome text and the example links.
