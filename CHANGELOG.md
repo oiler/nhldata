@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [3.4.4] - 2026-11-27
+### Changed
+- The "NHL Data" wordmark in the header links to the home page.
+
 ## [3.4.3] - 2026-11-27
 ### Fixed
 - On a phone, the open menu lists its links one under another instead of running them off the screen.

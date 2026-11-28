@@ -32,3 +32,12 @@ def test_phone_menu_has_the_desktop_links():
     menu_nav = _find(menu, lambda n: "app-menu-list" in (getattr(n, "className", "") or ""))
     assert _hrefs(menu_nav) == _hrefs(wide)
     assert "/skaters" in _hrefs(wide)
+
+
+def test_wordmark_links_home():
+    # On a phone the links sit behind the Menu button, so the wordmark is the quick way home.
+    from dash import dcc
+    layout = app_module.app.layout
+    title = _find(layout, lambda n: isinstance(n, html.H1) and getattr(n, "id", None) == "top")
+    link = _find(title, lambda n: isinstance(n, dcc.Link))
+    assert link is not None and link.href == "/"

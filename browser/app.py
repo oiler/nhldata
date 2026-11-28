@@ -87,7 +87,7 @@ app.layout = html.Div([
     # Header + nav. Below 640px the link row is hidden and the Menu button shows
     # the same links as a dropdown (style.css); <details> opens without JS.
     html.Div([
-        html.H1("NHL Data", id="top"),
+        html.H1(dcc.Link("NHL Data", href="/", className="app-wordmark"), id="top"),
         dbc.Nav(_nav_links(), className="app-nav app-nav-wide"),
         html.Details([
             html.Summary("Menu", className="app-menu-button"),
