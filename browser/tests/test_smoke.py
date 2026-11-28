@@ -78,3 +78,11 @@ def test_game_page_registered():
     import browser.app as _  # noqa: F401
     templates = [p.get("path_template", "") for p in dash.page_registry.values()]
     assert "/game/<game_id>" in templates, "Game page not registered"
+
+
+def test_pages_declare_a_phone_viewport():
+    # Without it, phones lay the page out about 980px wide and shrink it, so no
+    # phone-width CSS applies and the header and tables are out of reach.
+    import browser.app as app_module
+    html = app_module.app.server.test_client().get("/").get_data(as_text=True)
+    assert '<meta name="viewport" content="width=device-width, initial-scale=1">' in html

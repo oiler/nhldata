@@ -64,6 +64,15 @@ if os.environ.get("DASH_ENABLE_SECURITY_HEADERS") == "1":
 from browser.canonical_host import install as install_canonical_host
 install_canonical_host(server)
 
+def _nav_links():
+    """The header's page links. Built per call: a component can sit in only one place."""
+    return [
+        dbc.NavLink(page["name"], href=page["relative_path"], active="exact")
+        for page in dash.page_registry.values()
+        if page["path_template"] is None and page["relative_path"] != "/elites"
+    ]
+
+
 def _definition_list(entries):
     return [el for term, definition in entries for el in (html.Dt(term), html.Dd(definition))]
 
@@ -75,22 +84,15 @@ app.layout = html.Div([
     dcc.Store(id="store-season", storage_type="memory", data=DEFAULT_SEASON),
     dcc.Location(id="url", refresh=False),
 
-    # Header + nav
+    # Header + nav. Below 640px the link row is hidden and the Menu button shows
+    # the same links as a dropdown (style.css); <details> opens without JS.
     html.Div([
         html.H1("NHL Data", id="top"),
-        dbc.Nav(
-            [
-                dbc.NavLink(
-                    page["name"],
-                    href=page["relative_path"],
-                    active="exact",
-                )
-                for page in dash.page_registry.values()
-                if page["path_template"] is None
-                and page["relative_path"] != "/elites"
-            ],
-            className="app-nav",
-        ),
+        dbc.Nav(_nav_links(), className="app-nav app-nav-wide"),
+        html.Details([
+            html.Summary("Menu", className="app-menu-button"),
+            dbc.Nav(_nav_links(), vertical=True, className="app-menu-list"),
+        ], id="app-menu", className="app-menu"),
     ], className="app-header"),
 
     # Season filter. Starts hidden like goalie-situation-bar; toggle_season_bar

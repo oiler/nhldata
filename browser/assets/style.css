@@ -83,6 +83,52 @@ body {
   color: var(--on-navy);
   border-bottom-color: var(--orange);
 }
+/* Let the link row shrink and wrap instead of overflowing the bar. WebKit sizes
+   a wrapping flex row as if its items sat on one line unless min-width is 0. */
+.app-nav-wide { min-width: 0; flex-wrap: wrap; justify-content: flex-end; }
+
+/* ---- Phone menu (<details>): shown below 640px in place of the link row ---- */
+.app-header { position: relative; }
+.app-menu { display: none; }
+.app-menu-button {
+  list-style: none;
+  cursor: pointer;
+  color: var(--on-navy);
+  font-size: 0.9rem;
+  font-weight: 500;
+  padding: 0.4rem 0.85rem;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 6px;
+}
+.app-menu-button::-webkit-details-marker { display: none; }
+.app-menu-button::after { content: "\25BE"; margin-left: 0.4rem; font-size: 0.8em; }
+.app-menu[open] .app-menu-button::after { content: "\25B4"; }
+.app-menu-button:focus-visible { outline: 2px solid var(--on-navy); outline-offset: 2px; }
+.app-menu-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background-color: var(--navy);
+  padding: 0.25rem 0 0.5rem;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+.app-menu-list .nav-link {
+  color: var(--on-navy-muted);
+  font-size: 1rem;
+  padding: 0.75rem 1.5rem;
+  border-left: 3px solid transparent;
+}
+.app-menu-list .nav-link:hover { color: var(--on-navy); }
+.app-menu-list .nav-link.active { color: var(--on-navy); border-left-color: var(--orange); }
+@media (max-width: 639px) {
+  .app-nav-wide { display: none; }
+  .app-menu { display: block; }
+}
 
 /* ---- Filter bar ---- */
 .filter-bar {
