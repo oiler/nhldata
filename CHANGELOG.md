@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [3.4.3] - 2026-11-27
+### Fixed
+- On a phone, the open menu lists its links one under another instead of running them off the screen.
+- On a phone, the game page fits the screen: the team summary table scrolls sideways in its own box, and the two teams' player tables stack.
+
 ## [3.4.2] - 2026-11-27
 ### Fixed
 - On a phone, the header's links no longer run off the screen. Below 640px wide, a Menu button opens the links as a list, and the menu closes after a link is followed or on a tap outside it.

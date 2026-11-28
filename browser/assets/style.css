@@ -107,18 +107,24 @@ body {
 .app-menu-button::after { content: "\25BE"; margin-left: 0.4rem; font-size: 0.8em; }
 .app-menu[open] .app-menu-button::after { content: "\25B4"; }
 .app-menu-button:focus-visible { outline: 2px solid var(--on-navy); outline-offset: 2px; }
+/* Block layout, not flex: on an iPhone the flex version laid the links out in a
+   row, which ran off the screen and zoomed the page out. */
 .app-menu-list {
+  display: block;
   position: absolute;
   top: 100%;
   left: 0;
   right: 0;
+  max-width: 100vw;
   z-index: 1000;
   background-color: var(--navy);
   padding: 0.25rem 0 0.5rem;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
 }
 .app-menu-list .nav-link {
+  display: block;
   color: var(--on-navy-muted);
+  text-decoration: none;
   font-size: 1rem;
   padding: 0.75rem 1.5rem;
   border-left: 3px solid transparent;
@@ -264,6 +270,14 @@ body {
   letter-spacing: -0.01em;
   color: var(--text);
 }
+
+/* ---- Game page ---- */
+/* A wide table scrolls inside its own box instead of widening the page. */
+.table-scroll { overflow-x: auto; margin-bottom: 1.5rem; }
+.table-scroll table { border-collapse: collapse; white-space: nowrap; }
+/* The two teams sit side by side, and stack when there's no room for both. */
+.game-teams { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 1rem 2rem; }
+.game-teams > div { flex: 1 1 340px; min-width: 0; }
 
 /* ---- Table container ---- */
 .table-wrap {

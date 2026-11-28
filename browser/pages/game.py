@@ -197,7 +197,7 @@ def layout(game_id=None, **_query):
                 html.Td(_h(home, "team_wppi"), style=td_style),
             ]),
         ]),
-    ], style={"borderCollapse": "collapse", "marginBottom": "1.5rem"})
+    ])
 
     # Compute game wPPI+: (ppi_plus × toi_seconds) / league_mean_wppi × 100
     # Uses same league mean as the seasonal metric — only the toi_seconds differs (this game vs season avg).
@@ -227,15 +227,9 @@ def layout(game_id=None, **_query):
             f"{meta['gameDate']}  |  {score_str}",
             style={"fontSize": "1.1rem", "marginBottom": "1rem"},
         ),
-        heaviness_table,
+        html.Div(heaviness_table, className="table-scroll"),
         html.Div([
-            html.Div([
-                html.H4(f"{away} (Away)"),
-                away_table,
-            ], style={"flex": "1", "minWidth": "0", "marginRight": "1rem"}),
-            html.Div([
-                html.H4(f"{home} (Home)"),
-                home_table,
-            ], style={"flex": "1", "minWidth": "0", "marginLeft": "1rem"}),
-        ], style={"display": "flex", "alignItems": "flex-start", "gap": "1rem"}),
+            html.Div([html.H4(f"{away} (Away)"), away_table]),
+            html.Div([html.H4(f"{home} (Home)"), home_table]),
+        ], className="game-teams"),
     ])
